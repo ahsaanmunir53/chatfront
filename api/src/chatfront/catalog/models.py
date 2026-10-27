@@ -27,6 +27,7 @@ class StockReason(StrEnum):
     CORRECTION = "correction"
     RETURN = "return"
     WRITE_OFF = "write_off"
+    EXPIRED = "expired"  # past its date: held out of what can be sold
 
 
 class Product(Base):
@@ -74,6 +75,7 @@ class Variant(Base):
     price: Mapped[int | None] = mapped_column(BigInteger)  # None: the product's price
     stock: Mapped[int | None]  # None: not counted
     low_alerted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    low_snoozed_until: Mapped[datetime | None]  # "Snooze": remind once more after this
     position: Mapped[int] = mapped_column(default=0)
     active: Mapped[bool] = mapped_column(default=True)
 

@@ -12,6 +12,7 @@ from chatfront.core.models import Staff, StaffRole
 
 class Can(StrEnum):
     CATALOG = "catalog"  # products, prices, shop policies, stock limits
+    STOCK = "stock"  # restock, batches, expiry and write-offs
     ORDERS = "orders"  # see orders and customers
     SHIP = "ship"  # pack, dispatch, deliver, return; shipping labels
     PAYMENTS = "payments"  # approve or reject payments
@@ -30,6 +31,7 @@ ROLE_RIGHTS: dict[str, frozenset[Can]] = {
     StaffRole.PACKING: frozenset({Can.ORDERS, Can.SHIP}),
     StaffRole.ACCOUNTS: frozenset({Can.ORDERS, Can.PAYMENTS, Can.BOOKS, Can.BOOKS_WRITE}),
     StaffRole.AUDITOR: frozenset({Can.ORDERS, Can.BOOKS, Can.AUDIT}),
+    StaffRole.STOCK: frozenset({Can.ORDERS, Can.CATALOG, Can.STOCK}),
 }
 
 

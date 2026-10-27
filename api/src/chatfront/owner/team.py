@@ -1,6 +1,6 @@
 """The shop's team and its activity log (feature 42).
 
-The owner adds people by role (sales, packing, accounts, auditor) with an optional WhatsApp
+The owner adds people by role (sales, packing, accounts, auditor, stock) with an optional WhatsApp
 number; each gets a sign-in link to the console, and from their number the shop's assistant
 answers them as staff, within their role. Removing someone ends their sessions and turns
 their number back into an ordinary customer's. Every step lands in the hash-chained audit log,

@@ -18,6 +18,7 @@ class EntryKind(StrEnum):
     EXPENSE = "expense"  # money that went out: stock, rent, salaries, petrol
     UDHAAR_GIVEN = "udhaar_given"  # goods given on credit
     UDHAAR_PAID = "udhaar_paid"  # credit paid back
+    WRITE_OFF = "write_off"  # stock thrown away: a loss, though no cash moved
 
 
 class Category(StrEnum):

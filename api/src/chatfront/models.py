@@ -20,12 +20,14 @@ from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.owner.models import PendingAction
 from chatfront.payments.models import Payment, PaymentClaim, Receipt, WalletCredit
 from chatfront.shield.models import Approval
+from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
 __all__ = [
     "AiCall",
     "Approval",
     "AuditEntry",
     "Base",
+    "BatchAllocation",
     "ChannelAccount",
     "Conversation",
     "CronRun",
@@ -38,6 +40,7 @@ __all__ = [
     "Message",
     "Order",
     "OrderItem",
+    "OwnerNotice",
     "Payment",
     "PaymentClaim",
     "PendingAction",
@@ -46,6 +49,7 @@ __all__ = [
     "Receipt",
     "Shipment",
     "Staff",
+    "StockBatch",
     "StockMovement",
     "Tenant",
     "TenantModule",

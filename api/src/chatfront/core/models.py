@@ -27,6 +27,7 @@ class StaffRole(StrEnum):
     PACKING = "packing"
     ACCOUNTS = "accounts"
     AUDITOR = "auditor"
+    STOCK = "stock"
 
 
 class Tenant(Base):
