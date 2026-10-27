@@ -20,7 +20,6 @@ from sqlalchemy import select, update
 
 from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import verify_chain
-from chatfront.books.reports import CARD_JOB
 from chatfront.channels.models import Conversation, Direction, Message
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
@@ -287,13 +286,16 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
             "payment-watch",
             "udhaar-reminders",
             "profit-cards",
+            "stock-mornings",
         ]
     }
     assert services.worker is not None
-    assert await services.worker.run_once() == 5
-    async with seeded.system() as session:  # the evening profit cards each shop gets come later
-        statuses = list(await session.scalars(select(Job.status).where(Job.kind != CARD_JOB)))
-    assert statuses == ["done"] * 5
+    while await services.worker.run_once():
+        pass
+    async with seeded.system() as session:
+        statuses = list(await session.scalars(select(Job.status)))
+    assert len(statuses) >= 6  # the six, and whatever they queue for each shop
+    assert set(statuses) == {"done"}
 
 
 async def test_web_app_is_served(seeded: Database, tmp_path: Path) -> None:

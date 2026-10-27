@@ -114,7 +114,9 @@ async def order_by_transfer(
     client: Client, services: Services, slug: str = SHOP, *, cod: bool = False
 ) -> tuple[dict[str, str], Order]:
     """A customer orders one rust lawn suit to Lahore: Rs 4,850 and Rs 150 delivery."""
-    match = f"lawn suit {uuid.uuid4().hex[:6]}"
+    # Letters only: digits inside a word read as Arabizi and would switch the reply language.
+    tag = uuid.uuid4().hex[:6].translate(str.maketrans("0123456789", "ghijklmnop"))
+    match = f"lawn suit {tag}"
     use(
         services,
         agent(

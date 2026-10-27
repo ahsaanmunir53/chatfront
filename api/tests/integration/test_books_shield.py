@@ -269,9 +269,16 @@ async def test_the_owner_gets_profit_cards_and_low_stock_alerts(
             for _ in range(2):
                 await move_stock(session, variant, -1, StockReason.CORRECTION, SYSTEM)
         await drain(services)
-        alerts = [m["text"]["body"] for m in texts(graph, sent)]
+        alerts = texts(graph, sent)
         name = "Printed lawn 3-piece (Rust)"
-        assert alerts == [t("stock.low", LANG, name=name, left=2, limit=3)]  # left as sent
+        assert [m["interactive"]["body"]["text"] for m in alerts] == [
+            t("stock.low", LANG, name=name, left=2, limit=3)
+        ]  # left as sent, with Reorder and Snooze
+        buttons = alerts[0]["interactive"]["action"]["buttons"]
+        assert [b["reply"]["title"] for b in buttons] == [
+            t("stock.reorder", LANG),
+            t("stock.snooze", LANG),
+        ]
         async with services.db.system() as session:
             stored = await session.get(Variant, variant.id)
             assert stored is not None
