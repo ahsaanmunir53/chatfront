@@ -45,6 +45,10 @@ class Tenant(Base):
     default_lang: Mapped[str] = mapped_column(String(LANG_TAG), default="ur-Latn")
     profile: Mapped[dict[str, Any]] = mapped_column(default=dict)
     is_demo: Mapped[bool] = mapped_column(default=False)
+    # Chatfront's own shop: its numbers and web chat sign new shops up (feature 83).
+    is_platform: Mapped[bool] = mapped_column(default=False)
+    # Copies of a demo shop made for one visitor are removed after this time.
+    expires_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -90,6 +94,8 @@ class Customer(Base):
     display_name: Mapped[str | None] = mapped_column(String(120))
     phone_hash: Mapped[str | None] = mapped_column(String(64))
     lang: Mapped[str | None] = mapped_column(String(LANG_TAG))
+    # Set when this chat identity belongs to the shop's own staff, not a buyer.
+    staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
     verified_buyer: Mapped[bool] = mapped_column(default=False)
     risk_score: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = created_at_column()

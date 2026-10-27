@@ -21,6 +21,14 @@ class Channel(StrEnum):
     WEBCHAT = "webchat"
 
 
+class Party(StrEnum):
+    """Who is on the other side of a conversation, which decides the assistant that answers."""
+
+    CUSTOMER = "customer"
+    STAFF = "staff"  # the owner or staff, managing the shop
+    ONBOARDING = "onboarding"  # someone making a new shop on Chatfront's own number
+
+
 class Direction(StrEnum):
     IN = "in"
     OUT = "out"
@@ -80,6 +88,7 @@ class Conversation(Base):
         ForeignKey("channel_accounts.id", ondelete="CASCADE")
     )
     status: Mapped[str] = mapped_column(String(20), default="open")
+    party: Mapped[str] = mapped_column(String(12), default="customer")  # see Party
     lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # detected from the customer
     lang_choice: Mapped[str | None] = mapped_column(String(LANG_TAG))  # asked for; wins
     last_inbound_at: Mapped[datetime | None]

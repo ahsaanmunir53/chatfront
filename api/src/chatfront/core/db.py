@@ -44,6 +44,7 @@ class Base(DeclarativeBase):
         uuid.UUID: UUID(as_uuid=True),
         datetime: DateTime(timezone=True),
         dict[str, Any]: JSONB,
+        list[Any]: JSONB,
     }
 
 

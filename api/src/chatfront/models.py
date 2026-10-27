@@ -2,29 +2,16 @@
 
 from chatfront.ai.models import AiCall
 from chatfront.audit.models import AuditEntry
+from chatfront.catalog.models import Product, StockMovement, Variant
 from chatfront.channels.models import ChannelAccount, Conversation, CustomerIdentity, Message
 from chatfront.core.db import Base
 from chatfront.core.models import Customer, Staff, Tenant, TenantModule
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
-
-# Tables that carry tenant_id and get the row-level security policy.
-TENANT_TABLES = (
-    "tenant_modules",
-    "staff",
-    "customers",
-    "channel_accounts",
-    "customer_identities",
-    "conversations",
-    "messages",
-    "media",
-    "audit_log",
-    "ai_calls",
-    "jobs",
-)
+from chatfront.orders.models import Order, OrderItem
+from chatfront.owner.models import PendingAction
 
 __all__ = [
-    "TENANT_TABLES",
     "AiCall",
     "AuditEntry",
     "Base",
@@ -36,7 +23,13 @@ __all__ = [
     "Job",
     "Media",
     "Message",
+    "Order",
+    "OrderItem",
+    "PendingAction",
+    "Product",
     "Staff",
+    "StockMovement",
     "Tenant",
     "TenantModule",
+    "Variant",
 ]

@@ -69,3 +69,32 @@ async def test_jobs_only_for_own_tenant(clean_db: Database) -> None:
     with pytest.raises(DBAPIError, match="row-level security"):
         async with clean_db.tenant(a.id) as session:
             session.add(Job(tenant_id=b.id, kind="noop"))
+
+
+async def test_every_table_with_a_tenant_has_row_level_security(db: Database) -> None:
+    async with db.system() as session:
+        rows = await session.execute(
+            text(
+                """SELECT c.relname, c.relrowsecurity, EXISTS (
+                       SELECT 1 FROM pg_policies p
+                       WHERE p.tablename = c.relname AND p.policyname = 'tenant_isolation')
+                   FROM pg_class c JOIN information_schema.columns col
+                     ON col.table_name = c.relname AND col.column_name = 'tenant_id'
+                   WHERE c.relkind = 'r' AND col.table_schema = 'public'"""
+            )
+        )
+        tables = {name: (enabled, policy) for name, enabled, policy in rows}
+    assert {"products", "variants", "orders", "order_items", "stock_movements"} <= set(tables)
+    assert {name for name, (on, policy) in tables.items() if not (on and policy)} == set()
+
+
+async def test_stock_movements_are_append_only_for_the_app(clean_db: Database) -> None:
+    async with clean_db.system() as session:
+        grants = await session.scalars(
+            text(
+                "SELECT privilege_type FROM information_schema.role_table_grants "
+                "WHERE table_name = 'stock_movements' AND grantee = :role"
+            ),
+            {"role": APP_ROLE},
+        )
+        assert set(grants) == {"SELECT", "INSERT"}
