@@ -28,6 +28,15 @@ services:
         generateValue: true
       - key: WHATSAPP_ACCESS_TOKEN
         sync: false
+      - key: INSTAGRAM_APP_SECRET
+        sync: false
+      - key: INSTAGRAM_ACCESS_TOKEN
+        sync: false
+      - key: MESSENGER_PAGE_ACCESS_TOKEN
+        sync: false
+      # The GitHub Pages address of the web app, e.g. https://ahsaanmunir53.github.io
+      - key: CORS_ORIGINS
+        sync: false
       - key: BASETEN_API_KEY
         sync: false
       - key: FIREWORKS_API_KEY

@@ -15,9 +15,14 @@ Built with Muse Spark Open.
 ## Try it
 
 Every shop gets a page at `/s/<shop>` with a chat that runs the same agent as the shop's
-WhatsApp number. WhatsApp test numbers can only message their verified recipients, so this
-chat is how anyone outside the shop can try it. Six demo shops, one per business type, are
-created on first start: open `/` and pick one. They and their customers are made up.
+WhatsApp number, plus buttons that open the shop on WhatsApp, Instagram and Messenger.
+WhatsApp test numbers can only message their verified recipients, so the page chat is how
+anyone outside the shop can try it. Six demo shops, one per business type, are created on
+first start: open `/` and pick one. They and their customers are made up.
+
+The web app is static, so it opens at once even when the API on Render's free tier is
+asleep. It pings the API and shows a countdown while it wakes; anything typed in the chat
+meanwhile is sent as soon as the API answers.
 
 ## Run it locally in ten steps
 
@@ -90,6 +95,9 @@ web/src/      React app: shop page, try-it chat, trust page, receipt check, dash
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, linking and design:** Instagram DMs and Facebook Messenger alongside
+  WhatsApp through one webhook, wa.me/ig.me/m.me links on every shop page, the connect
+  command, and the redesigned web app that opens at once and counts down while the API wakes.
 - **27 October, foundation:** database with row-level security and migrations; the model
   provider layer with failover, mock fixtures and the cost meter; the WhatsApp adapter and
   webhook; the try-it chat; the job queue, worker and cron; media storage with signed URLs;
@@ -110,7 +118,8 @@ calendar, Safe Browsing), and are marked `model-api-only` in FEATURES.md.
 
 ## Deploy
 
-`render.yaml` describes one free Docker web service. Before the first deploy:
+The API is one free Docker web service on Render (`render.yaml`). The web app can be served by
+it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
 
 1. Neon: create a project and copy the direct connection string into `DATABASE_URL`.
 2. Supabase: create a private bucket `chatfront-media`; set `SUPABASE_URL` and
@@ -118,8 +127,18 @@ calendar, Safe Browsing), and are marked `model-api-only` in FEATURES.md.
 3. Render: New > Blueprint > this repository. Fill the values marked "sync: false".
 4. cron-job.org: POST `https://<service>.onrender.com/internal/cron` every 5 minutes with the
    header `X-Cron-Secret` set to the `CRON_SECRET` Render generated.
-5. Meta: set the WhatsApp webhook to `https://<service>.onrender.com/webhooks/whatsapp`, with
-   `META_VERIFY_TOKEN` as the verify token, subscribed to `messages`.
+5. Meta: in the app dashboard set one webhook URL for WhatsApp, Instagram and Messenger:
+   `https://<service>.onrender.com/webhooks/meta`, with `META_VERIFY_TOKEN` as the verify
+   token. Subscribe WhatsApp to `messages`, Instagram to `messages` and
+   `messaging_postbacks`, and the Page to `messages` and `messaging_postbacks`.
+6. Connect each account to its shop (tokens come from environment variables, never the
+   command line):
+   `python -m chatfront.channels.connect --shop gulmohar-lawn --channel whatsapp --account-id <phone number id> --handle <public number> --token-env WA_TOKEN`
+   and the same with `--channel instagram` (Instagram account id, username) and
+   `--channel messenger` (Page id, Page username).
+7. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
+   variable `API_BASE` = the Render URL; set `CORS_ORIGINS` on Render to
+   `https://<user>.github.io`; then run the "Deploy the web app to GitHub Pages" workflow.
 
 ## Roadmap
 

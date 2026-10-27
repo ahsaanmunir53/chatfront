@@ -8,12 +8,12 @@ Phase 0, the foundation, is done and every check passes:
 
 | Check | Result |
 |---|---|
-| API tests (`cd api && uv run pytest --cov`) | 129 passed, 97.7% line coverage (minimum 85%) |
+| API tests (`cd api && uv run pytest --cov`) | 142 passed, 97% line coverage (minimum 85%) |
 | Lint and format (`uv run ruff check . && uv run ruff format --check .`) | clean |
 | Types (`uv run mypy`, strict) | clean |
-| Web types and unit tests (`cd web && npm run typecheck && npm test`) | clean, 8 passed |
+| Web types and unit tests (`cd web && npm run typecheck && npm test`) | clean, 11 passed |
 | Web build (`npm run build`) | builds |
-| Browser tests (`npm run e2e`, desktop and phone) | 8 passed |
+| Browser tests (`npm run e2e`, desktop and phone) | 10 passed |
 
 What Phase 0 delivered:
 
@@ -40,6 +40,21 @@ What Phase 0 delivered:
 Not verified yet: the Docker image and the Render deploy (no Docker here); the live model
 calls and the real WhatsApp webhook (no keys yet).
 
+## Also done on 27 October, at Ahsaan's request
+
+- Instagram DMs and Facebook Messenger: one adapter for both, one webhook for all three
+  channels (`/webhooks/meta`), replies through the same reply job, quick replies for
+  buttons, referral refs kept. Tested end to end against mocked Graph endpoints.
+- Shop pages link out with Meta's official short links: wa.me (with a greeting),
+  ig.me/m and m.me (with a ref). `python -m chatfront.channels.connect` attaches a real
+  number, Instagram account or Page to a shop.
+- Redesigned web app: landing page with the payment-verification story, shop profile with
+  Chat here plus WhatsApp, Instagram and Messenger, a polished chat with suggestions, quick
+  replies and ticks.
+- The web app opens at once without the API: demo shops are bundled from the templates, a
+  countdown shows while Render wakes, and chat messages wait and send when it answers.
+  GitHub Pages deploy workflow (manual) for deploy day; CORS on the API.
+
 ## Next: Phase 1 (Build features, by 2 November)
 
 In the timeline's order:
@@ -56,12 +71,11 @@ stays the same.
 
 ## Open questions for Ahsaan
 
-1. GitHub repo `chatfront`: created? Access for pushing this history.
-2. Render: which of the 25 services to free.
-3. Which credits arrived: Baseten, Fireworks, Modal.
-4. Payment samples: which wallets and banks; one real small transfer's credit SMS and
+1. Render: which of the 25 services to free.
+2. Which credits arrived: Baseten, Fireworks, Modal.
+3. Payment samples: which wallets and banks; one real small transfer's credit SMS and
    screenshot from each, with name, number and TID covered. Needed before 30 October.
-5. Pilot shops and their business types.
+4. Pilot shops and their business types.
 
 ## Decisions taken
 

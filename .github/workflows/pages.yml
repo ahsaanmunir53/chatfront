@@ -1,0 +1,56 @@
+name: Deploy the web app to GitHub Pages
+
+# Run by hand on deploy day: Actions > "Deploy the web app to GitHub Pages" > Run workflow.
+# The page is static, so it opens at once; it shows a countdown while the API on Render wakes.
+# One-time setup: Settings > Pages > Source: GitHub Actions, and Settings > Secrets and
+# variables > Actions > Variables > API_BASE = https://<your-render-service>.onrender.com
+on:
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: "API address (leave empty to use the API_BASE repository variable)"
+        required: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build
+        working-directory: web
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_API_BASE: ${{ inputs.api_base || vars.API_BASE }}
+        run: |
+          test -n "$VITE_API_BASE" || { echo "Set the API_BASE variable or the api_base input"; exit 1; }
+          npm ci
+          npm run build
+          # GitHub Pages has no server-side routing: unknown paths get 404.html, which is the app.
+          cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

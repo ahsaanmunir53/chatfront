@@ -3,6 +3,8 @@
 FROM node:22-slim AS web
 WORKDIR /app
 COPY i18n ./i18n
+# The web app bundles the demo shops straight from the business templates.
+COPY api/src/chatfront/templates ./api/src/chatfront/templates
 COPY web/package.json web/package-lock.json ./web/
 RUN cd web && npm ci
 COPY web ./web
