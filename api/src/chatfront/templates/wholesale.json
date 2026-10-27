@@ -1,0 +1,27 @@
+{
+  "id": "wholesale",
+  "name": {"en": "Wholesale and B2B", "ur": "ہول سیل اور بی ٹو بی", "ur-Latn": "Wholesale aur B2B"},
+  "product_fields": [
+    {"key": "min_order", "type": "number", "required": true,
+     "label": {"en": "Minimum order", "ur": "کم از کم آرڈر", "ur-Latn": "Kam az kam order"}},
+    {"key": "price_tier", "type": "text",
+     "label": {"en": "Price tier", "ur": "قیمت کا درجہ", "ur-Latn": "Price tier"}},
+    {"key": "credit_days", "type": "number",
+     "label": {"en": "Credit terms (days)", "ur": "ادھار کی مدت (دن)", "ur-Latn": "Udhaar ki muddat (din)"}}
+  ],
+  "order_flow": ["quote_approval", "address", "payment_choice"],
+  "payment_methods": ["credit", "transfer"],
+  "agent_questions": [
+    {"key": "quantity", "text": {
+      "en": "How many pieces or cartons do you need?",
+      "ur": "آپ کو کتنے پیس یا کارٹن چاہئیں؟",
+      "ur-Latn": "Aap ko kitne piece ya carton chahiyein?"}}
+  ],
+  "demo": {
+    "slug": "ravi-traders", "name": "Ravi Textile Traders", "tier": "large", "city": "Faisalabad",
+    "tagline": {
+      "en": "Wholesale cloth for shops across Punjab, on credit terms",
+      "ur": "پنجاب بھر کی دکانوں کے لیے ہول سیل کپڑا، ادھار پر",
+      "ur-Latn": "Punjab bhar ki dukaanon ke liye wholesale kapra, udhaar par"}
+  }
+}
