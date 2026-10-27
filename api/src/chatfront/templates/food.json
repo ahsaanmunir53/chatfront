@@ -87,6 +87,7 @@
       {
         "name": "Chicken biryani",
         "price": 1800,
+        "cost": 1260,
         "category": "rice",
         "description": "Home-cooked chicken biryani with raita.",
         "attributes": {
@@ -116,6 +117,7 @@
       {
         "name": "Mutton karahi",
         "price": 4800,
+        "cost": 3360,
         "category": "karahi",
         "description": "Mutton karahi, about one kilogram, made to order.",
         "attributes": {
@@ -127,6 +129,7 @@
       {
         "name": "Chapli kebab, 6 pieces",
         "price": 1350,
+        "cost": 940,
         "category": "kebab",
         "description": "Six chapli kebabs, made fresh.",
         "attributes": {
@@ -137,6 +140,7 @@
       {
         "name": "Kheer",
         "price": 900,
+        "cost": 630,
         "category": "dessert",
         "description": "Rice kheer with almonds, in a family bowl.",
         "attributes": {

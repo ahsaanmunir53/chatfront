@@ -76,6 +76,7 @@ class DemoProduct(BaseModel):
 
     name: str
     price: int
+    cost: int | None = None  # synthetic cost of one piece, so the demo shows batch profit
     floor: int | None = None  # the lowest price the owner takes when a customer bargains
     category: str
     description: str

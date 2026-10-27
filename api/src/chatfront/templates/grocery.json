@@ -80,6 +80,7 @@
       {
         "name": "Basmati rice",
         "price": 380,
+        "cost": 270,
         "category": "rice",
         "description": "Long-grain basmati rice, sold by the kilogram.",
         "attributes": {
@@ -101,6 +102,7 @@
       {
         "name": "Cooking oil, 5 litre",
         "price": 2950,
+        "cost": 2060,
         "category": "oil",
         "description": "Cooking oil in a 5 litre bottle.",
         "attributes": {
@@ -124,6 +126,7 @@
       {
         "name": "Eggs",
         "price": 330,
+        "cost": 230,
         "category": "dairy",
         "description": "Farm eggs, sold by the dozen.",
         "attributes": {
@@ -145,6 +148,7 @@
       {
         "name": "Sugar",
         "price": 160,
+        "cost": 110,
         "category": "basics",
         "description": "White sugar, sold by the kilogram.",
         "attributes": {
@@ -165,6 +169,7 @@
       {
         "name": "Wheat flour (atta)",
         "price": 150,
+        "cost": 100,
         "category": "basics",
         "description": "Chakki atta, sold by the kilogram.",
         "attributes": {
@@ -186,6 +191,7 @@
       {
         "name": "Red lentils (masoor daal)",
         "price": 420,
+        "cost": 290,
         "category": "pulses",
         "description": "Split red lentils, sold by the kilogram.",
         "attributes": {
@@ -208,6 +214,7 @@
       {
         "name": "Tea leaves, 475 g",
         "price": 1250,
+        "cost": 880,
         "category": "tea",
         "description": "Black tea leaves in a 475 gram pack.",
         "attributes": {
@@ -231,6 +238,7 @@
       {
         "name": "Salt, 800 g",
         "price": 60,
+        "cost": 42,
         "category": "basics",
         "description": "Iodised salt in an 800 gram pack.",
         "attributes": {
@@ -251,6 +259,7 @@
       {
         "name": "Milk, 1 litre",
         "price": 220,
+        "cost": 150,
         "category": "dairy",
         "description": "UHT milk in a 1 litre pack.",
         "attributes": {

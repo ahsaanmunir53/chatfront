@@ -69,6 +69,7 @@
       {
         "name": "Lawn fabric, bulk (per metre)",
         "price": 420,
+        "cost": 290,
         "category": "fabric",
         "description": "Printed lawn fabric sold by the metre, for bulk orders.",
         "attributes": {
@@ -80,6 +81,7 @@
       {
         "name": "Cotton yarn, 10 kg bundle",
         "price": 9800,
+        "cost": 6860,
         "category": "yarn",
         "description": "Cotton yarn in 10 kilogram bundles.",
         "attributes": {
@@ -90,6 +92,7 @@
       {
         "name": "Khaddar fabric, bulk (per metre)",
         "price": 520,
+        "cost": 360,
         "category": "fabric",
         "description": "Khaddar fabric sold by the metre, for bulk orders.",
         "attributes": {

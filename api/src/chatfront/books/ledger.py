@@ -26,9 +26,13 @@ from chatfront.core.models import Tenant
 MAX_AMOUNT = 10_000_000_000  # minor units: a crore rupees in paisa is far more than a shop's day
 
 
+def zone(tenant: Tenant) -> ZoneInfo:
+    return ZoneInfo(get_pack(tenant.country).timezone)
+
+
 def today(tenant: Tenant) -> date:
     """The shop's own day, in its country's time zone."""
-    return utcnow().astimezone(ZoneInfo(get_pack(tenant.country).timezone)).date()
+    return utcnow().astimezone(zone(tenant)).date()
 
 
 async def post(

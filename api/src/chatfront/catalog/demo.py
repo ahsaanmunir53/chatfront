@@ -8,6 +8,7 @@ from chatfront.audit.service import SYSTEM
 from chatfront.catalog.service import ProductInput, VariantInput, create_product
 from chatfront.core.db import Database
 from chatfront.core.money import Minor
+from chatfront.stock import batches
 from chatfront.templates import DemoProduct, get_template
 
 
@@ -39,7 +40,12 @@ async def add_demo_products(
 ) -> int:
     products = get_template(template_id).demo.products
     async with db.tenant(tenant_id) as session:
+        today = await batches.shop_today(session, tenant_id)
         # Last first: the catalog lists newest first, so the template's first product leads.
         for product in reversed(products):
-            await create_product(session, tenant_id, demo_input(product, digits), SYSTEM)
+            item = await create_product(session, tenant_id, demo_input(product, digits), SYSTEM)
+            if product.cost is None:
+                continue
+            for variant in item.variants:
+                await batches.opening(session, variant, product.cost * 10**digits, today)
     return len(products)

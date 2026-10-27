@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, record
 from chatfront.catalog.models import Product, ProductStatus, StockReason, Variant
-from chatfront.catalog.service import move_stock
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
@@ -26,6 +25,7 @@ from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight
 from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.orders.states import CLOSED, HOLDS_STOCK, OrderStatus, check_move
 from chatfront.shield.autonomy import ASK_DISCOUNT_OVER, Action, Level, level
+from chatfront.stock import batches
 
 MAX_QUANTITY = 99
 OFFER_TTL = timedelta(hours=48)  # an agreed price holds this long
@@ -206,20 +206,14 @@ async def move(
     ref = ("order", str(order.id))
     if now_holding and not was_holding:
         for item in items:
-            await move_stock(
-                session,
-                await _variant(session, item),
-                -item.quantity,
-                StockReason.ORDER,
-                actor,
-                ref=ref,
+            await batches.sell(
+                session, await _variant(session, item), item, item.quantity, actor, ref=ref
             )
     elif was_holding and not now_holding:
         back = StockReason.RETURN if wanted == OrderStatus.RETURNED else StockReason.CANCEL
         for item in items:
-            await move_stock(
-                session, await _variant(session, item), item.quantity, back, actor, ref=ref
-            )
+            variant = await _variant(session, item)
+            await batches.unsell(session, variant, item, item.quantity, back, actor, ref=ref)
     previous, order.status = order.status, wanted
     now = utcnow()
     if wanted == OrderStatus.PLACED:
@@ -258,16 +252,12 @@ async def change_placed_line(
     if quantity == 0 and not others:
         raise AppError("empty_order", "Cancel the order instead", status_code=409)
     delta = quantity - item.quantity
-    if delta:
-        reason = StockReason.ORDER if delta > 0 else StockReason.CANCEL
-        await move_stock(
-            session,
-            await _variant(session, item),
-            -delta,
-            reason,
-            actor,
-            ref=("order", str(order.id)),
-        )
+    ref = ("order", str(order.id))
+    if delta > 0:
+        await batches.sell(session, await _variant(session, item), item, delta, actor, ref=ref)
+    elif delta < 0:
+        variant = await _variant(session, item)
+        await batches.unsell(session, variant, item, -delta, StockReason.CANCEL, actor, ref=ref)
     if quantity == 0:
         await session.delete(item)
     else:

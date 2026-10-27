@@ -59,6 +59,7 @@
       {
         "name": "Haircut and blow-dry",
         "price": 1500,
+        "cost": 1050,
         "category": "hair",
         "description": "Haircut with wash and blow-dry.",
         "attributes": {
@@ -68,6 +69,7 @@
       {
         "name": "Party makeup",
         "price": 6000,
+        "cost": 4200,
         "category": "makeup",
         "description": "Full party makeup with hairstyling.",
         "attributes": {
@@ -77,6 +79,7 @@
       {
         "name": "Manicure and pedicure",
         "price": 2500,
+        "cost": 1750,
         "category": "nails",
         "description": "Manicure and pedicure with polish.",
         "attributes": {
@@ -86,6 +89,7 @@
       {
         "name": "Mehndi, both hands",
         "price": 2000,
+        "cost": 1400,
         "category": "mehndi",
         "description": "Mehndi design on both hands, front and back.",
         "attributes": {

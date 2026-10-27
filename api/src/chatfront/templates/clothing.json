@@ -121,6 +121,7 @@
       {
         "name": "Printed lawn 3-piece",
         "price": 4850,
+        "cost": 3400,
         "floor": 4400,
         "category": "suits",
         "description": "Unstitched printed lawn suit: shirt, dupatta and trouser fabric.",
@@ -147,6 +148,7 @@
       {
         "name": "Embroidered chiffon dupatta",
         "price": 2200,
+        "cost": 1540,
         "floor": 1950,
         "category": "dupattas",
         "description": "Chiffon dupatta with embroidered borders.",
@@ -172,6 +174,7 @@
       {
         "name": "Khaddar 2-piece, stitched",
         "price": 3950,
+        "cost": 2760,
         "floor": 3600,
         "category": "suits",
         "description": "Stitched khaddar shirt and trouser for winter.",
@@ -204,6 +207,7 @@
       {
         "name": "Linen kurta",
         "price": 2750,
+        "cost": 1920,
         "category": "kurtas",
         "description": "Plain linen kurta with a straight cut.",
         "attributes": {
