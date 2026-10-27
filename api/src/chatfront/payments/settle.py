@@ -151,6 +151,7 @@ async def _receipt(
         "receipt": code,
         "shop": tenant.name,
         "shop_slug": tenant.slug,
+        "country": tenant.country,
         "order": order.code,
         "items": [{"name": item.name, "quantity": item.quantity} for item in items],
         "currency": order.currency,

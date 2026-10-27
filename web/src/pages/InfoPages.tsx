@@ -89,7 +89,6 @@ function Explainer({ title, lede }: { title: Key; lede: Key }) {
 }
 
 export const DashboardPage = () => <Explainer title="dashboard.title" lede="dashboard.lede" />;
-export const ReceiptPage = () => <Explainer title="receipt.title" lede="receipt.lede" />;
 
 export function NotFoundPage() {
   const { t } = useLang();

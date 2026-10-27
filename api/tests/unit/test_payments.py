@@ -163,6 +163,18 @@ class TestReceipts:
         assert not receipts.check(payload, signature, None).valid
         assert not receipts.check(payload, "not-a-signature", tenant.receipt_public_key).valid
 
+    def test_the_canonical_text_matches_the_web_page(self) -> None:
+        # The same payload and text are in web/src/receipt.test.ts.
+        payload = {
+            "shop": "گلمہر",
+            "order": "AB12CD",
+            "items": [{"quantity": 2, "name": "Lawn"}],
+            "amount": 249_700,
+        }
+        assert receipts.canonical(payload) == (
+            '{"amount":249700,"items":[{"name":"Lawn","quantity":2}],"order":"AB12CD","shop":"گلمہر"}'
+        )
+
     def test_the_key_is_made_once_and_kept(self) -> None:
         tenant = Tenant(profile={})
         secret = "test-secret-key-0123456789abcdef0123"
