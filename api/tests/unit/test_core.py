@@ -184,3 +184,19 @@ def test_database_url_gets_asyncpg_driver() -> None:
     assert Settings(database_url="postgres://u:p@h/db").database_url.startswith(
         "postgresql+asyncpg://"
     )
+
+
+def test_env_example_documents_every_setting() -> None:
+    from pathlib import Path
+
+    example = Path(__file__).parents[3] / ".env.example"
+    documented = set(re.findall(r"^([A-Z0-9_]+)=", example.read_text(), re.M))
+    assert documented == {name.upper() for name in Settings.model_fields}
+
+
+def test_empty_env_values_mean_the_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AI_RECORD_DIR", "")
+    monkeypatch.setenv("WEB_DIST_DIR", "")
+    settings = Settings()
+    assert settings.ai_record_dir is None
+    assert settings.web_dist_dir.name == "dist"

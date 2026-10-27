@@ -1,0 +1,46 @@
+# Render blueprint: one free web service runs the API, the job worker and the web app.
+# Render's free tier has no background workers, so cron-job.org calls /internal/cron.
+services:
+  - type: web
+    name: chatfront
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: prod
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PHONE_HASH_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_VERIFY_TOKEN
+        generateValue: true
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: BASETEN_API_KEY
+        sync: false
+      - key: FIREWORKS_API_KEY
+        sync: false
+      - key: MODAL_GLIMMER_BASE_URL
+        sync: false
+      - key: MODAL_GLIMMER_API_KEY
+        sync: false
+      - key: STORAGE_BACKEND
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DB_POOL_SIZE
+        value: "3"

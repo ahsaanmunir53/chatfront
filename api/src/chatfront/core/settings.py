@@ -7,14 +7,16 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", env_ignore_empty=True, extra="ignore"
+    )
 
     env: Literal["dev", "test", "prod"] = "dev"
     public_base_url: str = "http://localhost:8000"
@@ -65,15 +67,12 @@ class Settings(BaseSettings):
     signed_url_ttl_seconds: int = 3600
 
     # Behaviour.
-    default_timezone: str = "Asia/Karachi"
     worker_enabled: bool = True
     worker_poll_seconds: float = 1.0
     worker_batch_size: int = 5
     i18n_dir: Path = REPO_ROOT / "i18n"
     web_dist_dir: Path = REPO_ROOT / "web" / "dist"
     public_rate_limit_per_minute: int = 30
-
-    extra_cors_origins: list[str] = Field(default_factory=list)
 
     @field_validator("database_url")
     @classmethod
