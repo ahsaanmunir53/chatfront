@@ -79,15 +79,69 @@ language. It does not measure how well the model writes Pashto or Sindhi; only a
 The Punjabi word list was extended after the first run, using the misses; held-out Punjabi and
 Urdu lines in the unit tests check it did not overfit.
 
-Still open for 121 and 122: product translations (with the catalog), the handover screen
-(90), live eval, voice recordings, native-speaker review of every non-English catalog and of
-the eval lines, and real SMS samples to verify the parsers.
+Still open for 121 and 122: the handover screen (90), live eval, voice recordings,
+native-speaker review of every non-English catalog and of the eval lines, and real SMS samples
+to verify the parsers. (Product translations were added with the catalog group.)
+
+## Done on 27 October: the catalog group (1, 4, 83, 86; 109 and the shop page catalog)
+
+Started a day early, at Ahsaan's request, in the planned order. Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 501 passed, 95.7% line coverage (116 of them are the money cases shared with the web) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 26 passed |
+| Browser tests, desktop and phone | 42 passed |
+
+What it delivered:
+
+- Data: products, variants, append-only stock movements, orders and order items with an
+  explicit state table (stock taken on placing, given back on cancel or return), pending
+  owner actions. Migration 0004; every table under row-level security, checked by a test.
+- The owner's assistant (staff are recognised by phone on WhatsApp, by a signed session on
+  the web): a photo with words or a voice note becomes a product card checked against the
+  template; prices, lowest prices, on and off sale and shop policies change by chat. Nothing
+  changes until the owner taps Confirm or Apply, and buttons carry the action id, so an old
+  card can never confirm a newer change.
+- Without a model key, code reads typed names and prices, typed price changes and the start
+  page answers, so the demo works before the credits arrive.
+- Shops made by chat (83) on the web start page (/start) and, once a number is connected to
+  the shop `chatfront`, on WhatsApp. Web-made shops are kept 7 days.
+- Try as the owner (109): a signed-in three-day copy of any demo shop; at most 300 at once;
+  a cron job removes expired ones with their files.
+- Product texts translated per shop language in the background; the owner's own wording
+  per language is never overwritten (part of 121).
+- Web: the shop page catalog (price tags in the reader's digits, sold out, Ask about this),
+  the owner console (assistant beside the product list, wording per language), the start
+  page, photos and voice notes in every chat, list replies, the console link as a button.
+- Country packs now carry `minor_digits` (browsers' ICU says 0 for the rupee; CLDR and the
+  API say 2), and `i18n/money-cases.json` keeps API and web money text identical.
+- The Docker image installs ffmpeg for voice notes. A manual "Live model evaluation"
+  workflow runs the language set against the real models from repository secrets.
+
+Not verified yet: real model reading of photos and voice notes (no keys yet), WhatsApp
+onboarding on a real number, voice recording on iPhone Safari (it records MP4, which the
+chat does not offer yet; Android and desktop browsers record WebM).
+
+## Where the model keys go (when they arrive)
+
+Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
+
+| Key | GitHub: Settings > Secrets and variables > Actions > New repository secret | Render: the service > Environment | Local `api/.env` |
+|---|---|---|---|
+| `BASETEN_API_KEY` | yes (live evaluation workflow) | yes (the app) | optional |
+| `FIREWORKS_API_KEY` | yes | yes | optional |
+| `MODAL_GLIMMER_BASE_URL`, `MODAL_GLIMMER_API_KEY` | yes | yes | optional |
+
+Then: Actions > "Live model evaluation" > Run workflow. Its results file is attached to the
+run; it is committed after a look, and languages that pass leave beta.
 
 ## Next: Phase 1 (Build features, by 2 November)
 
 In the timeline's order:
 
-1. 28 Oct: catalog and order states: 1, 4, 83, 86.
+1. 28 Oct: catalog and order states: 1, 4, 83, 86. Done on 27 October.
 2. 29 Oct: order agent and guards: 9, 10, 11, 12, 89, 90, 93, 94, 105, 106, 109 (demo login).
 3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99.
 4. 31 Oct: delivery and COD: 33, 34, 101.
@@ -205,6 +259,14 @@ stays the same.
   the exact-language count is reported next to it.
 - SMS parser fixtures are synthetic and labelled so; every parser stays unverified until a
   real message passes, and a test enforces that.
+- Owner sessions are signed tokens (7 days) that travel in the link's fragment
+  (`/owner#t=…`), so they never reach a server log; the console moves them to the browser's
+  storage and out of the address bar.
+- A Latin-script message that could be English or Roman Urdu is answered in Roman Urdu for a
+  Pakistani shop, for owners too ("Lawn suit 4850" gets "Dukaan mein daal doon?").
+- The catalog lists newest first; demo products are seeded last first, so each template's
+  first product leads. A demo shop seeded before it had products gets them on the next seed.
+- Web-made shops are kept 7 days and demo copies 3 days; WhatsApp-made shops are kept.
 
 ## Working notes for the next session
 

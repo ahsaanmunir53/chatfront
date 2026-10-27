@@ -102,7 +102,8 @@ api/src/chatfront/
   payments/   wallet and bank SMS parsers
   eval/       evaluation sets (the language set runs in CI on the mock)
 i18n/         language registry, catalogs, number words, detector hints, country packs
-web/src/      React app: shop page, try-it chat, trust page, receipt check, dashboard
+web/src/      React app: shop page and catalog, try-it chat, start page, owner console, trust page,
+              receipt check, dashboard
 ```
 
 ## Built during the hackathon
@@ -110,6 +111,10 @@ web/src/      React app: shop page, try-it chat, trust page, receipt check, dash
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, catalog and the owner's assistant:** products, variants, stock movements and
+  order states; products added from a photo and a voice note and prices and policies changed
+  by chat, always after the owner confirms; shops made by chat on the start page; Try as the
+  owner on every demo shop; the shop page catalog and the owner console.
 - **27 October, languages and countries:** the language layer for 14 Tier 1 languages and
   dialects (detection, same-language replies, switching, handover translation, right to left,
   numbers in any form) with its evaluation set, and 20 country packs with 21 wallet SMS parsers.
@@ -153,10 +158,16 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    command line):
    `python -m chatfront.channels.connect --shop gulmohar-lawn --channel whatsapp --account-id <phone number id> --handle <public number> --token-env WA_TOKEN`
    and the same with `--channel instagram` (Instagram account id, username) and
-   `--channel messenger` (Page id, Page username).
+   `--channel messenger` (Page id, Page username). A number connected to the shop
+   `chatfront` is where new shops are made by chat (feature 83).
 7. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
    variable `API_BASE` = the Render URL; set `CORS_ORIGINS` on Render to
-   `https://<user>.github.io`; then run the "Deploy the web app to GitHub Pages" workflow.
+   `https://<user>.github.io` and `WEB_BASE_URL` to `https://<user>.github.io/chatfront`
+   (so links sent in chats open the Pages app); then run the "Deploy the web app to GitHub
+   Pages" workflow.
+8. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
+   come) in Render's Environment for the app, and as repository secrets for the manual
+   "Live model evaluation" workflow. They never go in the repository or the chat.
 
 ## Roadmap
 

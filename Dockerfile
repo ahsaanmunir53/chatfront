@@ -12,6 +12,10 @@ RUN cd web && npm run build
 
 FROM python:3.12-slim AS api
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+# ffmpeg turns voice notes (WhatsApp OGG, browser WebM) into the WAV the models read.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
 WORKDIR /app/api
 COPY api/pyproject.toml api/uv.lock ./

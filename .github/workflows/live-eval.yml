@@ -1,0 +1,46 @@
+name: Live model evaluation
+
+# Run by hand once the model keys are in: Actions > "Live model evaluation" > Run workflow.
+# The keys live only in Settings > Secrets and variables > Actions > Repository secrets:
+#   BASETEN_API_KEY          (Baseten > Settings > API keys)
+#   FIREWORKS_API_KEY        (Fireworks > Account > API keys; second in line)
+#   MODAL_GLIMMER_BASE_URL   (our Glimmer deployment on Modal, ending in /v1; optional)
+#   MODAL_GLIMMER_API_KEY    (the key that deployment was started with; optional)
+# Secrets are masked in logs and never reach forks or pull requests from forks.
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: "Only this language tag, e.g. ur-Latn (empty for every Tier 1 language)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  languages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: uv sync --frozen
+      - name: Language evaluation against the real models
+        env:
+          AI_MODE: auto
+          BASETEN_API_KEY: ${{ secrets.BASETEN_API_KEY }}
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+          MODAL_GLIMMER_BASE_URL: ${{ secrets.MODAL_GLIMMER_BASE_URL }}
+          MODAL_GLIMMER_API_KEY: ${{ secrets.MODAL_GLIMMER_API_KEY }}
+          ONLY_LANG: ${{ inputs.lang }}
+        run: |
+          uv run python -m chatfront.eval.languages --live --write ${ONLY_LANG:+--lang "$ONLY_LANG"}
+      # The results file is attached to the run; it is committed by hand after a look.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: i18n/eval-results.json
