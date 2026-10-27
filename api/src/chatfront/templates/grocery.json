@@ -65,6 +65,7 @@
   "modules": [
     "growth"
   ],
+  "default_weight_g": 1000,
   "demo": {
     "slug": "barkat-kiryana",
     "name": "Barkat Kiryana Store",
@@ -84,6 +85,13 @@
         "attributes": {
           "unit": "kg"
         },
+        "tags": [
+          "chawal",
+          "chaawal",
+          "چاول",
+          "rice"
+        ],
+        "weight_g": 1000,
         "variants": [
           {
             "stock": 120
@@ -99,6 +107,14 @@
           "unit": "litre",
           "pack_size": "5 litre"
         },
+        "tags": [
+          "tel",
+          "ghee",
+          "تیل",
+          "گھی",
+          "oil"
+        ],
+        "weight_g": 4700,
         "variants": [
           {
             "stock": 15
@@ -113,6 +129,13 @@
         "attributes": {
           "unit": "dozen"
         },
+        "tags": [
+          "anday",
+          "ande",
+          "انڈے",
+          "انڈا"
+        ],
+        "weight_g": 750,
         "variants": [
           {
             "stock": 40
@@ -127,9 +150,122 @@
         "attributes": {
           "unit": "kg"
         },
+        "tags": [
+          "cheeni",
+          "chini",
+          "چینی"
+        ],
+        "weight_g": 1000,
         "variants": [
           {
             "stock": 200
+          }
+        ]
+      },
+      {
+        "name": "Wheat flour (atta)",
+        "price": 150,
+        "category": "basics",
+        "description": "Chakki atta, sold by the kilogram.",
+        "attributes": {
+          "unit": "kg"
+        },
+        "tags": [
+          "atta",
+          "aata",
+          "آٹا",
+          "flour"
+        ],
+        "weight_g": 1000,
+        "variants": [
+          {
+            "stock": 300
+          }
+        ]
+      },
+      {
+        "name": "Red lentils (masoor daal)",
+        "price": 420,
+        "category": "pulses",
+        "description": "Split red lentils, sold by the kilogram.",
+        "attributes": {
+          "unit": "kg"
+        },
+        "tags": [
+          "daal",
+          "dal",
+          "masoor",
+          "دال",
+          "مسور"
+        ],
+        "weight_g": 1000,
+        "variants": [
+          {
+            "stock": 80
+          }
+        ]
+      },
+      {
+        "name": "Tea leaves, 475 g",
+        "price": 1250,
+        "category": "tea",
+        "description": "Black tea leaves in a 475 gram pack.",
+        "attributes": {
+          "unit": "packet",
+          "pack_size": "475 g"
+        },
+        "tags": [
+          "chai",
+          "patti",
+          "chai patti",
+          "چائے",
+          "پتی"
+        ],
+        "weight_g": 500,
+        "variants": [
+          {
+            "stock": 30
+          }
+        ]
+      },
+      {
+        "name": "Salt, 800 g",
+        "price": 60,
+        "category": "basics",
+        "description": "Iodised salt in an 800 gram pack.",
+        "attributes": {
+          "unit": "packet",
+          "pack_size": "800 g"
+        },
+        "tags": [
+          "namak",
+          "نمک"
+        ],
+        "weight_g": 800,
+        "variants": [
+          {
+            "stock": 60
+          }
+        ]
+      },
+      {
+        "name": "Milk, 1 litre",
+        "price": 220,
+        "category": "dairy",
+        "description": "UHT milk in a 1 litre pack.",
+        "attributes": {
+          "unit": "litre",
+          "pack_size": "1 litre"
+        },
+        "tags": [
+          "doodh",
+          "dudh",
+          "دودھ"
+        ],
+        "weight_g": 1050,
+        "variants": [
+          {
+            "stock": 48
           }
         ]
       }

@@ -106,6 +106,7 @@
       }
     }
   ],
+  "default_weight_g": 500,
   "demo": {
     "slug": "gulmohar-lawn",
     "name": "Gulmohar Lawn House",
@@ -120,6 +121,7 @@
       {
         "name": "Printed lawn 3-piece",
         "price": 4850,
+        "floor": 4400,
         "category": "suits",
         "description": "Unstitched printed lawn suit: shirt, dupatta and trouser fabric.",
         "attributes": {
@@ -145,6 +147,7 @@
       {
         "name": "Embroidered chiffon dupatta",
         "price": 2200,
+        "floor": 1950,
         "category": "dupattas",
         "description": "Chiffon dupatta with embroidered borders.",
         "attributes": {
@@ -169,6 +172,7 @@
       {
         "name": "Khaddar 2-piece, stitched",
         "price": 3950,
+        "floor": 3600,
         "category": "suits",
         "description": "Stitched khaddar shirt and trouser for winter.",
         "attributes": {

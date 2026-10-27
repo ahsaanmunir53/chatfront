@@ -76,9 +76,12 @@ class DemoProduct(BaseModel):
 
     name: str
     price: int
+    floor: int | None = None  # the lowest price the owner takes when a customer bargains
     category: str
     description: str
     attributes: dict[str, str] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)  # other names customers use: chawal, چاول
+    weight_g: int | None = None  # shipping weight of one piece; the template default otherwise
     variants: list[DemoVariant] = Field(default_factory=lambda: [DemoVariant()])
 
 
@@ -103,6 +106,8 @@ class BusinessTemplate(BaseModel):
     payment_methods: list[PaymentMethod]
     agent_questions: list[AgentQuestion]
     modules: list[str] = Field(default_factory=list)
+    # Shipping weight of one piece when a product does not give its own (delivery charge, 94).
+    default_weight_g: int = Field(default=500, ge=0)
     demo: DemoShop
 
 

@@ -16,10 +16,15 @@ def demo_input(product: DemoProduct, digits: int) -> ProductInput:
     return ProductInput(
         name=product.name,
         price=Minor(product.price * scale),
+        floor_price=Minor(product.floor * scale) if product.floor is not None else None,
         source="demo",
         description=product.description,
         category=product.category,
-        attributes=dict(product.attributes),
+        tags=tuple(product.tags),
+        attributes={
+            **product.attributes,
+            **({"weight_g": str(product.weight_g)} if product.weight_g is not None else {}),
+        },
         variants=tuple(
             VariantInput(
                 dict(v.options), Minor(v.price * scale) if v.price is not None else None, v.stock

@@ -54,6 +54,7 @@
       }
     }
   ],
+  "default_weight_g": 5000,
   "demo": {
     "slug": "ravi-traders",
     "name": "Ravi Textile Traders",

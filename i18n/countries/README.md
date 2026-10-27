@@ -17,3 +17,8 @@ and the wallets and banks people pay with. Adding a country means adding a file;
 Pakistan is the default and the only pack the demo depends on. There are no packs for countries
 the hackathon rules exclude (Belarus, China, Cuba, Iran, North Korea, Russia, Syria, Ukraine)
 or for sanctioned regions; a test enforces it.
+- `delivery` (optional) is the starting delivery charge in major units: `local_fee` inside the
+  shop's own city, `national_fee` elsewhere, `per_kg` for each kilogram over `included_kg`, and
+  `free_over` (or null). Each shop can change these by chat. `cities` (optional) lists the
+  cities customers name, with the spellings and scripts they use, so "lhr" and "لاہور" are
+  both Lahore.

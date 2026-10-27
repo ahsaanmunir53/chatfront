@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from babel import Locale, UnknownLocaleError
 from babel.dates import format_date as babel_format_date
@@ -20,10 +20,13 @@ from babel.numbers import (
     get_decimal_symbol,
 )
 
-from chatfront.core.languages import Language
+from chatfront.core.languages import Language, load_registry
 from chatfront.core.money import Minor
 from chatfront.core.numbers import cldr_locale, format_number, to_digits
 from chatfront.core.settings import get_settings
+
+if TYPE_CHECKING:
+    from chatfront.core.models import Tenant
 
 DEFAULT_COUNTRY = "PK"
 
@@ -52,6 +55,23 @@ class Wallet:
 
 
 @dataclass(frozen=True, slots=True)
+class DeliveryDefaults:
+    """A starting delivery charge, in major units, until the shop sets its own."""
+
+    local_fee: int
+    national_fee: int
+    per_kg: int
+    included_kg: int
+    free_over: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class City:
+    name: str
+    aliases: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class CountryPack:
     code: str
     name: str
@@ -68,6 +88,8 @@ class CountryPack:
     languages: tuple[str, ...]
     wallets: tuple[Wallet, ...]
     local_symbols: dict[str, Symbol] = field(default_factory=dict)
+    delivery: DeliveryDefaults | None = None
+    cities: tuple[City, ...] = ()
 
     def symbol_for(self, language: Language) -> Symbol:
         return self.local_symbols.get(language.tag, self.symbol)
@@ -102,6 +124,11 @@ def _pack(raw: dict[str, object]) -> CountryPack:
             tag: Symbol(item["symbol"], item["position"])
             for tag, item in money["local_symbols"].items()
         },
+        delivery=DeliveryDefaults(**raw["delivery"]) if raw.get("delivery") else None,  # type: ignore[arg-type]
+        cities=tuple(
+            City(item["name"], tuple(item.get("aliases", ())))
+            for item in raw.get("cities", [])  # type: ignore[attr-defined]
+        ),
     )
 
 
@@ -135,6 +162,11 @@ def format_money(amount: Minor, pack: CountryPack, language: Language) -> str:
     if symbol.position == "before":
         return f"{sign}{symbol.symbol} {number}"
     return f"{sign}{number} {symbol.symbol}"
+
+
+def shop_money(tenant: Tenant, amount: int, lang: str) -> str:
+    """An amount in the shop's currency, written for a reader of `lang`."""
+    return format_money(Minor(amount), get_pack(tenant.country), load_registry().get(lang))
 
 
 def _decimal_symbol(locale: str, numbering_system: str) -> str:

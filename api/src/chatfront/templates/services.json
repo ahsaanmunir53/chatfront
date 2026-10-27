@@ -44,6 +44,7 @@
       }
     }
   ],
+  "default_weight_g": 0,
   "demo": {
     "slug": "noor-salon",
     "name": "Noor Beauty Salon",

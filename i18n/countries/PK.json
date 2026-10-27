@@ -39,6 +39,136 @@
     "example": "0300 1234567"
   },
   "tax_label": "Sales tax (GST)",
+  "delivery": {
+    "local_fee": 150,
+    "national_fee": 250,
+    "per_kg": 60,
+    "included_kg": 1,
+    "free_over": null
+  },
+  "cities": [
+    {
+      "name": "Lahore",
+      "aliases": [
+        "lhr",
+        "لاہور",
+        "lahor"
+      ]
+    },
+    {
+      "name": "Karachi",
+      "aliases": [
+        "khi",
+        "کراچی"
+      ]
+    },
+    {
+      "name": "Islamabad",
+      "aliases": [
+        "isb",
+        "isl",
+        "اسلام آباد"
+      ]
+    },
+    {
+      "name": "Rawalpindi",
+      "aliases": [
+        "pindi",
+        "rwp",
+        "راولپنڈی",
+        "پنڈی"
+      ]
+    },
+    {
+      "name": "Faisalabad",
+      "aliases": [
+        "fsd",
+        "lyallpur",
+        "فیصل آباد"
+      ]
+    },
+    {
+      "name": "Multan",
+      "aliases": [
+        "ملتان"
+      ]
+    },
+    {
+      "name": "Peshawar",
+      "aliases": [
+        "پشاور",
+        "پېښور"
+      ]
+    },
+    {
+      "name": "Quetta",
+      "aliases": [
+        "کوئٹہ"
+      ]
+    },
+    {
+      "name": "Sialkot",
+      "aliases": [
+        "سیالکوٹ"
+      ]
+    },
+    {
+      "name": "Gujranwala",
+      "aliases": [
+        "گوجرانوالہ"
+      ]
+    },
+    {
+      "name": "Hyderabad",
+      "aliases": [
+        "حیدرآباد",
+        "حيدرآباد"
+      ]
+    },
+    {
+      "name": "Sargodha",
+      "aliases": [
+        "سرگودھا"
+      ]
+    },
+    {
+      "name": "Bahawalpur",
+      "aliases": [
+        "بہاولپور"
+      ]
+    },
+    {
+      "name": "Sukkur",
+      "aliases": [
+        "سکھر",
+        "سکر"
+      ]
+    },
+    {
+      "name": "Abbottabad",
+      "aliases": [
+        "ایبٹ آباد"
+      ]
+    },
+    {
+      "name": "Gujrat",
+      "aliases": [
+        "گجرات"
+      ]
+    },
+    {
+      "name": "Sahiwal",
+      "aliases": [
+        "ساہیوال"
+      ]
+    },
+    {
+      "name": "Mardan",
+      "aliases": [
+        "مردان"
+      ]
+    }
+  ],
   "languages": [
     "ur-Latn",
     "ur",

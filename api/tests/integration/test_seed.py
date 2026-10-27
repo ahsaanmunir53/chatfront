@@ -27,7 +27,7 @@ async def test_seed_makes_one_shop_per_template(clean_db: Database) -> None:
     assert platform.is_platform
     assert not platform.is_demo
     assert all(t.is_demo for t in tenants.values())
-    assert len(products) == 23  # the templates' demo products
+    assert len(products) == 28  # the templates' demo products
     enabled = {(m.tenant_id, m.module) for m in modules if m.enabled}
     grocery = tenants["barkat-kiryana"]
     wholesale = tenants["ravi-traders"]
@@ -38,7 +38,7 @@ async def test_seed_makes_one_shop_per_template(clean_db: Database) -> None:
     assert {a.external_id for a in accounts} == {*tenants, "chatfront"}
     assert len(owners) == 7
     async with clean_db.tenant(grocery.id) as session:
-        assert (await verify_chain(session, grocery.id)).checked == 5  # shop and 4 products
+        assert (await verify_chain(session, grocery.id)).checked == 10  # shop and 9 products
 
 
 async def test_seed_restocks_a_demo_shop_seeded_before_it_had_products(clean_db: Database) -> None:
