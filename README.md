@@ -99,7 +99,7 @@ api/src/chatfront/
   audit/      hash-chained audit log
   modules/    module registry and tiers
   templates/  business-type JSON
-  payments/   wallet and bank SMS parsers
+  payments/   screenshot checks, SMS parsers and webhook, matching, receipts, watcher
   eval/       evaluation sets (the language set runs in CI on the mock)
 i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page and catalog, try-it chat, start page, owner console, trust page,
@@ -111,6 +111,13 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, payments:** a customer's payment screenshot read by Spark Open and checked by
+  code (wrong amount, other receiver, edits, reused picture by perceptual hash, here or at
+  another shop); wallet and bank SMS forwarded from the owner's phone and matched to it, or to
+  the order whose code is in the remarks or whose unique amount it is (Rs 2,497 instead of
+  2,500); Approve and Reject for the owner on WhatsApp and in the console; an advance on cash
+  on delivery and part payments; a watcher every 5 minutes; and a receipt signed with the
+  shop's own key that the receipt page checks in the browser.
 - **27 October, the order agent:** Spark Open with the shop's tools in every customer chat:
   orders from text, voice notes, photos and handwritten lists, bargaining above the owner's
   lowest price, delivery by city and weight, changes and cancellations before dispatch, all
@@ -165,12 +172,16 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    and the same with `--channel instagram` (Instagram account id, username) and
    `--channel messenger` (Page id, Page username). A number connected to the shop
    `chatfront` is where new shops are made by chat (feature 83).
-7. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
+7. SMS forwarding (per shop, by its owner): in the owner console, Payments > Set up SMS
+   forwarding makes a link with the shop's secret, shown once. In a free SMS forwarder app on
+   the owner's Android phone, forward messages from JazzCash, Easypaisa and the bank to it
+   (POST, JSON or form). Messages from other senders are dropped unread.
+8. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
    variable `API_BASE` = the Render URL; set `CORS_ORIGINS` on Render to
    `https://<user>.github.io` and `WEB_BASE_URL` to `https://<user>.github.io/chatfront`
    (so links sent in chats open the Pages app); then run the "Deploy the web app to GitHub
    Pages" workflow.
-8. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
+9. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
    come) in Render's Environment for the app, and as repository secrets for the manual
    "Live model evaluation" workflow. They never go in the repository or the chat.
 

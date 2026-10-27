@@ -154,6 +154,40 @@ What it delivered:
 Not verified yet: any of it against the real model (no keys yet); the WhatsApp handover
 notice on a real number.
 
+## Done on 27 October: the payments group (23, 24, 25, 26, 27, 30, 97, 98, 99)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 587 passed, 94.9% line coverage |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 28 passed |
+| Browser tests, desktop and phone | 46 passed |
+
+What it delivered:
+
+- Placing a transfer order asks for an exact, unique amount (a few rupees off) with the order
+  code for the remarks; cash on delivery at a shop that takes an advance asks for the advance
+  the same way. Part payments are instalments, each with its own receipt.
+- A picture from a customer whose order waits for money is read as a payment screenshot
+  before the order agent sees it, checked by code, and either settled by a matching SMS,
+  handed to the owner, or left waiting for the SMS (15 minutes, then the owner).
+- The SMS webhook (`/webhooks/sms/<shop>`, secret per shop) keeps only messages a provider
+  parser trusts, sealed and deduplicated, and matches them to a screenshot or an order.
+- The owner approves or rejects on WhatsApp (buttons) or in the console's payments panel;
+  the console also lists unpaid orders and money received, and makes the forwarder link.
+- Receipts are signed with each shop's own Ed25519 key; `/r/<code>` checks them in the
+  browser and shows a QR code that opens the same page.
+- The watcher runs from cron every 5 minutes; the watcher model writes one line on each
+  payment card when every number in it is in the evidence.
+- Migration 0006: payment_claims, wallet_credits, payments and receipts (the last three
+  append-only); order advance, paid, due now and unique amount; shop SMS secret and receipt key.
+
+Not verified yet: the screenshot reading against the real model (no keys yet); the parsers
+against real SMS (samples not here yet, so every SMS match goes to the owner for now); a real
+SMS forwarder app posting to the webhook.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -174,7 +208,7 @@ In the timeline's order:
 1. 28 Oct: catalog and order states: 1, 4, 83, 86. Done on 27 October.
 2. 29 Oct: order agent and guards: 9, 10, 11, 12, 89, 90, 93, 94, 105, 106, 109 (demo login).
    Done on 27 October.
-3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99.
+3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99. Done on 27 October.
 4. 31 Oct: delivery and COD: 33, 34, 101.
 5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107.
 6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120.
@@ -259,7 +293,8 @@ stays the same.
    arrived. Building continues on the mock.
 3. Payment samples: real credit SMS and screenshots, with name, number and TID covered,
    coming before 30 October. They will turn the JazzCash, Easypaisa and bank parsers from
-   unverified to verified.
+   unverified to verified (until then every SMS match waits for the owner's Approve), and the
+   screenshots become recorded readings for the payment tests.
 4. Pilot shops and their business types.
 5. Native speakers to read the Punjabi, Pashto, Sindhi, Hindi, Bengali and Arabic strings
    and eval lines, and to record the two voice notes per language (script in the eval data).
@@ -306,6 +341,17 @@ stays the same.
   real shops' lowest prices are only in the database and never reach a customer.
 - An owner's language is their own setting, else the shop's (Roman Urdu in Pakistan): the
   handover summary and notices use it.
+- Payments settle only on a verified parser's matching SMS or the owner's Approve; a
+  screenshot alone never settles anything. A shop without SMS forwarding sends every
+  screenshot straight to the owner.
+- The unique amount is taken off the order's total (the shop gives up a few rupees, at most
+  49) and only until the first money arrives; after a part payment the rest is asked as it is.
+- The COD advance is the shop's own `cod_advance` (minor units) if set, else the delivery
+  charge, else a tenth of the order (rounded up to 50, at least 100).
+- Owner payment buttons carry the claim id (`pay:<id>:ok|no`); the claim's own status is the
+  state, so a second tap or a console decision cannot settle twice.
+- Test screenshots are plain coloured pictures with recorded readings; no image that looks
+  like a bank or wallet receipt is ever generated.
 
 ## Working notes for the next session
 
