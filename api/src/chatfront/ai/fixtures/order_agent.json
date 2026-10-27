@@ -149,5 +149,60 @@
     "match": "i will pay by bank transfer",
     "step": 1,
     "content": "[mock reply] Here is your order. Tap Place order to confirm it."
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "deliver it to gulberg",
+    "tool_calls": [
+      {
+        "name": "add_items",
+        "arguments": {
+          "items": [
+            {
+              "name": "Sugar",
+              "quantity": 2
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_delivery_details",
+        "arguments": {
+          "city": "Lahore",
+          "address": "Gulberg",
+          "area": "Gulberg",
+          "name": "Test Customer",
+          "phone": "0300 0000000"
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "deliver it to gulberg",
+    "step": 1,
+    "content": "[mock reply] Please share your location so the rider can find you."
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "place it now",
+    "tool_calls": [
+      {
+        "name": "checkout",
+        "arguments": {
+          "payment_method": "cod"
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "place it now",
+    "step": 1,
+    "content": "[mock reply] Here is your order. Tap Place order to confirm it."
   }
 ]

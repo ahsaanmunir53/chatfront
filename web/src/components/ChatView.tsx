@@ -5,7 +5,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { ServerMessage } from "../api";
-import { linkify, liveReplyId } from "../chat";
+import { linkify, liveReplyId, mapLink } from "../chat";
 import type { Outgoing } from "../chat";
 import { dirOf, scriptLang } from "../i18n";
 import type { Key } from "../i18n";
@@ -22,6 +22,7 @@ import {
   CloseIcon,
   KeyIcon,
   MicIcon,
+  PinIcon,
   SendIcon,
 } from "./Icons";
 import { LangSelect } from "./Shell";
@@ -81,13 +82,15 @@ function Bubble({
   message,
   live,
   onTap,
+  onShareLocation,
 }: {
   message: ServerMessage;
   live: boolean;
   onTap: (title: string, id: string) => void;
+  onShareLocation: () => void;
 }) {
   const { t } = useLang();
-  const { buttons, list } = message.payload;
+  const { buttons, list, location, location_request: askLocation } = message.payload;
   const voice = message.kind === "audio" && !message.body;
   return (
     <li className={`bubble bubble-${message.direction}`}>
@@ -97,6 +100,20 @@ function Bubble({
       {message.body && (
         <span lang={message.lang ?? undefined} dir={message.lang ? dirOf(message.lang) : "auto"}>
           <Linked text={message.body} />
+        </span>
+      )}
+      {location && (
+        <a className="bubble-pin" href={mapLink(location)} target="_blank" rel="noopener" dir="ltr">
+          <PinIcon size={16} />
+          {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+        </a>
+      )}
+      {askLocation && (
+        <span className="bubble-buttons">
+          <button type="button" disabled={!live} onClick={onShareLocation}>
+            <PinIcon size={16} />
+            {t("chat.share_location")}
+          </button>
         </span>
       )}
       {buttons && buttons.length > 0 && (
@@ -184,6 +201,7 @@ export function ChatView({
   const chat = useChat(slug, ownerToken, onSignedOut);
   const recorder = useRecorder();
   const [draft, setDraft] = useState(initialDraft);
+  const [locationOff, setLocationOff] = useState(false);
   const threadRef = useRef<HTMLOListElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const live = liveReplyId(chat.messages);
@@ -211,6 +229,24 @@ export function ChatView({
     if (recording !== null && recording >= MAX_VOICE_SECONDS) void sendVoice();
   }, [recording, sendVoice]);
 
+  // The browser asks the customer first; a refusal gets a hint to name a landmark instead.
+  function shareLocation() {
+    setLocationOff(false);
+    if (!navigator.geolocation) {
+      setLocationOff(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        chat.share(
+          { latitude: coords.latitude, longitude: coords.longitude },
+          t("chat.my_location"),
+        ),
+      () => setLocationOff(true),
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     chat.say(draft);
@@ -233,7 +269,9 @@ export function ChatView({
         ? t("chat.no_recording")
         : chat.problem
           ? t(PROBLEMS[chat.problem])
-          : null;
+          : locationOff
+            ? t("chat.location_off")
+            : null;
 
   return (
     <section className={`phone phone-${variant}`} aria-label={label}>
@@ -263,6 +301,7 @@ export function ChatView({
             message={message}
             live={message.id === live}
             onTap={(text, id) => chat.say(text, id)}
+            onShareLocation={shareLocation}
           />
         ))}
         {chat.pending.map((item) => (

@@ -3,7 +3,7 @@
 // the owner console passes its signed session instead.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "./api";
-import type { ChatAuth, ServerMessage } from "./api";
+import type { ChatAuth, Coordinates, ServerMessage } from "./api";
 import { awaitingReply, lastSeen, merge, settle } from "./chat";
 import type { Outgoing } from "./chat";
 import { useServer } from "./server";
@@ -121,6 +121,7 @@ export function useChat(slug: string, ownerToken: string | null, onSignedOut?: (
             client_id: next.clientId,
             text: next.body,
             ...(next.buttonId ? { button_id: next.buttonId } : {}),
+            ...(next.location ? { location: next.location } : {}),
           });
         }
         setSent((done) => new Set(done).add(next.clientId));
@@ -157,6 +158,11 @@ export function useChat(slug: string, ownerToken: string | null, onSignedOut?: (
     [queue],
   );
 
+  const share = useCallback(
+    (location: Coordinates, label: string) => queue({ kind: "location", body: label, location }),
+    [queue],
+  );
+
   return {
     online,
     messages,
@@ -165,5 +171,6 @@ export function useChat(slug: string, ownerToken: string | null, onSignedOut?: (
     waiting: online && awaitingReply(messages, pending),
     say,
     attach,
+    share,
   };
 }

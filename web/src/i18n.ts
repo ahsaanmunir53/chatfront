@@ -203,3 +203,9 @@ export function needsReview(tag: Lang): boolean {
   const catalogStatus = (review.catalogs as Record<string, { status: string }>)[tag]?.status;
   return catalogStatus === "needs-native-review";
 }
+
+/** A name, code or number set apart from the text around it, so right-to-left text and a
+ * code such as "78MMG3" do not reorder each other. */
+export function isolate(text: string): string {
+  return `\u2068${text}\u2069`;
+}

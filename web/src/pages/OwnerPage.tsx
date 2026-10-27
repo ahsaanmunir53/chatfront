@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { OwnerMe, OwnerProduct } from "../api";
 import { ChatView } from "../components/ChatView";
+import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
@@ -246,7 +247,7 @@ function Products({
   );
 }
 
-/** The signed-in console: the assistant, the products, the customers waiting and payments. */
+/** The signed-in console: the assistant, products, customers waiting, orders and payments. */
 function Console({
   me,
   token,
@@ -265,6 +266,7 @@ function Console({
   const [panel, setPanel] = useState<"chat" | "products">("chat");
   const waiting = useHandovers(token);
   const payments = usePayments(token);
+  const orders = useOrders(token);
   const saved = useCallback(() => setSaves((n) => n + 1), []);
 
   // Each reply may have added or changed a product: read the list again.
@@ -331,6 +333,7 @@ function Console({
         />
         <Products me={me} token={token} products={products} onSaved={saved} />
       </div>
+      <OrdersPanel me={me} token={token} orders={orders.orders} onChange={orders.refresh} />
       <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
     </Page>
   );

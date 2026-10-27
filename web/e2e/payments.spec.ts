@@ -54,7 +54,7 @@ test("a customer pays by transfer, the owner approves, and the signed receipt ch
   // The owner sees the evidence and approves.
   const review = page.getByRole("region", { name: /Payments to check/ });
   await expect(review).toBeVisible({ timeout: 20_000 });
-  await expect(review).toContainText(`Order ${code}`);
+  await expect(review).toContainText(code);
   await expect(review).toContainText("SMS forwarding is not set up");
   await expect(review.getByRole("img", { name: "Payment screenshot" })).toBeVisible();
   await review.getByRole("button", { name: "Approve" }).click();
@@ -70,7 +70,7 @@ test("a customer pays by transfer, the owner approves, and the signed receipt ch
     timeout: 15_000,
   });
   await expect(customer.getByRole("heading", { level: 1 })).toContainText("Barkat");
-  await expect(customer.getByText(`Order ${code}`)).toBeVisible();
+  await expect(customer.locator(".slip-order")).toContainText(code);
   await expect(customer.getByText("Confirmed by the shop owner")).toBeVisible();
   await customerContext.close();
 });

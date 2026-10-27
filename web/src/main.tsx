@@ -9,6 +9,7 @@ import { ChatPage } from "./pages/ChatPage";
 import { HomePage } from "./pages/HomePage";
 import { DashboardPage, NotFoundPage, TrustPage } from "./pages/InfoPages";
 import { ReceiptPage } from "./pages/ReceiptPage";
+import { TrackPage } from "./pages/TrackPage";
 import { OwnerPage } from "./pages/OwnerPage";
 import { ShopPage } from "./pages/ShopPage";
 import { StartPage } from "./pages/StartPage";
@@ -44,6 +45,7 @@ createRoot(root).render(
             <Route path="/owner" element={<OwnerPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/r/:code?" element={<ReceiptPage />} />
+            <Route path="/t/:code" element={<TrackPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <RouteEffects />

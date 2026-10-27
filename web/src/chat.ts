@@ -1,12 +1,13 @@
 // Pure helpers for the chats: merging polled messages, settling what was sent, links in text.
-import type { ServerMessage } from "./api";
+import type { Coordinates, ServerMessage } from "./api";
 
 /** Something typed, tapped or attached here that the server has not shown back yet. */
 export type Outgoing = {
   clientId: string;
-  kind: "text" | "image" | "audio";
+  kind: "text" | "image" | "audio" | "location";
   body: string; // the text, a photo's caption, or empty for a voice note
   buttonId?: string;
+  location?: Coordinates;
   file?: Blob;
   preview?: string; // an object URL for a photo being sent
 };
@@ -59,4 +60,9 @@ export function linkify(text: string): Piece[] {
   }
   if (at < text.length) pieces.push({ text: text.slice(at) });
   return pieces;
+}
+
+/** A map link for a shared location. */
+export function mapLink({ latitude, longitude }: Coordinates): string {
+  return `https://maps.google.com/?q=${latitude.toFixed(6)},${longitude.toFixed(6)}`;
 }

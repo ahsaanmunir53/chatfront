@@ -1387,6 +1387,9 @@ button {
 }
 
 .bubble-buttons button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 12px;
   border: 1.5px solid var(--ink-raised);
   border-radius: 999px;
@@ -1395,6 +1398,16 @@ button {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.bubble-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: inherit;
+  font-size: 14px;
+  text-underline-offset: 3px;
 }
 
 .typing {
@@ -2909,4 +2922,262 @@ button {
   .slip {
     filter: none;
   }
+}
+
+/* Orders in the console ------------------------------------------------------------------ */
+
+.order-panel {
+  margin-top: 36px;
+}
+
+.order-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-row {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.order-head,
+.order-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.order-status {
+  --tone: var(--muted);
+  padding: 1px 10px 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 16%, var(--card));
+  color: color-mix(in srgb, var(--tone) 70%, var(--text));
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.order-status.status-awaiting_payment {
+  --tone: var(--tone-saffron);
+}
+
+.order-status.status-paid,
+.order-status.status-confirmed {
+  --tone: var(--tone-sky);
+}
+
+.order-status.status-packed {
+  --tone: var(--tone-plum);
+}
+
+.order-status.status-dispatched {
+  --tone: var(--tone-teal);
+}
+
+.order-status.status-delivered {
+  --tone: var(--stamp);
+}
+
+.order-status.status-returned {
+  --tone: var(--chili);
+}
+
+.order-pin {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.order-risk {
+  font-size: 14px;
+}
+
+.order-risk summary {
+  display: inline-block;
+  padding: 1px 10px 2px;
+  border-radius: 999px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.order-risk.risk-low summary {
+  background: var(--paper);
+  color: var(--muted);
+}
+
+.order-risk.risk-medium summary {
+  background: color-mix(in srgb, var(--saffron) 24%, var(--card));
+}
+
+.order-risk.risk-high summary {
+  background: color-mix(in srgb, var(--chili) 18%, var(--card));
+  color: color-mix(in srgb, var(--chili) 70%, var(--text));
+}
+
+.order-risk ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+}
+
+.order-row .waiting-actions {
+  margin-top: 2px;
+}
+
+.order-dispatch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.order-dispatch label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.order-dispatch input {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.order-dispatch .action {
+  grid-column: 1 / -1;
+  justify-content: center;
+  padding: 8px 14px;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  cursor: pointer;
+}
+
+.order-failed {
+  margin: 0;
+  color: var(--chili);
+  font-size: 14px;
+}
+
+/* A parcel's page: what to pay at the door, then the way it has come. ---------------------- */
+
+.track-hero {
+  max-width: 540px;
+  margin-inline: auto;
+}
+
+.track {
+  display: grid;
+  gap: 18px;
+  max-width: 540px;
+  margin: 0 auto 40px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+}
+
+.track-collect,
+.track-paid {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.track-collect {
+  background: color-mix(in srgb, var(--saffron) 24%, var(--card));
+}
+
+.track-paid {
+  background: color-mix(in srgb, var(--stamp) 14%, var(--card));
+  color: color-mix(in srgb, var(--stamp) 60%, var(--text));
+}
+
+.track-steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 0 0 18px 28px;
+}
+
+[dir="rtl"] .track-step {
+  padding: 0 28px 18px 0;
+}
+
+.track-step::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 5px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-raised);
+}
+
+.track-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+
+.track-step:last-child {
+  padding-bottom: 0;
+}
+
+.track-step:last-child::before {
+  background: var(--stamp);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--stamp) 22%, transparent);
+}
+
+.track-step.step-returned:last-child::before,
+.track-step.step-cancelled:last-child::before {
+  background: var(--chili);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--chili) 22%, transparent);
+}
+
+.track-step-name {
+  font-weight: 650;
+}
+
+.track-step time {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.track-courier {
+  margin: 0;
+  color: var(--muted);
+}
+
+.track .action {
+  justify-self: start;
 }

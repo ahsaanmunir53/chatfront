@@ -38,7 +38,12 @@ export type ServerMessage = {
   kind: string;
   body: string | null;
   lang?: string | null;
-  payload: { buttons?: ChatButton[]; list?: { button: string; rows: ChatListRow[] } };
+  payload: {
+    buttons?: ChatButton[];
+    list?: { button: string; rows: ChatListRow[] };
+    location_request?: boolean;
+    location?: { latitude: number; longitude: number };
+  };
   media_url?: string | null;
   client_id?: string | null;
   created_at: string;
@@ -152,6 +157,35 @@ export type ReceiptCheck = {
   valid: boolean;
 };
 
+export type RiskReason = { code: string; points: number; count?: number };
+export type OwnerOrder = {
+  code: string;
+  customer: string;
+  status: string;
+  method: "cod" | "transfer" | null;
+  total: number;
+  paid: number;
+  due_now: number | null;
+  to_collect: number;
+  risk: { score: number; band: "low" | "medium" | "high"; reasons: RiskReason[] };
+  pin: boolean;
+  placed_at: string | null;
+  next: string[];
+  label: boolean;
+  shipment: { courier: string | null; tracking_number: string | null; public_code: string } | null;
+};
+export type Parcel = {
+  shop: string;
+  shop_slug: string;
+  country: string;
+  order: string;
+  status: string;
+  steps: { step: string; at: string }[];
+  collect: number;
+  courier: string | null;
+  tracking_number: string | null;
+};
+
 /** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
 export type ChatAuth = { token: string; owner: boolean };
 
@@ -201,7 +235,13 @@ export async function ping(timeoutMs: number): Promise<boolean> {
   }
 }
 
-export type ChatText = { client_id: string; text: string; button_id?: string };
+export type Coordinates = { latitude: number; longitude: number };
+export type ChatText = {
+  client_id: string;
+  text: string;
+  button_id?: string;
+  location?: Coordinates;
+};
 
 export const api = {
   shop: (slug: string) => call<Shop>(shopPath(slug)),
@@ -260,6 +300,22 @@ export const api = {
     ),
   setUpForwarding: (token: string) =>
     call<Forwarding>("/api/owner/sms-forwarding", { method: "POST", headers: bearer(token) }),
+  orders: (token: string) => call<OwnerOrder[]>("/api/owner/orders", { headers: bearer(token) }),
+  moveOrder: (token: string, code: string, to: string, courier = "", tracking = "") =>
+    call<OwnerOrder>(`/api/owner/orders/${encodeURIComponent(code)}/status`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ to, courier, tracking }),
+    }),
+  label: async (token: string, code: string): Promise<Blob> => {
+    const response = await fetch(
+      `${API_BASE}/api/owner/orders/${encodeURIComponent(code)}/label.pdf`,
+      { headers: bearer(token) },
+    );
+    if (!response.ok) throw new ApiError(response.status, `http_${response.status}`, "No label");
+    return response.blob();
+  },
+  track: (code: string) => call<Parcel>(`/api/track/${encodeURIComponent(code)}`),
   receipt: (code: string) => call<ReceiptCheck>(`/api/receipts/${encodeURIComponent(code)}`),
   resumeHandover: (token: string, handoverId: string) =>
     call<{ resumed: boolean }>(`/api/owner/handovers/${encodeURIComponent(handoverId)}/resume`, {

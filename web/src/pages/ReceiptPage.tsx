@@ -6,7 +6,7 @@ import { ApiError, api } from "../api";
 import type { ReceiptCheck } from "../api";
 import { Page, Problem } from "../components/Shell";
 import { API_BASE } from "../config";
-import { scriptLang } from "../i18n";
+import { isolate, scriptLang } from "../i18n";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
 import { formatMoney } from "../money";
@@ -107,7 +107,7 @@ export function ReceiptPage() {
             <h1 id="slip-shop" className="slip-shop" lang={scriptLang(p.shop)} dir="auto">
               {p.shop}
             </h1>
-            <p className="slip-order">{t("receipt.order", { code: p.order })}</p>
+            <p className="slip-order">{t("receipt.order", { code: isolate(p.order) })}</p>
           </div>
           {valid && (
             <span className="stamp slip-stamp" aria-hidden="true">

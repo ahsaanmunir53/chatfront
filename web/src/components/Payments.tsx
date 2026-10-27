@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Forwarding, OwnerMe, PaymentReview, Payments } from "../api";
+import { isolate } from "../i18n";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
 import { formatMoney } from "../money";
@@ -119,7 +120,7 @@ export function PaymentReviews({
             <div className="pay-body">
               <p className="waiting-head">
                 <strong dir="auto">{review.customer || t("console.customer_label")}</strong>
-                <span>{t("receipt.order", { code: review.order_code })}</span>
+                <span>{t("receipt.order", { code: isolate(review.order_code) })}</span>
                 <time>{timeOf(review.created_at)}</time>
               </p>
               <Evidence me={me} review={review} />
