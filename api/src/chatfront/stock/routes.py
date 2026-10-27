@@ -20,7 +20,7 @@ from chatfront.channels.handover import staff_language
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Staff, Tenant
-from chatfront.owner.rights import Can
+from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.routes import ServicesDep, StaffDep, needs
 from chatfront.owner.sessions import OwnerSession
 from chatfront.stock import actions, expiry, notices, profit, restock, sheets
@@ -63,8 +63,8 @@ class BatchOut(BaseModel):
     status: str
     price_question: str | None
     sold: int
-    revenue: int
-    cost_sold: int
+    revenue: int | None  # money from sales, for people who may read the books
+    cost_sold: int | None
     profit: int | None
 
 
@@ -180,12 +180,14 @@ async def restock_sheet(
 
 @router.get("/batches")
 async def batches(session: StockDep, services: ServicesDep) -> list[BatchOut]:
+    books = Can.BOOKS in await staff_rights(services.db, session.tenant_id, session.staff_id)
     async with services.db.tenant(session.tenant_id) as db:
         found = await profit.recent_batches(db)
         sold = await profit.by_batch(db, [b.id for b in found])
         out = []
         for batch in found:
             done = sold.get(batch.id, profit.Sold())
+            known = books and batch.total_cost is not None
             out.append(
                 BatchOut(
                     id=batch.id,
@@ -200,9 +202,9 @@ async def batches(session: StockDep, services: ServicesDep) -> list[BatchOut]:
                     status=batch.status,
                     price_question=batch.price_question,
                     sold=done.units,
-                    revenue=done.revenue,
-                    cost_sold=done.cost,
-                    profit=done.profit if batch.total_cost is not None else None,
+                    revenue=done.revenue if books else None,
+                    cost_sold=done.cost if books else None,
+                    profit=done.profit if known else None,
                 )
             )
         return out

@@ -83,11 +83,13 @@ async def post(
 async def reverse(
     session: AsyncSession, tenant: Tenant, entry_id: uuid.UUID, actor: Actor
 ) -> LedgerEntry:
-    """Undo an entry with its mirror image. Udhaar entries are undone through the khata."""
+    """Undo an entry with its mirror image. Udhaar entries are undone through the khata;
+    stock written off stays written off, so its loss does too."""
     entry = await session.get(LedgerEntry, entry_id)
     if entry is None:
         raise NotFound("entry")
-    if entry.reverses is not None or entry.amount < 0 or entry.account_id is not None:
+    fixed = entry.account_id is not None or entry.kind == EntryKind.WRITE_OFF
+    if entry.reverses is not None or entry.amount < 0 or fixed:
         raise AppError("not_reversible", "This entry cannot be undone here", status_code=409)
     done = await session.scalar(select(LedgerEntry.id).where(LedgerEntry.reverses == entry.id))
     if done is not None:

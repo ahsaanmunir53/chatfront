@@ -325,13 +325,20 @@ async def test_the_console_restocks_by_form_and_sheet_within_each_role(
     closed = await client.post(f"{url}/expiry", json={"expires_on": day}, headers=kashif)
     assert closed.status_code == 409
     assert (await variants(client, kashif))[RUST]["stock"] == 9  # 4 + 10 + 5 - 10
+    assert (sheet_batch["revenue"], sheet_batch["profit"]) == (None, None)  # not the books
+    shown = (await get(client, "/api/owner/batches", owner))[0]
+    assert (shown["revenue"], shown["profit"]) == (0, 0)
 
     # Profit belongs to the books: the owner sees it, the stock role does not.
     assert (await client.get("/api/owner/profit", headers=kashif)).status_code == 403
     assert (await client.get("/api/owner/books", headers=kashif)).status_code == 403
     assert await get(client, "/api/owner/profit", owner) == []  # nothing sold yet
-    today = (await get(client, "/api/owner/books", owner))["today"]
+    books = await get(client, "/api/owner/books", owner)
+    today = books["today"]
     assert today["write_offs"] == 2_900_000
+    [loss] = [e for e in books["entries"] if e["kind"] == "write_off"]
+    undo = await client.post(f"/api/owner/books/entries/{loss['id']}/reverse", headers=owner)
+    assert undo.status_code == 409  # the stock stays thrown away, and so does its loss
     assert today["goods_profit"] == -2_900_000
     # The stock role restocks by chat too; sales may not.
     assert (await say(client, services, slug, kashif, "1 lawn aaya"))[-1]["body"] != t(
