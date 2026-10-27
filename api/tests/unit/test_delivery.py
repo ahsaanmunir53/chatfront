@@ -194,7 +194,9 @@ class TestRisk:
         grocery = Tenant(template="grocery", country="PK", profile={})  # cod, credit, transfer
         assert cod_advance(grocery, 300_000, 15_000) == 0
         assert cod_advance(grocery, 300_000, 15_000, risky=True) == 15_000
-        off = Tenant(template="grocery", country="PK", profile={"risk_advance": False})
+        off = Tenant(
+            template="grocery", country="PK", profile={"autonomy": {"risk_advance": "never"}}
+        )
         assert cod_advance(off, 300_000, 15_000, risky=True) == 0
         cod_only = Tenant(template="grocery", country="PK", profile={"payment_methods": ["cod"]})
         assert cod_advance(cod_only, 300_000, 15_000, risky=True) == 0
