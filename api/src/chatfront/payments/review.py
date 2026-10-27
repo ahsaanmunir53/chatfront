@@ -34,11 +34,13 @@ from chatfront.core.models import Tenant
 from chatfront.core.provisioning import owner_of
 from chatfront.jobs.queue import JobContext, enqueue
 from chatfront.orders.models import Order
+from chatfront.owner.rights import Can, staff_rights
 from chatfront.payments.forensics import Signal
 from chatfront.payments.messages import evidence_lines, paid_text
 from chatfront.payments.models import ClaimStatus, PaymentClaim, VerifiedBy, WalletCredit
 from chatfront.payments.settle import settle
 from chatfront.shield.answer_check import Facts, unsupported
+from chatfront.shield.autonomy import Action, Level, level
 
 if TYPE_CHECKING:
     from chatfront.channels.conversation import Turn
@@ -68,6 +70,16 @@ async def to_review(
         tenant_id=claim.tenant_id,
         dedupe_key=f"payment-review:{claim.id}:{len(claim.signals)}",
     )
+
+
+def why_not_alone(tenant: Tenant, credit: WalletCredit) -> Signal | None:
+    """Why a matching credit SMS may not settle a payment by itself: its parser has not been
+    checked on a real message, or the owner wants to approve every payment (feature 104)."""
+    if not credit.verified:
+        return Signal("unverified_parser")
+    if level(tenant, Action.SMS_PAYMENTS) != Level.AUTO:
+        return Signal("owner_asks")
+    return None
 
 
 def review_button(claim: PaymentClaim, answer: str) -> str:
@@ -275,6 +287,8 @@ async def payment_button(services: Services, turn: Turn) -> list[Outbound] | Non
     parsed = parse_review_button((turn.message.payload or {}).get("button_id"))
     if parsed is None or turn.staff_id is None:
         return None
+    if Can.PAYMENTS not in await staff_rights(services.db, turn.tenant.id, turn.staff_id):
+        return [OutText(t("owner.not_allowed", turn.lang))]
     claim_id, approve = parsed
     decision = await decide(services, turn.tenant.id, claim_id, turn.staff_id, approve=approve)
     if decision.outcome == Decided.BEFORE:

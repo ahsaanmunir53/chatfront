@@ -34,7 +34,7 @@ from chatfront.payments.forensics import STRONG, Expected, PaymentReading, Signa
 from chatfront.payments.matcher import credit_for_claim, find_order_code, same_transaction
 from chatfront.payments.messages import paid_text
 from chatfront.payments.models import ClaimStatus, PaymentClaim, VerifiedBy
-from chatfront.payments.review import to_review
+from chatfront.payments.review import to_review, why_not_alone
 from chatfront.payments.settle import claim_facts, credit_facts, settle, unused_credits
 
 if TYPE_CHECKING:
@@ -245,7 +245,8 @@ async def _decide(
     credits = {credit.id: credit for credit in await unused_credits(session, tenant.id)}
     match = credit_for_claim(claim_facts(claim), [credit_facts(c) for c in credits.values()])
     credit = credits[match.id] if match else None
-    if credit is not None and credit.verified and not codes & _REUSED:
+    blocked = why_not_alone(tenant, credit) if credit is not None else None
+    if credit is not None and blocked is None and not codes & _REUSED:
         receipt = await settle(
             session,
             tenant,
@@ -259,8 +260,7 @@ async def _decide(
         return [OutText(paid_text(tenant, order, receipt, lang, services.settings.web_url))]
     if credit is not None:
         claim.credit_id = credit.id
-        extra = () if credit.verified else (Signal("unverified_parser"),)
-        await to_review(session, claim, *extra)
+        await to_review(session, claim, *([blocked] if blocked else []))
         return [OutText(t("payment.with_owner", lang, code=order.code))]
     # With no forwarder, no SMS will ever come: only the owner can say the money arrived.
     extra = () if tenant.sms_secret_hash else (Signal("no_forwarder"),)

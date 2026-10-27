@@ -30,11 +30,10 @@ from chatfront.core.models import Tenant
 from chatfront.core.secretbox import seal
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
-from chatfront.payments.forensics import Signal
 from chatfront.payments.matcher import DueOrder, claim_for_credit, find_order_code, order_for_credit
 from chatfront.payments.messages import paid_text
 from chatfront.payments.models import ClaimStatus, PaymentClaim, Receipt, VerifiedBy, WalletCredit
-from chatfront.payments.review import to_review
+from chatfront.payments.review import to_review, why_not_alone
 from chatfront.payments.settle import claim_facts, credit_facts, settle
 from chatfront.payments.sms import PARSERS, parse_sms
 
@@ -142,13 +141,14 @@ async def _match(
         if due is None:
             return Taken.KEPT, None
         order = orders[due.id]
-    if not credit.verified:
+    blocked = why_not_alone(tenant, credit)
+    if blocked is not None:
         if claim is None:
             claim = _claim_from_sms(credit, order)
             session.add(claim)
             await session.flush()
         claim.credit_id = credit.id
-        await to_review(session, claim, Signal("unverified_parser"), again=True)
+        await to_review(session, claim, blocked, again=True)
         return Taken.REVIEW, None
     receipt = await settle(
         session,

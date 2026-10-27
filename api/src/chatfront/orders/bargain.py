@@ -22,6 +22,7 @@ class Outcome(StrEnum):
     COUNTER = "counter"  # the shop's lower price, more rounds left
     FINAL = "final"  # the shop's last price
     FIXED = "fixed"  # the owner set no lowest price: the price is the price
+    ASKED = "asked"  # within the owner's floor but a bigger discount than they let code give
 
 
 @dataclass(frozen=True, slots=True)

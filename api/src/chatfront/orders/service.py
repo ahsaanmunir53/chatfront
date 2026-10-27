@@ -3,6 +3,7 @@ floor), the delivery charge worked out from the address, stock held while an ord
 
 from __future__ import annotations
 
+import math
 import uuid
 from datetime import timedelta
 from typing import Any
@@ -24,6 +25,7 @@ from chatfront.orders import bargain
 from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
 from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.orders.states import CLOSED, HOLDS_STOCK, OrderStatus, check_move
+from chatfront.shield.autonomy import ASK_DISCOUNT_OVER, Action, Level, level
 
 MAX_QUANTITY = 99
 OFFER_TTL = timedelta(hours=48)  # an agreed price holds this long
@@ -300,15 +302,29 @@ async def offer(
             .order_by(PriceOffer.created_at)
         )
     )
-    countered = [r.answer for r in rounds if r.outcome != bargain.Outcome.ACCEPTED]
+    countered = [
+        r.answer
+        for r in rounds
+        if r.outcome not in (bargain.Outcome.ACCEPTED, bargain.Outcome.ASKED)
+    ]
+    # Autonomy (feature 104): never bargain, bargain to the floor, or ask the owner about
+    # anything more than 10% off.
+    mode = level(tenant, Action.DISCOUNTS)
+    floor = None if mode == Level.NEVER else product.floor_price
+    auto_floor = floor
+    if mode == Level.ASK and floor is not None:
+        auto_floor = max(floor, math.ceil(product.price * (100 - ASK_DISCOUNT_OVER) / 100))
     decision = bargain.decide(
         list_price=product.price,
-        floor=product.floor_price,
+        floor=auto_floor,
         offer=amount,
         rounds_so_far=len(rounds),
         last_counter=min(countered) if countered else None,
         digits=get_pack(tenant.country).minor_digits,
     )
+    owner_decides = auto_floor is not None and floor is not None and floor <= amount < auto_floor
+    if decision.outcome is not bargain.Outcome.ACCEPTED and owner_decides:
+        decision = bargain.Decision(bargain.Outcome.ASKED, amount, decision.round)
     session.add(
         PriceOffer(
             tenant_id=tenant.id,
@@ -339,6 +355,21 @@ async def agreed_price(
         .order_by(PriceOffer.created_at.desc())
         .limit(1)
     )
+
+
+async def apply_agreed_price(
+    session: AsyncSession,
+    tenant: Tenant,
+    customer_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    product_id: uuid.UUID,
+    price: int,
+) -> None:
+    """An agreed price, on any line of that product already in the customer's cart."""
+    cart = await open_cart(session, tenant, customer_id, conversation_id=conversation_id)
+    for line in await lines(session, cart):
+        if line.product_id == product_id:
+            await set_quantity(session, cart, line.variant_id, line.quantity, agreed_price=price)
 
 
 def summary(order: Order, items: list[OrderItem]) -> dict[str, Any]:
