@@ -69,6 +69,7 @@ addopts = "-q"
 [tool.coverage.run]
 source = ["chatfront"]
 branch = true
+concurrency = ["greenlet", "thread"]
 
 [tool.coverage.report]
 fail_under = 85

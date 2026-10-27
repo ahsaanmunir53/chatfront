@@ -40,8 +40,9 @@ class Fixture:
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
 
     def matches(self, req: ChatRequest, last_user_text: str) -> bool:
+        prompt_name = (req.prompt or "").split("@")[0]  # fixtures hold across prompt versions
         return (
-            self.prompt in ("*", req.prompt)
+            self.prompt in ("*", prompt_name)
             and self.role in ("*", req.role.value)
             and (self.match == "*" or self.match.lower() in last_user_text.lower())
         )
