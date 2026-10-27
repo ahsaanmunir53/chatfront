@@ -71,7 +71,9 @@ export const api = {
       body: JSON.stringify(body),
     }),
   listChat: (slug: string, token: string, after?: string) => {
-    const query = new URLSearchParams({ token, ...(after ? { after } : {}) });
-    return call<ServerMessage[]>(`${shopPath(slug)}/chat/messages?${query}`);
+    const query = after ? `?${new URLSearchParams({ after })}` : "";
+    return call<ServerMessage[]>(`${shopPath(slug)}/chat/messages${query}`, {
+      headers: { "X-Chat-Token": token },
+    });
   },
 };

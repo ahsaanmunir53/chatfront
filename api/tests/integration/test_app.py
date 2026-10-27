@@ -297,17 +297,21 @@ async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
     }
     assert services.worker is not None
     await services.worker.run_once()
-    listed = (await client.get(f"/api/shops/{SHOP}/chat/messages", params={"token": token})).json()
+    mine = {"X-Chat-Token": token}
+    listed = (await client.get(f"/api/shops/{SHOP}/chat/messages", headers=mine)).json()
     assert [(m["direction"], m["body"]) for m in listed] == [
         ("in", "salam"),
         ("out", "Wa alaikum assalam! Bataiye, main aap ki kya madad kar sakta hoon?"),
     ]
     newer = await client.get(
         f"/api/shops/{SHOP}/chat/messages",
-        params={"token": token, "after": listed[0]["created_at"]},
+        headers=mine,
+        params={"after": listed[0]["created_at"]},
     )
     assert [m["direction"] for m in newer.json()] == ["out"]
-    stranger = await client.get(f"/api/shops/{SHOP}/chat/messages", params={"token": "x" * 32})
+    stranger = await client.get(
+        f"/api/shops/{SHOP}/chat/messages", headers={"X-Chat-Token": "x" * 32}
+    )
     assert stranger.json() == []
     assert (await client.post("/api/shops/nope/chat/session")).status_code == 404
     too_long = {**post, "client_id": str(uuid.uuid4()), "text": "x" * 2001}

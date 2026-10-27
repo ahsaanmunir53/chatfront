@@ -143,11 +143,12 @@ async def post_chat_message(
 @router.get("/api/shops/{slug}/chat/messages")
 async def list_chat_messages(
     slug: str,
-    token: str,
     request: Request,
     services: ServicesDep,
+    token: Annotated[str, Header(alias="X-Chat-Token", min_length=20, max_length=100)],
     after: datetime | None = None,
 ) -> list[ChatMessageOut]:
+    """The chat so far. The token travels in a header so it never lands in access logs."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
     external_hash = hash_phone(f"{Channel.WEBCHAT}:{token}", services.keys.phone_hash_key)
