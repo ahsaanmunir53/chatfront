@@ -4,7 +4,7 @@ shipping label (101), and the public tracking page a label's QR code opens."""
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
@@ -21,10 +21,13 @@ from chatfront.delivery.risk import band
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
-from chatfront.owner.routes import OwnerDep, ServicesDep
+from chatfront.owner.rights import Can
+from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.sessions import OwnerSession
 from chatfront.payments.models import Payment
 
 router = APIRouter()
+ShipDep = Annotated[OwnerSession, needs(Can.SHIP)]
 
 ORDER_LIMIT = 50
 
@@ -87,7 +90,9 @@ def _order_out(order: Order, name: str | None, shipment: Shipment | None) -> Ord
 
 
 @router.get("/api/owner/orders")
-async def list_orders(session: OwnerDep, services: ServicesDep) -> list[OrderOut]:
+async def list_orders(
+    session: Annotated[OwnerSession, needs(Can.ORDERS)], services: ServicesDep
+) -> list[OrderOut]:
     async with services.db.tenant(session.tenant_id) as db:
         rows = await db.execute(
             select(Order, Customer.display_name, Shipment)
@@ -107,7 +112,7 @@ class MoveIn(BaseModel):
 
 
 @router.post("/api/owner/orders/{code}/status")
-async def move_order(code: str, body: MoveIn, session: OwnerDep, services: ServicesDep) -> OrderOut:
+async def move_order(code: str, body: MoveIn, session: ShipDep, services: ServicesDep) -> OrderOut:
     moved = await shipping.move(
         services,
         session.tenant_id,
@@ -121,7 +126,7 @@ async def move_order(code: str, body: MoveIn, session: OwnerDep, services: Servi
 
 
 @router.get("/api/owner/orders/{code}/label.pdf")
-async def shipping_label(code: str, session: OwnerDep, services: ServicesDep) -> Response:
+async def shipping_label(code: str, session: ShipDep, services: ServicesDep) -> Response:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
         assert tenant is not None

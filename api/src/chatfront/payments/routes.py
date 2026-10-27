@@ -24,7 +24,9 @@ from chatfront.core.models import Customer, Tenant
 from chatfront.media.models import Media
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
-from chatfront.owner.routes import OwnerDep, ServicesDep
+from chatfront.owner.rights import Can
+from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.sessions import OwnerSession
 from chatfront.payments import receipts
 from chatfront.payments.credits import Forwarded, take_sms
 from chatfront.payments.models import ClaimStatus, Payment, PaymentClaim, Receipt, WalletCredit
@@ -101,7 +103,9 @@ class Forwarding(BaseModel):
 
 
 @router.post("/api/owner/sms-forwarding")
-async def set_up_forwarding(session: OwnerDep, services: ServicesDep) -> Forwarding:
+async def set_up_forwarding(
+    session: Annotated[OwnerSession, needs(Can.SETTINGS)], services: ServicesDep
+) -> Forwarding:
     """A new secret for the shop's SMS forwarder; the old one stops working."""
     secret = secrets.token_urlsafe(24)
     async with services.db.tenant(session.tenant_id) as db:
@@ -173,7 +177,9 @@ async def _screenshot_url(services: Services, media: Media | None) -> str | None
 
 
 @router.get("/api/owner/payments")
-async def payments(session: OwnerDep, services: ServicesDep) -> PaymentsOut:
+async def payments(
+    session: Annotated[OwnerSession, needs(Can.PAYMENTS)], services: ServicesDep
+) -> PaymentsOut:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
         if tenant is None:
@@ -265,7 +271,10 @@ class DecisionOut(BaseModel):
 
 @router.post("/api/owner/payments/{claim_id}/{answer}")
 async def decide_payment(
-    claim_id: uuid.UUID, answer: str, session: OwnerDep, services: ServicesDep
+    claim_id: uuid.UUID,
+    answer: str,
+    session: Annotated[OwnerSession, needs(Can.PAYMENTS)],
+    services: ServicesDep,
 ) -> DecisionOut:
     if answer not in ("approve", "reject"):
         raise NotFound("action")

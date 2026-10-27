@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from chatfront.catalog import stock
 from chatfront.catalog.models import ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.catalog.translations import set_owner_text, target_languages
@@ -30,8 +31,9 @@ from chatfront.channels.models import (
     HandoverStatus,
     Message,
 )
-from chatfront.core.errors import AppError, NotFound
+from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.models import Customer, Staff, Tenant
+from chatfront.owner.rights import Can, rights
 from chatfront.owner.sandbox import copy_demo_shop
 from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
 from chatfront.services import Services, get_services
@@ -50,6 +52,38 @@ def owner_session(
 
 
 OwnerDep = Annotated[OwnerSession, Depends(owner_session)]
+
+
+async def _staff(services: Services, session: OwnerSession) -> Staff:
+    async with services.db.tenant(session.tenant_id) as db:
+        staff = await db.get(Staff, session.staff_id)
+    if staff is None or not staff.active:
+        raise NotSignedIn
+    return staff
+
+
+async def active_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+    """Any signed-in member of the shop's staff who has not been removed."""
+    await _staff(services, session)
+    return session
+
+
+StaffDep = Annotated[OwnerSession, Depends(active_staff)]
+
+
+def needs(right: Can) -> Any:
+    """A signed-in staff member whose role allows this (feature 42)."""
+
+    async def check(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+        staff = await _staff(services, session)
+        if right not in rights(staff.role):
+            raise Forbidden("Your role in this shop does not allow this")
+        return session
+
+    return Depends(check)
+
+
+ChatsDep = Annotated[OwnerSession, needs(Can.CHATS)]
 
 
 class DemoRequest(BaseModel):
@@ -71,6 +105,8 @@ class Me(BaseModel):
     currency: str
     is_demo: bool
     languages: list[str]  # the customer languages product texts are written in, beside English
+    role: str
+    rights: list[str]
 
 
 class OwnerVariant(BaseModel):
@@ -127,11 +163,13 @@ async def me(session: OwnerDep, services: ServicesDep) -> Me:
         currency=tenant.currency,
         is_demo=tenant.is_demo,
         languages=target_languages(tenant),
+        role=staff.role,
+        rights=sorted(rights(staff.role)),
     )
 
 
 @router.get("/products")
-async def products(session: OwnerDep, services: ServicesDep) -> list[OwnerProduct]:
+async def products(session: StaffDep, services: ServicesDep) -> list[OwnerProduct]:
     async with services.db.tenant(session.tenant_id) as db:
         items = await load_items(db, statuses=tuple(ProductStatus))
     return [
@@ -152,9 +190,28 @@ async def products(session: OwnerDep, services: ServicesDep) -> list[OwnerProduc
     ]
 
 
+class LowStock(BaseModel):
+    name: str
+    left: int
+    limit: int
+
+
+@router.get("/low-stock")
+async def low_stock(session: StaffDep, services: ServicesDep) -> list[LowStock]:
+    """Counted variants at or below their limit (feature 52)."""
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await db.get(Tenant, session.tenant_id)
+        assert tenant is not None
+        return [LowStock(**item) for item in await stock.low_now(db, tenant)]
+
+
 @router.put("/products/{product_id}/translations/{lang}")
 async def set_translation(
-    product_id: uuid.UUID, lang: str, body: OwnerText, session: OwnerDep, services: ServicesDep
+    product_id: uuid.UUID,
+    lang: str,
+    body: OwnerText,
+    session: Annotated[OwnerSession, needs(Can.CATALOG)],
+    services: ServicesDep,
 ) -> dict[str, bool]:
     """The owner's own wording in one language; a model never overwrites it."""
     async with services.db.tenant(session.tenant_id) as db:
@@ -191,7 +248,7 @@ class StaffReply(BaseModel):
 
 
 @router.get("/handovers")
-async def handovers(session: OwnerDep, services: ServicesDep) -> list[HandoverOut]:
+async def handovers(session: ChatsDep, services: ServicesDep) -> list[HandoverOut]:
     async with services.db.tenant(session.tenant_id) as db:
         rows = await db.execute(
             select(Handover, Customer.display_name, ChannelAccount.channel)
@@ -229,7 +286,7 @@ async def _conversation(
 
 @router.get("/conversations/{conversation_id}/messages")
 async def conversation_messages(
-    conversation_id: uuid.UUID, session: OwnerDep, services: ServicesDep
+    conversation_id: uuid.UUID, session: ChatsDep, services: ServicesDep
 ) -> list[ConsoleMessage]:
     """The chat, newest last, with the customer's words in the owner's language."""
     await _conversation(services, session, conversation_id)
@@ -274,7 +331,7 @@ async def conversation_messages(
 
 @router.post("/conversations/{conversation_id}/reply")
 async def staff_reply(
-    conversation_id: uuid.UUID, body: StaffReply, session: OwnerDep, services: ServicesDep
+    conversation_id: uuid.UUID, body: StaffReply, session: ChatsDep, services: ServicesDep
 ) -> dict[str, bool]:
     """The owner's words to the customer, translated into the customer's language. Only in a
     handed-over chat, so the owner and the agent never answer at once."""
@@ -287,6 +344,6 @@ async def staff_reply(
 
 @router.post("/handovers/{handover_id}/resume")
 async def resume_handover(
-    handover_id: uuid.UUID, session: OwnerDep, services: ServicesDep
+    handover_id: uuid.UUID, session: ChatsDep, services: ServicesDep
 ) -> dict[str, bool]:
     return {"resumed": await resume(services, session.tenant_id, handover_id, session.staff_id)}
