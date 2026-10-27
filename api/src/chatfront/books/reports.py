@@ -9,7 +9,7 @@ goods cost comes in with stock batches (feature 119).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
@@ -32,6 +32,8 @@ from chatfront.jobs.queue import JobContext, enqueue
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
 from chatfront.owner.rights import Can
+from chatfront.stock import profit
+from chatfront.stock.profit import Sold
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -50,6 +52,9 @@ NEEDS: dict[str, Can] = {
     "pending_payments": Can.PAYMENTS,
     "pending_orders": Can.ORDERS,
     "low_stock": Can.CATALOG,
+    "products": Can.CATALOG,
+    "orders": Can.ORDERS,
+    "batches": Can.BOOKS,
 }
 
 
@@ -60,10 +65,17 @@ class Totals:
     udhaar_paid: int = 0
     expenses: int = 0
     orders: int = 0
+    write_offs: int = 0  # stock thrown away: a loss, not cash
+    goods: Sold = field(default_factory=Sold)  # goods sold, with their cost (feature 119)
 
     @property
     def cash_profit(self) -> int:
         return self.sales + self.udhaar_paid - self.expenses
+
+    @property
+    def goods_profit(self) -> int:
+        """Goods profit on the units whose cost is known, less what was thrown away."""
+        return self.goods.known_revenue - self.goods.cost - self.write_offs
 
 
 def week_start(day: date) -> date:
@@ -100,6 +112,8 @@ async def totals(session: AsyncSession, tenant: Tenant, start: date, end: date) 
         udhaar_paid=int(sums.get(EntryKind.UDHAAR_PAID) or 0),
         expenses=int(sums.get(EntryKind.EXPENSE) or 0),
         orders=int(placed or 0),
+        write_offs=int(sums.get(EntryKind.WRITE_OFF) or 0),
+        goods=await profit.in_period(session, tenant, start, end),
     )
 
 
@@ -107,17 +121,23 @@ def money_card(tenant: Tenant, title: str, sums: Totals, lang: str) -> str:
     def money(amount: int) -> str:
         return shop_money(tenant, amount, lang)
 
-    return "\n".join(
-        [
-            title,
-            t("books.line_orders", lang, count=sums.orders),
-            t("books.line_sales", lang, amount=money(sums.sales)),
-            t("books.line_udhaar_given", lang, amount=money(sums.udhaar_given)),
-            t("books.line_udhaar_paid", lang, amount=money(sums.udhaar_paid)),
-            t("books.line_expenses", lang, amount=money(sums.expenses)),
-            t("books.line_cash_profit", lang, amount=money(sums.cash_profit)),
-        ]
-    )
+    lines = [
+        title,
+        t("books.line_orders", lang, count=sums.orders),
+        t("books.line_sales", lang, amount=money(sums.sales)),
+        t("books.line_udhaar_given", lang, amount=money(sums.udhaar_given)),
+        t("books.line_udhaar_paid", lang, amount=money(sums.udhaar_paid)),
+        t("books.line_expenses", lang, amount=money(sums.expenses)),
+        t("books.line_cash_profit", lang, amount=money(sums.cash_profit)),
+    ]
+    goods = sums.goods
+    if goods.cost or sums.write_offs:
+        lines.append(t("books.line_goods_profit", lang, amount=money(sums.goods_profit)))
+    if sums.write_offs:
+        lines.append(t("books.line_write_offs", lang, amount=money(sums.write_offs)))
+    if goods.unknown:
+        lines.append(t("books.line_cost_unknown", lang, count=goods.unknown))
+    return "\n".join(lines)
 
 
 async def _orders_text(session: AsyncSession, tenant: Tenant, report: str, lang: str) -> str:

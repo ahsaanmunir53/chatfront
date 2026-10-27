@@ -43,6 +43,9 @@ class Sums(BaseModel):
     expenses: int
     orders: int
     cash_profit: int
+    goods_profit: int
+    write_offs: int
+    cost_unknown: int
 
 
 class EntryOut(BaseModel):
@@ -114,6 +117,9 @@ def _sums(found: Totals) -> Sums:
         expenses=found.expenses,
         orders=found.orders,
         cash_profit=found.cash_profit,
+        goods_profit=found.goods_profit,
+        write_offs=found.write_offs,
+        cost_unknown=found.goods.unknown,
     )
 
 
