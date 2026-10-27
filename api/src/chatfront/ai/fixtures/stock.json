@@ -1,0 +1,90 @@
+[
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "products",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "The shop's products.",
+      "report": "products"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "orders",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Orders to look at.",
+      "report": "orders"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "batches",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Stock batches with cost and profit.",
+      "report": "batches"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "maal ka hisaab",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Stock batches with cost and profit.",
+      "report": "batches"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "rust ke 20",
+    "json": {
+      "intent": "restock",
+      "product": null,
+      "changes": [],
+      "note": "Twenty rust lawn suits came in.",
+      "restock": [
+        {
+          "item": "printed lawn rust",
+          "quantity": 20,
+          "unit_cost": 2700,
+          "total_cost": null,
+          "expiry": null
+        }
+      ],
+      "supplier": "Al-Noor Textiles"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "doodh ki expiry",
+    "json": {
+      "intent": "update",
+      "product": null,
+      "changes": [
+        {
+          "kind": "expiry",
+          "product": "milk",
+          "value_number": null,
+          "policy_key": null,
+          "value_text": "2026-11-05"
+        }
+      ],
+      "note": "Milk expiry date."
+    }
+  }
+]
