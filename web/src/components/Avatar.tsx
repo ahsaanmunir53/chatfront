@@ -10,6 +10,10 @@ const TEMPLATE_TONES: Record<string, string> = {
   wholesale: "teal",
 };
 
+export function templateTone(template: string | undefined): string {
+  return (template && TEMPLATE_TONES[template]) || "ink";
+}
+
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   const letters = words.slice(0, 2).map((w) => Array.from(w)[0] ?? "");
@@ -25,10 +29,9 @@ export function Avatar({
   template?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const tone = (template && TEMPLATE_TONES[template]) || "ink";
   return (
     <span
-      className={`avatar avatar-${size} tone-${tone}`}
+      className={`avatar avatar-${size} tone-${templateTone(template)}`}
       lang={scriptLang(name)}
       aria-hidden="true"
     >

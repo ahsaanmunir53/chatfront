@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { languageOf, statusOf, UI_LANGS } from "../i18n";
 import { useLang } from "../lang";
+import { readOwnerToken } from "../owner";
 import { CheckIcon, ChevronIcon, GlobeIcon } from "./Icons";
 
 /** The language picker: every interface language by its own name, beta ones marked. */
@@ -121,10 +122,20 @@ export function Wordmark() {
 }
 
 export function TopBar({ tone = "light" }: { tone?: "light" | "dark" }) {
+  const { t } = useLang();
+  const { pathname } = useLocation();
+  const toConsole = readOwnerToken() !== null && pathname !== "/owner";
   return (
     <header className={`topbar topbar-${tone}`}>
       <Wordmark />
-      <LangMenu tone={tone} />
+      <div className="topbar-end">
+        {toConsole && (
+          <Link to="/owner" className="topbar-link">
+            {t("console.title")}
+          </Link>
+        )}
+        <LangMenu tone={tone} />
+      </div>
     </header>
   );
 }

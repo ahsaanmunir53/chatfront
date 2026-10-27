@@ -16,6 +16,8 @@ export type ChannelLink = { channel: string; display: string | null; url: string
 export type Shop = {
   slug: string;
   name: string;
+  country: string;
+  currency: string;
   business_type: Text3;
   city: string | null;
   tagline: Text3;
@@ -28,20 +30,78 @@ export type Shop = {
 export type TrustInfo = { slug: string; name: string; channels: ChannelLink[] };
 
 export type ChatButton = { id: string; title: string };
+export type ChatListRow = { id: string; title: string; description: string | null };
 export type ServerMessage = {
   id: string;
   direction: "in" | "out";
   kind: string;
   body: string | null;
   lang?: string | null;
-  payload: { buttons?: ChatButton[] };
+  payload: { buttons?: ChatButton[]; list?: { button: string; rows: ChatListRow[] } };
+  media_url?: string | null;
+  client_id?: string | null;
   created_at: string;
 };
 
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
+export type PublicVariant = {
+  id: string;
+  options: Record<string, string>;
+  price: number;
+  in_stock: boolean;
+};
+export type PublicProduct = {
+  code: string;
+  name: string;
+  description: string;
+  category: string | null;
+  price: number;
+  attributes: Record<string, unknown>;
+  translations: Record<string, { name?: string; description?: string }>;
+  image_url: string | null;
+  in_stock: boolean;
+  variants: PublicVariant[];
+};
+
+export type OwnerMe = {
+  slug: string;
+  shop_name: string;
+  staff_name: string;
+  lang: string;
+  template: string;
+  country: string;
+  currency: string;
+  is_demo: boolean;
+  languages: string[];
+};
+export type OwnerProduct = {
+  id: string;
+  code: string;
+  status: "draft" | "active" | "archived";
+  name: string;
+  price: number;
+  floor_price: number | null;
+  translations: Record<string, { name?: string; description?: string; by?: "owner" | "model" }>;
+  variants: { id: string; options: Record<string, string>; price: number; stock: number | null }[];
+};
+
+/** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
+export type ChatAuth = { token: string; owner: boolean };
+
+function authHeaders(auth: ChatAuth): Record<string, string> {
+  return auth.owner ? { Authorization: `Bearer ${auth.token}` } : { "X-Chat-Token": auth.token };
+}
+
+const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+type Init = Omit<RequestInit, "headers"> & { headers?: Record<string, string> };
+
+async function call<T>(path: string, init?: Init): Promise<T> {
+  // JSON bodies say so; a FormData body lets the browser set its multipart boundary.
+  const json: Record<string, string> =
+    typeof init?.body === "string" ? { "Content-Type": "application/json" } : {};
   const response = await fetch(API_BASE + path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: { ...json, ...init?.headers },
   });
   if (!response.ok) {
     let body: { error?: { code?: string; message?: string } } | undefined;
@@ -73,20 +133,53 @@ export async function ping(timeoutMs: number): Promise<boolean> {
   }
 }
 
+export type ChatText = { client_id: string; text: string; button_id?: string };
+
 export const api = {
   shop: (slug: string) => call<Shop>(shopPath(slug)),
+  products: (slug: string) => call<PublicProduct[]>(`${shopPath(slug)}/products`),
   trust: (slug: string) => call<TrustInfo>(`${shopPath(slug)}/trust`),
   startChat: (slug: string) =>
     call<{ token: string }>(`${shopPath(slug)}/chat/session`, { method: "POST" }),
-  postChat: (slug: string, body: { token: string; client_id: string; text: string }) =>
+  postChat: (slug: string, auth: ChatAuth, message: ChatText) =>
     call<{ accepted: boolean }>(`${shopPath(slug)}/chat/messages`, {
       method: "POST",
-      body: JSON.stringify(body),
+      headers: auth.owner ? authHeaders(auth) : {},
+      body: JSON.stringify(auth.owner ? message : { ...message, token: auth.token }),
     }),
-  listChat: (slug: string, token: string, after?: string) => {
-    const query = after ? `?${new URLSearchParams({ after })}` : "";
-    return call<ServerMessage[]>(`${shopPath(slug)}/chat/messages${query}`, {
-      headers: { "X-Chat-Token": token },
+  postMedia: (slug: string, auth: ChatAuth, clientId: string, file: Blob, caption?: string) => {
+    const form = new FormData();
+    form.append("file", file, file instanceof File ? file.name : "upload");
+    form.append("client_id", clientId);
+    if (caption) form.append("caption", caption);
+    return call<{ accepted: boolean }>(`${shopPath(slug)}/chat/media`, {
+      method: "POST",
+      headers: authHeaders(auth),
+      body: form,
     });
   },
+  listChat: (slug: string, auth: ChatAuth, after?: string) => {
+    const query = after ? `?${new URLSearchParams({ after })}` : "";
+    return call<ServerMessage[]>(`${shopPath(slug)}/chat/messages${query}`, {
+      headers: authHeaders(auth),
+    });
+  },
+  tryAsOwner: (slug: string) =>
+    call<{ token: string; slug: string }>("/api/owner/demo", {
+      method: "POST",
+      body: JSON.stringify({ slug }),
+    }),
+  me: (token: string) => call<OwnerMe>("/api/owner/me", { headers: bearer(token) }),
+  ownerProducts: (token: string) =>
+    call<OwnerProduct[]>("/api/owner/products", { headers: bearer(token) }),
+  saveWording: (
+    token: string,
+    productId: string,
+    lang: string,
+    text: { name: string; description: string },
+  ) =>
+    call<{ saved: boolean }>(
+      `/api/owner/products/${encodeURIComponent(productId)}/translations/${encodeURIComponent(lang)}`,
+      { method: "PUT", headers: bearer(token), body: JSON.stringify(text) },
+    ),
 };

@@ -185,9 +185,9 @@ export function HomePage() {
               <a href="#shops" className="button button-saffron">
                 {t("home.demo_shops")}
               </a>
-              <a href="#proof" className="button button-ghost">
-                {t("landing.cta_how")}
-              </a>
+              <Link to="/start" className="button button-ghost">
+                {t("home.make_shop")}
+              </Link>
             </div>
           </div>
           <HeroChat />

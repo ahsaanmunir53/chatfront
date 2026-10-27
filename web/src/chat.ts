@@ -1,7 +1,15 @@
-// Pure helpers for the try-it chat: merging polled messages and settling what was typed.
+// Pure helpers for the chats: merging polled messages, settling what was sent, links in text.
 import type { ServerMessage } from "./api";
 
-export type Pending = { clientId: string; body: string };
+/** Something typed, tapped or attached here that the server has not shown back yet. */
+export type Outgoing = {
+  clientId: string;
+  kind: "text" | "image" | "audio";
+  body: string; // the text, a photo's caption, or empty for a voice note
+  buttonId?: string;
+  file?: Blob;
+  preview?: string; // an object URL for a photo being sent
+};
 
 /** Add newly polled messages, without duplicates, in the order they were written. */
 export function merge(existing: ServerMessage[], incoming: ServerMessage[]): ServerMessage[] {
@@ -12,18 +20,10 @@ export function merge(existing: ServerMessage[], incoming: ServerMessage[]): Ser
   );
 }
 
-/** Drop typed messages the server now has; each server copy settles one typed message. */
-export function settle(pending: Pending[], messages: ServerMessage[]): Pending[] {
-  const arrived = new Map<string, number>();
-  for (const m of messages) {
-    if (m.direction === "in" && m.body) arrived.set(m.body, (arrived.get(m.body) ?? 0) + 1);
-  }
-  return pending.filter((p) => {
-    const count = arrived.get(p.body) ?? 0;
-    if (count === 0) return true;
-    arrived.set(p.body, count - 1);
-    return false;
-  });
+/** Drop what the server now has: it returns the id the page gave each message it sent. */
+export function settle(pending: Outgoing[], messages: ServerMessage[]): Outgoing[] {
+  const arrived = new Set(messages.map((m) => m.client_id).filter(Boolean));
+  return pending.filter((p) => !arrived.has(p.clientId));
 }
 
 export function lastSeen(messages: ServerMessage[]): string | undefined {
@@ -31,6 +31,32 @@ export function lastSeen(messages: ServerMessage[]): string | undefined {
 }
 
 /** The shop owes a reply when something is still sending or the customer spoke last. */
-export function awaitingReply(messages: ServerMessage[], pending: Pending[]): boolean {
+export function awaitingReply(messages: ServerMessage[], pending: Outgoing[]): boolean {
   return pending.length > 0 || messages.at(-1)?.direction === "in";
+}
+
+/** Only the newest reply's buttons can be tapped; older cards are settled or replaced. */
+export function liveReplyId(messages: ServerMessage[]): string | undefined {
+  const last = messages.at(-1);
+  return last?.direction === "out" ? last.id : undefined;
+}
+
+export type Piece = { text: string } | { href: string; console: boolean };
+
+const URL_PATTERN = /https?:\/\/[^\s<>"]+[^\s<>".,;:!?)'’”]/g;
+
+/** Text with its web links found, so they can be drawn as links. The owner console link
+ * (…/owner#t=…) is marked: it signs the owner in and is shown as a button, not a token. */
+export function linkify(text: string): Piece[] {
+  const pieces: Piece[] = [];
+  let at = 0;
+  for (const match of text.matchAll(URL_PATTERN)) {
+    const start = match.index ?? 0;
+    if (start > at) pieces.push({ text: text.slice(at, start) });
+    const href = match[0];
+    pieces.push({ href, console: /\/owner#t=/.test(href) });
+    at = start + href.length;
+  }
+  if (at < text.length) pieces.push({ text: text.slice(at) });
+  return pieces;
 }

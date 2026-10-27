@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ChannelLink } from "../api";
-import { Avatar } from "../components/Avatar";
-import { ChatIcon, PinIcon, SendIcon } from "../components/Icons";
+import { bundledProducts, fromApi, productText } from "../catalog";
+import type { ShopProduct } from "../catalog";
+import { Avatar, initials, templateTone } from "../components/Avatar";
+import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
 import { Page, Problem } from "../components/Shell";
 import { demoShop } from "../demo";
 import { pick, scriptLang } from "../i18n";
 import type { Text3 } from "../i18n";
 import { useLang } from "../lang";
+import { DEFAULT_COUNTRY, formatMoney } from "../money";
+import { saveOwnerToken } from "../owner";
 import { useServer } from "../server";
 
 type Profile = {
   name: string;
   template?: string;
+  country: string;
   business_type: Text3;
   city: string | null;
   tagline: Text3;
@@ -31,14 +36,14 @@ const CHANNEL_ORDER = Object.keys(CHANNEL_NAMES);
 export function useShop(slug: string) {
   const { state } = useServer();
   const bundled = demoShop(slug);
-  const [live, setLive] = useState<{ profile: Profile; channels: ChannelLink[] } | null>(null);
+  const [live, setLive] = useState<{ profile: Profile; channels: ChannelLink[]; demo: boolean }>();
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     if (state !== "online") return;
     let current = true;
     api.shop(slug).then(
-      (shop) => current && setLive({ profile: shop, channels: shop.channels }),
+      (shop) => current && setLive({ profile: shop, channels: shop.channels, demo: shop.is_demo }),
       (error: unknown) => {
         if (current && error instanceof ApiError && error.status === 404) setMissing(true);
       },
@@ -48,18 +53,168 @@ export function useShop(slug: string) {
     };
   }, [slug, state]);
 
-  const profile: Profile | undefined = live?.profile ?? bundled;
+  const profile: Profile | undefined =
+    live?.profile ?? (bundled && { ...bundled, country: DEFAULT_COUNTRY });
   return {
     profile: profile && { ...profile, template: bundled?.template ?? profile.template },
     channels: live?.channels ?? [],
+    // Only the demo shops themselves can be copied; a visitor's copy cannot be copied again.
+    copyable: Boolean(bundled) && live?.demo !== false,
     missing: missing && !bundled,
   };
+}
+
+/** Bundled demo products at once; the shop's live catalog once the server answers. */
+function useProducts(slug: string): ShopProduct[] | undefined {
+  const { state } = useServer();
+  const [live, setLive] = useState<ShopProduct[]>();
+
+  useEffect(() => {
+    if (state !== "online") return;
+    let current = true;
+    api.products(slug).then(
+      (products) => current && setLive(products.map(fromApi)),
+      () => {
+        // The bundled list, or the empty state, stays on screen.
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [slug, state]);
+
+  return live ?? bundledProducts(slug);
+}
+
+function ProductCard({
+  product,
+  slug,
+  country,
+  template,
+}: {
+  product: ShopProduct;
+  slug: string;
+  country: string;
+  template: string | undefined;
+}) {
+  const { lang, t } = useLang();
+  const text = productText(product, lang);
+  const nameLang = text.lang ?? scriptLang(text.name);
+  const price = formatMoney(product.price, country, lang);
+  const ask = t("catalog.ask_text", { product: text.name });
+  return (
+    <li className={`product ${product.inStock ? "" : "is-sold-out"}`}>
+      <div className={`product-tile tone-${templateTone(template)}`}>
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt="" loading="lazy" />
+        ) : (
+          <span className="product-monogram" lang={nameLang} aria-hidden="true">
+            {initials(text.name)}
+          </span>
+        )}
+        {!product.inStock && <span className="product-stamp">{t("catalog.sold_out")}</span>}
+        <span className="price-tag">
+          {product.priceVaries ? t("catalog.from", { price }) : price}
+        </span>
+      </div>
+      <div className="product-body">
+        <h3 className="product-name" lang={nameLang} dir="auto">
+          {text.name}
+        </h3>
+        {product.options.length > 0 && (
+          <p className="product-options" dir="auto">
+            {product.options.join(", ")}
+          </p>
+        )}
+        <Link to={`/s/${slug}/chat?${new URLSearchParams({ ask })}`} className="product-ask">
+          <ChatIcon size={16} />
+          {t("catalog.ask")}
+        </Link>
+      </div>
+    </li>
+  );
+}
+
+function Catalog({ slug, profile }: { slug: string; profile: Profile }) {
+  const { t } = useLang();
+  const products = useProducts(slug);
+  return (
+    <section className="catalog" aria-labelledby="catalog-title" aria-busy={!products}>
+      <h2 id="catalog-title" className="section-title">
+        {t("shop.products")}
+      </h2>
+      {products && products.length > 0 ? (
+        <ul className="product-grid">
+          {products.map((product) => (
+            <ProductCard
+              key={product.key}
+              product={product}
+              slug={slug}
+              country={profile.country}
+              template={profile.template}
+            />
+          ))}
+        </ul>
+      ) : (
+        <div className="catalog-empty">
+          <span className="catalog-ghost" aria-hidden="true" />
+          <span className="catalog-ghost" aria-hidden="true" />
+          <span className="catalog-ghost" aria-hidden="true" />
+          <p>{t("catalog.empty")}</p>
+          <Link to={`/s/${slug}/chat`} className="button button-ink">
+            {t("shop.chat_here")}
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** "Try as the owner": the visitor's own three-day copy of this demo shop, signed in. */
+function TryAsOwner({ slug }: { slug: string }) {
+  const { t } = useLang();
+  const { state } = useServer();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function start() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const { token } = await api.tryAsOwner(slug);
+      saveOwnerToken(token);
+      navigate("/owner");
+    } catch {
+      setFailed(true);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="owner-try" aria-labelledby="owner-try-title">
+      <KeyIcon size={28} className="owner-try-icon" />
+      <div className="owner-try-text">
+        <h2 id="owner-try-title">{t("shop.try_owner_title")}</h2>
+        <p>{t("shop.try_owner_body")}</p>
+        {failed && <p role="alert">{t("shop.try_owner_failed")}</p>}
+      </div>
+      <button
+        type="button"
+        className="button button-saffron"
+        disabled={busy || state !== "online"}
+        onClick={() => void start()}
+      >
+        {state === "online" ? t("shop.try_owner") : t("chat.waking")}
+      </button>
+    </section>
+  );
 }
 
 export function ShopPage() {
   const { slug = "" } = useParams();
   const { lang, t } = useLang();
-  const { profile, channels, missing } = useShop(slug);
+  const { profile, channels, copyable, missing } = useShop(slug);
 
   if (missing) {
     return (
@@ -117,20 +272,9 @@ export function ShopPage() {
         </div>
       </section>
 
-      <section className="catalog" aria-labelledby="catalog-title">
-        <h2 id="catalog-title" className="section-title">
-          {t("shop.products")}
-        </h2>
-        <div className="catalog-empty">
-          <span className="catalog-ghost" aria-hidden="true" />
-          <span className="catalog-ghost" aria-hidden="true" />
-          <span className="catalog-ghost" aria-hidden="true" />
-          <p>{t("shop.catalog_soon")}</p>
-          <Link to={`/s/${slug}/chat`} className="button button-ink">
-            {t("shop.chat_here")}
-          </Link>
-        </div>
-      </section>
+      <Catalog slug={slug} profile={profile} />
+
+      {copyable && <TryAsOwner slug={slug} />}
 
       <p className="trust-link">
         <Link to={`/s/${slug}/trust`}>{t("shop.trust_link")}</Link>

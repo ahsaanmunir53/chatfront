@@ -34,6 +34,8 @@ export default defineConfig({
         process.env.E2E_DATABASE_URL ??
         "postgresql+asyncpg://chatfront_owner:owner@127.0.0.1:5432/chatfront_e2e",
       AI_MODE: "mock",
+      // Links in messages (the shop page, the owner console) point back at this server.
+      PUBLIC_BASE_URL: `http://127.0.0.1:${port}`,
       WORKER_ENABLED: "true",
       WORKER_POLL_SECONDS: "0.3",
       PUBLIC_RATE_LIMIT_PER_MINUTE: "1000",

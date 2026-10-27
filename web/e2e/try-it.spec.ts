@@ -12,7 +12,7 @@ test("a customer finds a demo shop and chats with it", async ({ page }) => {
   await page.getByRole("link", { name: "Chat here" }).first().click();
 
   await page.getByLabel("Type a message").fill("salam");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.locator(".bubble-in").first()).toContainText("salam");
   await expect(page.locator(".bubble-out")).toContainText("Wa alaikum assalam", {
     timeout: 10_000,
@@ -43,6 +43,16 @@ test("Urdu turns the page right to left and is remembered", async ({ page }) => 
   await expect(page.getByRole("link", { name: "یہاں چیٹ کریں" }).first()).toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+});
+
+test("the catalog opens before the server, and a product can be asked about", async ({ page }) => {
+  await page.route("**/health", (route) => route.abort());
+  await page.goto("/s/saffron-kitchen");
+  await expect(page.locator(".product")).not.toHaveCount(0); // bundled demo products
+  const first = page.locator(".product").first();
+  const name = (await first.locator(".product-name").textContent()) ?? "";
+  await first.getByRole("link", { name: "Ask about this" }).click();
+  await expect(page.getByLabel("Type a message")).toHaveValue(`Is ${name} available?`);
 });
 
 test("the trust page lists the shop's official channels", async ({ page }) => {

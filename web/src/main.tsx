@@ -8,17 +8,22 @@ import { LangProvider } from "./lang";
 import { ChatPage } from "./pages/ChatPage";
 import { HomePage } from "./pages/HomePage";
 import { DashboardPage, NotFoundPage, ReceiptPage, TrustPage } from "./pages/InfoPages";
+import { OwnerPage } from "./pages/OwnerPage";
 import { ShopPage } from "./pages/ShopPage";
+import { StartPage } from "./pages/StartPage";
 import { ServerProvider } from "./server";
 import "./styles.css";
 
-/** New page, top of the page; the chat shows its own wake-up line inside the phone. */
+/** New page, top of the page; full-screen chats show their own wake-up line in the phone. */
 function RouteEffects() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [pathname]);
-  return pathname.endsWith("/chat") ? null : <WakeBar />;
+    // A link to a section (/#shops) lands on it; any other new page starts at the top.
+    const section = /^#[\w-]+$/.test(hash) ? document.getElementById(hash.slice(1)) : null;
+    if (section) section.scrollIntoView();
+    else window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname, hash]);
+  return pathname.endsWith("/chat") || pathname === "/start" ? null : <WakeBar />;
 }
 
 const root = document.getElementById("root");
@@ -34,6 +39,8 @@ createRoot(root).render(
             <Route path="/s/:slug" element={<ShopPage />} />
             <Route path="/s/:slug/chat" element={<ChatPage />} />
             <Route path="/s/:slug/trust" element={<TrustPage />} />
+            <Route path="/start" element={<StartPage />} />
+            <Route path="/owner" element={<OwnerPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/r/:code?" element={<ReceiptPage />} />
             <Route path="*" element={<NotFoundPage />} />

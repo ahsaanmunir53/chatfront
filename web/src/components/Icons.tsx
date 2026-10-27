@@ -85,3 +85,37 @@ export const ChevronIcon = (p: IconProps) => (
     <path d="M7 10l5 5 5-5" />
   </Icon>
 );
+
+export const CameraIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 8h3.5L9 5.5h6L16.5 8H20v11H4z" />
+    <circle cx="12" cy="13.2" r="3.3" />
+  </Icon>
+);
+
+export const MicIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="9" y="3.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3" />
+  </Icon>
+);
+
+export const CloseIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </Icon>
+);
+
+export const TagIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3.5 12.5V4h8.5l8.5 8.5-8.5 8.5z" />
+    <circle cx="8" cy="8.5" r="1.4" />
+  </Icon>
+);
+
+export const KeyIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M11 12l8.5-8.5M16 7l2.5 2.5M14 9l2 2" />
+  </Icon>
+);

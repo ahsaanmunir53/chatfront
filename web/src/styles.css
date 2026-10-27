@@ -1479,7 +1479,7 @@ button {
   padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
 }
 
-.composer input {
+.composer-text {
   flex: 1;
   min-width: 0;
   padding: 11px 16px;
@@ -1491,7 +1491,7 @@ button {
   font-size: 16px;
 }
 
-.composer input:focus-visible {
+.composer-text:focus-visible {
   outline-offset: 1px;
 }
 
@@ -1639,5 +1639,753 @@ button {
   .wake,
   .wake-spinner {
     animation: none;
+  }
+}
+
+/* Chat: photos, voice notes, reply lists, recording -------------------------------------- */
+
+.bubble-photo {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  max-height: 320px;
+  margin-bottom: 4px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--rule);
+}
+
+.bubble-audio {
+  width: 240px;
+  max-width: 100%;
+  height: 40px;
+}
+
+.bubble a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.bubble a.bubble-console {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bubble-buttons button:not(:disabled):hover {
+  background: var(--ink-raised);
+  color: #fff;
+}
+
+.bubble-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.bubble-list button {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  text-align: start;
+  cursor: pointer;
+}
+
+.bubble-list button:not(:disabled):hover {
+  border-color: var(--text);
+}
+
+.bubble-list-title {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.bubble-list-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bubble-buttons button:disabled,
+.bubble-list button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bubble-buttons button {
+    border-color: var(--saffron);
+    color: var(--saffron);
+  }
+}
+
+.composer .composer-quiet {
+  width: 40px;
+  background: transparent;
+  color: var(--text);
+}
+
+.composer .composer-quiet:hover {
+  background: var(--card);
+}
+
+.recording {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1.5px solid var(--chili);
+  border-radius: 999px;
+  background: var(--card);
+  font-weight: 600;
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--chili);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.recording-time {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-dot {
+    animation: none;
+  }
+}
+
+/* The chat as a panel inside a page (the owner console) rather than a phone. */
+.phone-panel {
+  height: min(720px, calc(100dvh - 140px));
+  min-height: 460px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+@media (min-width: 560px) {
+  .phone-panel {
+    width: auto;
+    height: min(720px, calc(100dvh - 140px));
+    border-radius: 20px;
+    box-shadow: none;
+  }
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Catalog: price tags and the sold-out stamp ---------------------------------------------- */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 559px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.product-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 19px, rgb(0 0 0 / 0.06) 19px 20px),
+    color-mix(in srgb, var(--tone) 32%, var(--card));
+}
+
+.product-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-monogram {
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 700;
+  font-stretch: 75%;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tone) 55%, var(--text));
+}
+
+.price-tag {
+  position: absolute;
+  bottom: 10px;
+  inset-inline-start: 10px;
+  padding-block: 3px;
+  padding-inline: 22px 12px;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%);
+}
+
+[dir="rtl"] .price-tag {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+
+/* The hole the string goes through. */
+.price-tag::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 3px);
+  inset-inline-start: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--card);
+}
+
+.product-stamp {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 12px;
+  padding: 1px 10px;
+  border: 3px double var(--chili);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--chili);
+  font-size: 14px;
+  font-weight: 700;
+  transform: rotate(-8deg);
+}
+
+.is-sold-out .product-tile > :is(img, .product-monogram) {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.product-body {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.product-options {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.product-ask {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--saffron);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* Try a demo shop as its owner. */
+.owner-try {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px 18px;
+  align-items: center;
+  margin-top: 40px;
+  padding: 22px 24px;
+  border-radius: 22px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 23px, var(--ink-line) 23px 24px),
+    var(--ink);
+  color: var(--on-ink);
+}
+
+.owner-try-icon {
+  align-self: start;
+  color: var(--saffron);
+}
+
+.owner-try-text h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  font-stretch: 88%;
+  line-height: 1.25;
+}
+
+.owner-try-text p {
+  max-width: 40em;
+  margin: 6px 0 0;
+  color: var(--on-ink-muted);
+}
+
+.owner-try-text [role="alert"] {
+  color: #ffb4ab;
+}
+
+.owner-try .button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+@media (min-width: 840px) {
+  .owner-try {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .owner-try .button {
+    grid-column: auto;
+  }
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-link {
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.topbar-link:hover {
+  text-decoration: underline;
+}
+
+/* The owner console ----------------------------------------------------------------------- */
+
+.console-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 12px 0 16px;
+}
+
+.console-kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.console-shop {
+  margin: 2px 0 0;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  font-stretch: 80%;
+  line-height: 1.1;
+}
+
+.console-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.console-actions .action {
+  padding: 9px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.console-demo {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--saffron) 22%, var(--card));
+  font-size: 15px;
+}
+
+.console-switch {
+  display: none;
+}
+
+.console-grid {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .console-grid {
+    grid-template-columns: minmax(0, 430px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 959px) {
+  .console-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+  }
+
+  .console-switch button {
+    padding: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .console-switch [aria-selected="true"] {
+    background: var(--ink);
+    color: var(--on-ink);
+  }
+
+  .console-grid.shows-chat .console-products,
+  .console-grid.shows-products .phone-panel {
+    display: none;
+  }
+}
+
+.console-count {
+  margin-inline-start: 10px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.console-skeleton {
+  height: 560px;
+  margin-top: 24px;
+}
+
+.console-expired {
+  margin: 0 0 12px;
+  color: var(--chili);
+  font-weight: 600;
+}
+
+.console-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* The product list is a khata page: a red margin rule, one entry per product. */
+.khata {
+  position: relative;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.khata::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 22px;
+  width: 5px;
+  border-inline: 1.5px solid var(--margin-red);
+}
+
+.khata:empty {
+  display: none;
+}
+
+.khata-entry {
+  padding: 14px 18px;
+  padding-inline-start: 46px;
+  border-top: 1px solid var(--rule);
+}
+
+.khata-entry:first-child {
+  border-top: 0;
+}
+
+.khata-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.khata-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.khata-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.khata-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.khata-code {
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.khata-status {
+  font-weight: 650;
+}
+
+.status-active {
+  color: var(--stamp);
+}
+
+.status-archived {
+  color: var(--chili);
+}
+
+.khata-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.khata-variants li {
+  display: inline-flex;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 13px;
+}
+
+.khata-variants li span:last-child {
+  color: var(--muted);
+}
+
+.khata-wording {
+  margin-top: 10px;
+}
+
+.khata-wording summary {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wording {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.wording-langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wording-langs button {
+  padding: 3px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.wording-langs [aria-checked="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.wording-by {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wording label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wording input,
+.wording textarea {
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.wording-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+/* The start page: making a shop by chat --------------------------------------------------- */
+
+.start-copy {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .start-stage {
+    grid-template-columns: minmax(0, 440px) auto;
+    justify-content: center;
+    gap: 56px;
+  }
+
+  .start-copy {
+    display: block;
+    color: var(--on-ink);
+  }
+}
+
+.start-title {
+  margin: 28px 0 12px;
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700;
+  font-stretch: 80%;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.start-lede {
+  max-width: 30em;
+  margin: 0;
+  color: var(--on-ink-muted);
+  font-size: 18px;
+}
+
+.start-steps {
+  display: grid;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.start-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ink-line);
+  counter-increment: step;
+}
+
+.start-steps li::before {
+  content: counter(step);
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+:lang(bn):not(:lang(bn-Latn)) .start-steps li::before {
+  content: counter(step, bengali);
+}
+
+:lang(ar):not(:lang(ar-Latn)) .start-steps li::before {
+  content: counter(step, arabic-indic);
+}
+
+.start-note {
+  margin: 20px 0 0;
+  color: var(--on-ink-muted);
+  font-size: 14px;
+}
+
+/* Night ink on a night card disappears: in the dark, chosen tabs and ink buttons turn light. */
+@media (prefers-color-scheme: dark) {
+  .button-ink,
+  .console-switch [aria-selected="true"],
+  .wording-langs [aria-checked="true"] {
+    border-color: var(--on-ink);
+    background: var(--on-ink);
+    color: var(--ink);
   }
 }

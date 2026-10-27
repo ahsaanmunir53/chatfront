@@ -82,7 +82,7 @@ test("every language in the menu is named in its own script, beta ones marked", 
 test("a Pashto customer gets a Pashto reply, written right to left", async ({ page }) => {
   await page.goto("/s/gulmohar-lawn/chat");
   await page.getByLabel("Type a message").fill("دا سوټ په څو دی؟");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Send", exact: true }).click();
   const reply = page.locator(".bubble-out span[lang]").first();
   await expect(reply).toContainText("ځواب", { timeout: 10_000 });
   await expect(reply).toHaveAttribute("lang", "ps");
