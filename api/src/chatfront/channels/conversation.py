@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import logging
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal, Protocol
 
 from sqlalchemy import select
 
 from chatfront.ai.client import AiClient, ModelUnavailable
 from chatfront.ai.prompts import load_prompt
+from chatfront.ai.translate import translate
 from chatfront.ai.types import (
     AudioPart,
     ChatMessage,
@@ -28,9 +29,13 @@ from chatfront.ai.types import (
 from chatfront.audit.service import AGENT, record
 from chatfront.channels import service as channels
 from chatfront.channels.base import WindowClosed
+from chatfront.channels.language import reply_language
 from chatfront.channels.models import Channel, ChannelAccount, Conversation, Direction, Message
 from chatfront.channels.types import Kind, Outbound, OutText
-from chatfront.core.i18n import Lang, t
+from chatfront.core.countries import get_pack
+from chatfront.core.i18n import t
+from chatfront.core.langdetect import load_detector
+from chatfront.core.languages import Language, load_registry, mutually_readable
 from chatfront.core.models import Tenant
 from chatfront.jobs.queue import JobContext
 from chatfront.media import service as media_service
@@ -64,7 +69,7 @@ class Turn:
     message: Message
     history: list[Message]
     media_url: str | None
-    lang: Lang
+    lang: str  # the language to answer in, a registry tag
 
 
 class Responder(Protocol):
@@ -106,16 +111,25 @@ def _current(turn: Turn) -> ChatMessage:
     return ChatMessage("user", parts)
 
 
+def written_in(text: str, language: Language) -> bool:
+    """False only when the text is confidently in a language this reader does not read."""
+    found = load_detector().detect(text)
+    return found is None or not found.confident or mutually_readable(found.tag, language.tag)
+
+
 class ShopAssistant:
     def __init__(self, ai: AiClient) -> None:
         self.ai = ai
 
     async def respond(self, turn: Turn) -> list[Outbound]:
+        language = load_registry().get(turn.lang)
         prompt = load_prompt("shop_assistant")
         system = prompt.render(
             shop_name=turn.tenant.name,
             business_type=get_template(turn.tenant.template).name.en.lower(),
+            country=get_pack(turn.tenant.country).name,
             channel=_CHANNEL_NAMES[Channel(turn.message.channel)],
+            reply_language=language.prompt,
             shop_details=shop_details(turn.tenant),
         )
         request = ChatRequest(
@@ -124,14 +138,45 @@ class ShopAssistant:
             tenant_id=turn.tenant.id,
             prompt=prompt.ref,
             ref=("conversation", str(turn.conversation.id)),
+            lang=language.tag,
         )
         try:
             result = await self.ai.complete(request)
         except ModelUnavailable:
             log.warning("no model available; sending the fallback reply")
-            return [OutText(t("agent.fallback", turn.lang))]
+            return [OutText(t("agent.fallback", language.tag))]
         text = (result.content or "").strip()
-        return [OutText(text or t("agent.fallback", turn.lang))]
+        if not text:
+            return [OutText(t("agent.fallback", language.tag))]
+        return [OutText(await self._in_language(request, text, language))]
+
+    async def _in_language(self, request: ChatRequest, text: str, language: Language) -> str:
+        """Make sure the answer is in the customer's language: ask once more, then translate."""
+        if written_in(text, language):
+            return text
+        again = replace(
+            request,
+            messages=[
+                *request.messages,
+                ChatMessage("assistant", text),
+                ChatMessage("user", f"Write that answer again, in {language.prompt} only."),
+            ],
+        )
+        try:
+            retry = ((await self.ai.complete(again)).content or "").strip()
+        except ModelUnavailable:
+            retry = ""
+        if retry and written_in(retry, language):
+            return retry
+        translation = await translate(
+            self.ai,
+            text,
+            source=None,
+            target=language,
+            tenant_id=request.tenant_id,
+            ref=request.ref,
+        )
+        return translation.text
 
 
 async def _already_replied(services: Services, tenant_id: uuid.UUID, message_id: uuid.UUID) -> bool:
@@ -208,8 +253,9 @@ async def handle_reply(ctx: JobContext) -> None:
             )
         )[::-1]
     media_url = await _attach_media(services, message, account)
-    lang = Lang(conversation.lang or tenant.default_lang)
-    turn = Turn(tenant, conversation, message, history, media_url, lang)
+    turn = Turn(
+        tenant, conversation, message, history, media_url, reply_language(conversation, tenant)
+    )
     replies = await services.responder.respond(turn)
     adapter = services.adapters[Channel(message.channel)]
     sent = 0
@@ -224,6 +270,7 @@ async def handle_reply(ctx: JobContext) -> None:
                 services.keys,
                 services.fallback_token(message.channel),
                 in_reply_to=message_id,
+                extra={"lang": turn.lang},
             )
             sent += 1
     except WindowClosed:

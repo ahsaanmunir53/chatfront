@@ -10,7 +10,7 @@ import re
 from urllib.parse import quote, urlencode
 
 from chatfront.channels.models import Channel
-from chatfront.core.i18n import Lang, t
+from chatfront.core.i18n import t
 
 _REF_UNSAFE = re.compile(r"[^A-Za-z0-9_=-]")
 
@@ -19,7 +19,7 @@ def ref_for(slug: str) -> str:
     return _REF_UNSAFE.sub("_", f"shop_{slug}")
 
 
-def chat_link(channel: str, handle: str, *, shop_name: str, slug: str, lang: Lang) -> str | None:
+def chat_link(channel: str, handle: str, *, shop_name: str, slug: str, lang: str) -> str | None:
     """The link that opens a chat with this account, or None for channels without one."""
     match channel:
         case Channel.WHATSAPP:

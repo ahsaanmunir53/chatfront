@@ -7,7 +7,6 @@ import hmac
 import io
 import json
 import uuid
-from collections.abc import AsyncIterator
 from datetime import timedelta
 from pathlib import Path
 
@@ -20,66 +19,15 @@ from sqlalchemy import select, update
 
 from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import verify_chain
-from chatfront.channels.models import Channel, ChannelAccount, Conversation, Direction, Message
+from chatfront.channels.models import Conversation, Direction, Message
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
-from chatfront.core.models import Tenant
-from chatfront.core.settings import Settings, get_settings
 from chatfront.jobs.models import Job
 from chatfront.main import create_app
-from chatfront.modules.registry import core_modules
-from chatfront.seed.__main__ import seed
 from chatfront.services import Services
+from tests.integration.conftest import SHOP, app_settings
 
 GRAPH = "https://graph.facebook.com/v23.0"
-SHOP = "gulmohar-lawn"
-
-
-@pytest.fixture
-async def seeded(clean_db: Database) -> Database:
-    await seed(clean_db, core_modules())
-    async with clean_db.system() as session:
-        tenant = await session.scalar(select(Tenant).where(Tenant.slug == SHOP))
-        assert tenant is not None
-        session.add_all(
-            [
-                ChannelAccount(
-                    tenant_id=tenant.id,
-                    channel=Channel.WHATSAPP,
-                    external_id="PN1",
-                    display="+92 300 ***0000",
-                    public_handle="923000000000",
-                ),
-                ChannelAccount(
-                    tenant_id=tenant.id,
-                    channel=Channel.INSTAGRAM,
-                    external_id="IG1",
-                    display="@gulmohar.lawn",
-                    public_handle="gulmohar.lawn",
-                ),
-                ChannelAccount(
-                    tenant_id=tenant.id,
-                    channel=Channel.MESSENGER,
-                    external_id="PAGE1",
-                    display="Gulmohar Lawn House",
-                    public_handle="gulmoharlawn",
-                ),
-            ]
-        )
-    return clean_db
-
-
-def _app_settings(**overrides: object) -> Settings:
-    return get_settings().model_copy(update=overrides)
-
-
-@pytest.fixture
-async def app(seeded: Database) -> AsyncIterator[tuple[httpx.AsyncClient, Services]]:
-    application = create_app(_app_settings())
-    async with LifespanManager(application) as manager:
-        transport = httpx.ASGITransport(app=manager.app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
-            yield client, application.state.services
 
 
 def signed(
@@ -347,7 +295,7 @@ async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
 
 
 async def test_rate_limit(seeded: Database) -> None:
-    application = create_app(_app_settings(public_rate_limit_per_minute=2))
+    application = create_app(app_settings(public_rate_limit_per_minute=2))
     async with LifespanManager(application) as manager:
         transport = httpx.ASGITransport(app=manager.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
@@ -374,7 +322,7 @@ async def test_web_app_is_served(seeded: Database, tmp_path: Path) -> None:
     (tmp_path / "index.html").write_text("<html>chatfront</html>")
     (tmp_path / "assets" / "app.js").write_text("console.log(1)")
     (tmp_path / "manifest.webmanifest").write_text("{}")
-    application = create_app(_app_settings(web_dist_dir=tmp_path))
+    application = create_app(app_settings(web_dist_dir=tmp_path))
     async with LifespanManager(application) as manager:
         transport = httpx.ASGITransport(app=manager.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
@@ -472,7 +420,7 @@ async def test_webhooks_for_unknown_objects_or_accounts_are_ignored(
 
 async def test_cors_for_a_separately_hosted_frontend(seeded: Database) -> None:
     origin = "https://ahsaanmunir53.github.io"
-    application = create_app(_app_settings(cors_origins=f"{origin}/, https://other.test"))
+    application = create_app(app_settings(cors_origins=f"{origin}/, https://other.test"))
     async with LifespanManager(application) as manager:
         transport = httpx.ASGITransport(app=manager.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:

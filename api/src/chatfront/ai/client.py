@@ -158,6 +158,7 @@ class AiClient:
             "prompt": req.prompt or "*",
             "role": req.role.value,
             "match": last_user[:80] or "*",
+            "lang": req.lang or "*",
             "content": result.content,
             "tool_calls": [{"name": c.name, "arguments": c.arguments} for c in result.tool_calls],
         }

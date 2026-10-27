@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.channels.base import AccountRef, ChannelAdapter, check_sendable
+from chatfront.channels.language import note_language
 from chatfront.channels.models import (
     Channel,
     ChannelAccount,
@@ -21,11 +22,11 @@ from chatfront.channels.models import (
 )
 from chatfront.channels.types import MEDIA_KINDS, Inbound, Outbound, StatusUpdate, to_record
 from chatfront.core.clock import utcnow
+from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError, NotFound
-from chatfront.core.i18n import detect_lang
 from chatfront.core.ids import new_id
-from chatfront.core.models import Customer
+from chatfront.core.models import Customer, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.core.secretbox import seal, unseal
 from chatfront.jobs.queue import enqueue
@@ -141,6 +142,11 @@ async def accept(
         payload = dict(msg.payload)
         if msg.kind in MEDIA_KINDS and msg.media_ref:
             payload["media_ref"] = msg.media_ref
+        tenant = await session.get(Tenant, account.tenant_id)
+        assert tenant is not None
+        detected = note_language(conversation, msg.text, get_pack(tenant.country).languages)
+        if detected is not None:
+            payload["lang"] = detected.tag
         message_id = await session.scalar(
             insert(Message)
             .values(
@@ -164,8 +170,7 @@ async def accept(
         if message_id is None:
             return None
         conversation.last_inbound_at = max(msg.sent_at, conversation.last_inbound_at or msg.sent_at)
-        if msg.text:
-            conversation.lang = detect_lang(msg.text)
+        customer.lang = conversation.lang_choice or conversation.lang or customer.lang
         await enqueue(
             session,
             REPLY_JOB,
@@ -195,6 +200,7 @@ async def send(
     fallback_token: str | None,
     *,
     in_reply_to: uuid.UUID | None = None,
+    extra: dict[str, object] | None = None,
 ) -> Message:
     """Check the window and capability, record the message, then hand it to the channel."""
     async with db.tenant(tenant_id) as session:
@@ -214,6 +220,7 @@ async def send(
         body, payload = to_record(message)
         if in_reply_to is not None:
             payload["in_reply_to"] = str(in_reply_to)
+        payload.update(extra or {})
         row = Message(
             tenant_id=tenant_id,
             conversation_id=conversation_id,

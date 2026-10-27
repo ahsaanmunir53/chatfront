@@ -1,0 +1,159 @@
+{
+  "_about": "Written by `python -m chatfront.eval.languages`. A language counts as supported only from a live run.",
+  "runs": {
+    "afb": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "ar-Latn": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "ar": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "arz": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "bn-Latn": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "bn": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "en": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "hi-Latn": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "hi": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "pa-Arab": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "ps": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "sd": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "ur-Latn": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    },
+    "ur": {
+      "mock": {
+        "pass_rate": 1.0,
+        "passed": 10,
+        "total": 10,
+        "first_try": 10,
+        "exact_language": 10,
+        "voice_pending": 2,
+        "date": "2026-10-27"
+      }
+    }
+  }
+}

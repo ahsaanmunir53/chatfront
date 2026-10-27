@@ -1,7 +1,8 @@
 """The mock provider answers from recorded fixtures, so everything runs with no keys.
 
-Fixtures live in ai/fixtures/*.json. Each entry names a prompt and role ("*" for any) and a
-`match` substring of the last user message ("*" for any); specific matches win over "*".
+Fixtures live in ai/fixtures/*.json. Each entry names a prompt and role ("*" for any), a
+`match` substring of the last user message and the answer language `lang` (both "*" for any).
+Specific entries win over "*": a match on the text first, then on the language.
 Real responses can be captured with AI_RECORD_DIR and promoted into fixtures.
 """
 
@@ -35,6 +36,7 @@ class Fixture:
     prompt: str
     role: str
     match: str
+    lang: str = "*"
     content: str | None = None
     json: dict[str, Any] | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
@@ -45,6 +47,7 @@ class Fixture:
             self.prompt in ("*", prompt_name)
             and self.role in ("*", req.role.value)
             and (self.match == "*" or self.match.lower() in last_user_text.lower())
+            and self.lang in ("*", req.lang)
         )
 
 
@@ -71,7 +74,7 @@ class MockProvider:
     def find(self, req: ChatRequest) -> Fixture:
         text = _last_user_text(req)
         candidates = [f for f in self.fixtures if f.matches(req, text)]
-        candidates.sort(key=lambda f: f.match == "*")
+        candidates.sort(key=lambda f: (f.match == "*", f.lang == "*"))
         if not candidates:
             raise MockMiss(req)
         return candidates[0]

@@ -17,7 +17,6 @@ from chatfront.channels.conversation import ShopAssistant, Turn, shop_details
 from chatfront.channels.models import Conversation, Message
 from chatfront.channels.types import OutText
 from chatfront.core.db import Database
-from chatfront.core.i18n import Lang
 from chatfront.core.models import Tenant, TenantModule
 from chatfront.core.settings import Settings
 from chatfront.jobs.models import Job, JobStatus
@@ -88,7 +87,7 @@ async def test_assistant_falls_back_when_no_model_answers() -> None:
         Message(channel="webchat", kind="text", body="biryani hai?"),
         [],
         None,
-        Lang.ROMAN_UR,
+        "ur-Latn",
     )
     replies = await ShopAssistant(no_models).respond(turn)
     assert replies == [

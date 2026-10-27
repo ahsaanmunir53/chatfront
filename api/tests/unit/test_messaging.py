@@ -23,7 +23,6 @@ from chatfront.channels.types import (
     OutText,
 )
 from chatfront.core.errors import AppError
-from chatfront.core.i18n import Lang
 
 IG = "https://graph.instagram.com/v23.0"
 FB = "https://graph.facebook.com/v23.0"
@@ -183,7 +182,7 @@ def test_chat_links() -> None:
         "+92 300 1234567",
         shop_name="Saffron",
         slug="saffron-kitchen",
-        lang=Lang.ROMAN_UR,
+        lang="ur-Latn",
     )
     assert wa is not None
     parsed = urlparse(wa)
@@ -192,13 +191,13 @@ def test_chat_links() -> None:
         "Salam Saffron! Main ne aap ki dukaan Chatfront par dekhi."
     ]
     assert (
-        chat_link("instagram", "@saffron.pk", shop_name="S", slug="saffron-kitchen", lang=Lang.EN)
+        chat_link("instagram", "@saffron.pk", shop_name="S", slug="saffron-kitchen", lang="en")
         == "https://ig.me/m/saffron.pk?ref=shop_saffron-kitchen"
     )
     assert (
-        chat_link("messenger", "saffronpk", shop_name="S", slug="s", lang=Lang.EN)
+        chat_link("messenger", "saffronpk", shop_name="S", slug="s", lang="en")
         == "https://m.me/saffronpk?ref=shop_s"
     )
-    assert chat_link("webchat", "x", shop_name="S", slug="s", lang=Lang.EN) is None
-    assert chat_link("whatsapp", "n/a", shop_name="S", slug="s", lang=Lang.EN) is None
+    assert chat_link("webchat", "x", shop_name="S", slug="s", lang="en") is None
+    assert chat_link("whatsapp", "n/a", shop_name="S", slug="s", lang="en") is None
     assert ref_for("a.b c") == "shop_a_b_c"

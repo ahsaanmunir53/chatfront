@@ -90,6 +90,7 @@ class ChatRequest:
     effort: Effort | None = None
     max_tokens: int | None = None
     ref: tuple[str, str] | None = None
+    lang: str | None = None  # the language the answer must be in (a registry tag)
 
 
 @dataclass(frozen=True)

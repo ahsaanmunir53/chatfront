@@ -11,7 +11,7 @@ from sqlalchemy import select
 from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.errors import NotFound
-from chatfront.core.i18n import Lang, t
+from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.services import Services, get_services
 from chatfront.templates import get_template
@@ -75,7 +75,7 @@ async def _channels(services: Services, tenant: Tenant) -> list[ChannelLink]:
                 .order_by(ChannelAccount.channel)
             )
         )
-    lang = Lang(tenant.default_lang)
+    lang = tenant.default_lang
     return [
         ChannelLink(
             channel=account.channel,

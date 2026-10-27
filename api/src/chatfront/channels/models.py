@@ -11,6 +11,7 @@ from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chatfront.core.db import Base, created_at_column, id_column
+from chatfront.core.models import LANG_TAG
 
 
 class Channel(StrEnum):
@@ -79,7 +80,8 @@ class Conversation(Base):
         ForeignKey("channel_accounts.id", ondelete="CASCADE")
     )
     status: Mapped[str] = mapped_column(String(20), default="open")
-    lang: Mapped[str | None] = mapped_column(String(8))
+    lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # detected from the customer
+    lang_choice: Mapped[str | None] = mapped_column(String(LANG_TAG))  # asked for; wins
     last_inbound_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
 

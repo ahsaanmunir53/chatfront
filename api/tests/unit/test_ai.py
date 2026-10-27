@@ -293,11 +293,17 @@ def test_factory_never_mocks_in_production() -> None:
 
 def test_prompt_file() -> None:
     prompt = load_prompt("shop_assistant")
-    assert prompt.ref == "shop_assistant@v1"
+    assert prompt.ref == "shop_assistant@v2"
     text = prompt.render(
-        shop_name="Zara", business_type="clothing", channel="WhatsApp", shop_details="Open 10 to 8"
+        shop_name="Zara",
+        business_type="clothing",
+        country="Pakistan",
+        channel="WhatsApp",
+        reply_language="Pashto, written in Pashto script",
+        shop_details="Open 10 to 8",
     )
     assert "Zara" in text
+    assert "Reply in Pashto, written in Pashto script." in text
     assert "Never invent a price" in text
 
 

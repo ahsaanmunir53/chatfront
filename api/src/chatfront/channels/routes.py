@@ -115,6 +115,7 @@ class ChatMessageOut(BaseModel):
     direction: str
     kind: str
     body: str | None
+    lang: str | None  # the language the message is in, so the page sets direction and font
     payload: dict[str, Any]
     created_at: datetime
 
@@ -192,6 +193,7 @@ async def list_chat_messages(
                 direction=m.direction,
                 kind=m.kind,
                 body=m.body,
+                lang=(m.payload or {}).get("lang"),
                 payload={k: v for k, v in (m.payload or {}).items() if k in ("buttons", "list")},
                 created_at=m.created_at,
             )

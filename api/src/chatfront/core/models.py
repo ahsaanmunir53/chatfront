@@ -12,6 +12,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from chatfront.core.db import Base, created_at_column, id_column
 
+LANG_TAG = 35  # longest BCP 47 tag a column holds ("fil-x-taglish" is 13)
+
 
 class Tier(StrEnum):
     SMALL = "small"
@@ -40,7 +42,7 @@ class Tenant(Base):
     country: Mapped[str] = mapped_column(String(2), default="PK")
     currency: Mapped[str] = mapped_column(String(3), default="PKR")
     timezone: Mapped[str] = mapped_column(String(40), default="Asia/Karachi")
-    default_lang: Mapped[str] = mapped_column(String(8), default="ur-Latn")
+    default_lang: Mapped[str] = mapped_column(String(LANG_TAG), default="ur-Latn")
     profile: Mapped[dict[str, Any]] = mapped_column(default=dict)
     is_demo: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = created_at_column()
@@ -70,6 +72,7 @@ class Staff(Base):
     password_hash: Mapped[str | None] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default=StaffRole.OWNER)
     phone_hash: Mapped[str | None] = mapped_column(String(64))
+    lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # None: the shop's default
     active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = created_at_column()
 
@@ -86,7 +89,7 @@ class Customer(Base):
     )
     display_name: Mapped[str | None] = mapped_column(String(120))
     phone_hash: Mapped[str | None] = mapped_column(String(64))
-    lang: Mapped[str | None] = mapped_column(String(8))
+    lang: Mapped[str | None] = mapped_column(String(LANG_TAG))
     verified_buyer: Mapped[bool] = mapped_column(default=False)
     risk_score: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = created_at_column()
