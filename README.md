@@ -112,6 +112,13 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, books and shield:** the shop's books kept by chat, voice note, bill photo or
+  the console's form, with Undo by a mirror entry; the udhaar khata with reminders that grow
+  firmer; today's and the week's cash profit as a WhatsApp card in the evening, and answers to
+  "aaj ki sale?" and "pending payments?"; low-stock alerts; staff roles with their own sign-in
+  links and the activity log checked end to end; what the assistant may do on its own, ask
+  first or never do, with Approve and Reject for the owner; verified buyers who skip the COD
+  advance and can buy on the khata; and a why panel under every order.
 - **27 October, delivery:** addresses tidied for a rider, with a location pin asked for when
   they are too vague (WhatsApp's Send location button, Share my location in the web chat, or a
   maps link); a cash-on-delivery risk score with its reasons that asks risky buyers for an

@@ -217,6 +217,40 @@ What it delivered:
 Not verified yet: the address split by the real model (no keys yet); WhatsApp's location
 request on a real phone; a label printed on a real label printer.
 
+## Done on 27 October: the books and shield group (38, 42, 48, 49, 50, 52, 75, 104, 107)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 647 passed, 94.4% line coverage |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 29 passed |
+| Browser tests, desktop and phone | 50 passed |
+
+What it delivered:
+
+- Books: an append-only ledger (sales from settled payments and cash at the door, expenses,
+  udhaar given and paid back), Undo by a mirror entry, expenses from bill photos, text, voice
+  notes and the console's form, each saved only after the owner taps Save.
+- Udhaar: one account per person, a payback never more than what is owed, reminders at one,
+  two and three weeks while the chat window is open.
+- Reports: today's and the week's cash card on the owner's WhatsApp in the evening (cron,
+  once a day), and the same answers when the owner asks; the console's day book.
+- Stock: one alert when a sale takes a variant down to its limit, re-armed when it is back up.
+- Staff: five roles with rights checked in the API and in the owner's chat; team management
+  with sign-in links; the activity log after a full chain check.
+- Autonomy and approvals: five actions with their levels; questions to the owner on WhatsApp
+  and in the console, asked once and answered once.
+- Verified buyers by rule or by the owner; credit (khata) orders for them at shops that give
+  credit.
+- The why panel for every order.
+- Migration 0008: ledger entries (append-only), udhaar accounts, approvals, each product's
+  low-stock limit, each variant's alert flag, and who verified a buyer.
+
+Not verified yet: bill photos and owner commands read by the real model (no keys yet); the
+evening card on a real phone.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -239,7 +273,7 @@ In the timeline's order:
    Done on 27 October.
 3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99. Done on 27 October.
 4. 31 Oct: delivery and COD: 33, 34, 101. Done on 27 October.
-5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107.
+5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107. Done on 27 October.
 6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120.
 7. 2 Nov: dashboard, eval set, cost meter, reasoning routing, deploy: 74, 80, 111, 112, 113.
    The dashboard parts of 117 to 120 (sheet upload, queued alerts, batch and expiry views)
@@ -384,10 +418,21 @@ stays the same.
 - An address is too vague for a rider when it has no area, or neither a house or street
   number nor a landmark. Then checkout waits for a location pin.
 - A high COD risk (60 or more) never blocks a buyer. It asks for an advance only where the shop
-  also takes transfers, and the owner can switch that off (`risk_advance: false`).
+  also takes transfers, and the owner can switch that off (the `risk_advance` autonomy level).
 - The parcel page shows the shop, the order code, its steps and what to pay at the door, never
   the address or the phone number.
-- The owner moves orders in the console for now; WhatsApp owner commands come with feature 75.
+- The owner moves orders in the console for now; WhatsApp owner commands (75) answer
+  questions about the shop and do not move orders yet.
+- Profit is cash profit (money in less expenses) until batches (119) give each sale its cost.
+- A low-stock alert fires when a sale or write-off reaches the limit, not for stock that
+  starts low; the console and "low stock?" list those.
+- Udhaar reminders default to "ask me": each one waits for the owner's Approve until the owner
+  lets them go on their own.
+- Staff sign in by link like the owner; staff rows carry a placeholder email
+  (`<id>@staff.chatfront.invalid`) that is never used to send anything.
+- A customer's verified badge set by the owner is never changed by the automatic rule.
+- Expenses come from the owner's words or the bill; a bill photo without a readable total and
+  without a typed amount waits for the owner to type it, never a guess.
 
 ## Working notes for the next session
 
