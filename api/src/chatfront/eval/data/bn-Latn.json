@@ -1,0 +1,107 @@
+{
+ "lang": "bn-Latn",
+ "country": "BD",
+ "conversations": [
+  {
+   "id": "bn-Latn-01",
+   "turns": [
+    {
+     "text": "vai eta koto taka?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-02",
+   "turns": [
+    {
+     "text": "apnar kache red color ache?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-03",
+   "turns": [
+    {
+     "text": "amar 2ta suit lagbe"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-04",
+   "turns": [
+    {
+     "text": "cash on delivery hobe?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-05",
+   "turns": [
+    {
+     "text": "Dhaka te delivery koto din lagbe?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-06",
+   "turns": [
+    {
+     "text": "ami bkash e taka pathiyechi"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-07",
+   "turns": [
+    {
+     "text": "eta ki red e pawa jabe?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-08",
+   "turns": [
+    {
+     "text": "ektu kom koren vai"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-09",
+   "turns": [
+    {
+     "text": "Hello"
+    },
+    {
+     "text": "apnader dokan kothay?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-10",
+   "turns": [
+    {
+     "text": "amar order kobe ashbe?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-v1",
+   "turns": [
+    {
+     "voice": "voice/bn-Latn-v1.ogg",
+     "transcript": "vai amar eta lagbe, kobe pathaben?"
+    }
+   ]
+  },
+  {
+   "id": "bn-Latn-v2",
+   "turns": [
+    {
+     "voice": "voice/bn-Latn-v2.ogg",
+     "transcript": "apnader dokan koyta porjonto khola thake?"
+    }
+   ]
+  }
+ ]
+}

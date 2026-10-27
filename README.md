@@ -38,7 +38,8 @@ You need Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22 and PostgreS
 6. `uv run uvicorn chatfront.main:create_app --factory --reload` (API and job worker on :8000)
 7. In another terminal: `cd web && npm ci && npm run dev` (web app on :5173, proxied to :8000)
 8. Open http://localhost:5173, pick a shop, open its chat and say salam.
-9. With no model keys the replies come from recorded fixtures and start with `[mock reply]`.
+9. With no model keys the replies come from recorded fixtures, one per Tier 1 language, and
+   most start with `[mock reply]`.
    Add `BASETEN_API_KEY` to `api/.env` for real answers.
 10. Tests: `cd api && uv run pytest --cov`, then `cd web && npm test && npm run e2e`.
 
@@ -75,11 +76,22 @@ built web app. Render's free tier has no background workers, so cron-job.org cal
   the shop's zone. **Phone numbers** are stored as keyed hashes where the number is not needed;
   channel ids are stored sealed.
 - **Business types** are JSON templates in `api/src/chatfront/templates/`, not code.
-- **One string catalog** in `i18n/` (English, Urdu, Roman Urdu) serves the API and the web app.
+- **Languages.** `i18n/languages.json` lists 42 languages; Tier 1 (Urdu, Roman Urdu, English,
+  Punjabi in Shahmukhi, Pashto, Sindhi, Hindi and Hinglish, Bengali and Banglish, Arabic with
+  Gulf, Egyptian and Arabizi) is built and tested. Every customer message is detected for
+  script and language, the reply is checked to be in that language, customers can switch
+  mid-chat, and staff read and write in their own language. One ICU catalog per interface
+  language serves the API and the web app, with right-to-left layouts and a Noto font per
+  script. Numbers are read in any digits and in words ("dedh hazaar", "ألف ونص").
+- **Country packs.** `i18n/countries/<CC>.json`: currency, money and number formats from
+  CLDR, phones, time zone, tax label, languages and the wallets and banks people pay with.
+  Pakistan is the default. Wallet SMS parsers live in `api/src/chatfront/payments/sms/`, and
+  each stays unverified until it passes on a real message.
 
 ```
 api/src/chatfront/
-  core/       settings, db + RLS sessions, money, time, i18n, ids, phone hashing, errors
+  core/       settings, db + RLS sessions, money, time, ids, phone hashing, errors;
+              languages, detection, ICU messages, numbers, country packs
   ai/         provider layer, mock fixtures, prompts, tools, cost meter
   channels/   adapters, webhooks, try-it chat API, reply job
   jobs/       queue, worker, cron
@@ -87,6 +99,9 @@ api/src/chatfront/
   audit/      hash-chained audit log
   modules/    module registry and tiers
   templates/  business-type JSON
+  payments/   wallet and bank SMS parsers
+  eval/       evaluation sets (the language set runs in CI on the mock)
+i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page, try-it chat, trust page, receipt check, dashboard
 ```
 
@@ -95,6 +110,9 @@ web/src/      React app: shop page, try-it chat, trust page, receipt check, dash
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, languages and countries:** the language layer for 14 Tier 1 languages and
+  dialects (detection, same-language replies, switching, handover translation, right to left,
+  numbers in any form) with its evaluation set, and 20 country packs with 21 wallet SMS parsers.
 - **27 October, linking and design:** Instagram DMs and Facebook Messenger alongside
   WhatsApp through one webhook, wa.me/ig.me/m.me links on every shop page, the connect
   command, and the redesigned web app that opens at once and counts down while the API wakes.
@@ -104,7 +122,7 @@ Developer Hackathon. The commit history shows the order.
   the hash-chained audit log; six business templates and their demo shops; the web app
   with the shop page, try-it chat and trust page in English, Urdu and Roman Urdu; CI.
 
-The table in [FEATURES.md](FEATURES.md) tracks all 120 features and what state each is in.
+The table in [FEATURES.md](FEATURES.md) tracks all 122 features and what state each is in.
 
 ## Model API upgrade path
 
@@ -142,7 +160,7 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
 
 ## Roadmap
 
-Build features (45) work end to end by 2 November, Stretch features (34) follow, and Later
+Build features (47) work end to end by 2 November, Stretch features (34) follow, and Later
 features (41) stay on the roadmap. The demo shows only work built during the event.
 
 ## Attribution

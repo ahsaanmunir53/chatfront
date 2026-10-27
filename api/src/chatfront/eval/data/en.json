@@ -1,0 +1,110 @@
+{
+ "lang": "en",
+ "country": "PK",
+ "conversations": [
+  {
+   "id": "en-01",
+   "turns": [
+    {
+     "text": "Hi, is this suit available in medium?"
+    }
+   ]
+  },
+  {
+   "id": "en-02",
+   "turns": [
+    {
+     "text": "How much is the three piece?"
+    }
+   ]
+  },
+  {
+   "id": "en-03",
+   "turns": [
+    {
+     "text": "Do you deliver to Islamabad?"
+    },
+    {
+     "text": "How long does it take?"
+    }
+   ]
+  },
+  {
+   "id": "en-04",
+   "turns": [
+    {
+     "text": "Can I pay with JazzCash?"
+    }
+   ]
+  },
+  {
+   "id": "en-05",
+   "turns": [
+    {
+     "text": "I sent the payment, here is the screenshot"
+    }
+   ]
+  },
+  {
+   "id": "en-06",
+   "turns": [
+    {
+     "text": "What are your opening hours?"
+    }
+   ]
+  },
+  {
+   "id": "en-07",
+   "turns": [
+    {
+     "text": "Is there any discount if I buy two?"
+    }
+   ]
+  },
+  {
+   "id": "en-08",
+   "turns": [
+    {
+     "text": "I want to return this, the size is wrong"
+    }
+   ]
+  },
+  {
+   "id": "en-09",
+   "turns": [
+    {
+     "text": "salam"
+    },
+    {
+     "text": "Do you have this in black?"
+    }
+   ]
+  },
+  {
+   "id": "en-10",
+   "turns": [
+    {
+     "text": "Please share the price list"
+    }
+   ]
+  },
+  {
+   "id": "en-v1",
+   "turns": [
+    {
+     "voice": "voice/en-v1.ogg",
+     "transcript": "Hi, I want this suit. When can you send it?"
+    }
+   ]
+  },
+  {
+   "id": "en-v2",
+   "turns": [
+    {
+     "voice": "voice/en-v2.ogg",
+     "transcript": "Hello, how late is the shop open today?"
+    }
+   ]
+  }
+ ]
+}

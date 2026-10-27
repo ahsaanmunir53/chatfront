@@ -1,0 +1,113 @@
+{
+ "lang": "ur-Latn",
+ "country": "PK",
+ "conversations": [
+  {
+   "id": "ur-Latn-01",
+   "turns": [
+    {
+     "text": "Assalam o alaikum, ye lawn ka suit available hai?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-02",
+   "turns": [
+    {
+     "text": "bhai ye kitne ka hai?"
+    },
+    {
+     "text": "delivery Lahore mein kitne din mein hogi?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-03",
+   "turns": [
+    {
+     "text": "Mujhe 2 suit chahiye medium size mein"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-04",
+   "turns": [
+    {
+     "text": "Cash on delivery hai ya pehle payment karni hogi?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-05",
+   "turns": [
+    {
+     "text": "price kya hai is ki"
+    },
+    {
+     "text": "thora kam kar dein na"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-06",
+   "turns": [
+    {
+     "text": "Maine Easypaisa se paise bhej diye hain, screenshot bhejun?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-07",
+   "turns": [
+    {
+     "text": "kal tak mil jayega? shaadi hai parson"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-08",
+   "turns": [
+    {
+     "text": "Ye wala red mein bhi milega?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-09",
+   "turns": [
+    {
+     "text": "Hi"
+    },
+    {
+     "text": "kya aap Karachi deliver karte hain?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-10",
+   "turns": [
+    {
+     "text": "order cancel karna hai mera, galat size aa gaya"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-v1",
+   "turns": [
+    {
+     "voice": "voice/ur-Latn-v1.ogg",
+     "transcript": "Bhai mujhe ye suit chahiye, kab tak bhej denge?"
+    }
+   ]
+  },
+  {
+   "id": "ur-Latn-v2",
+   "turns": [
+    {
+     "voice": "voice/ur-Latn-v2.ogg",
+     "transcript": "Assalam o alaikum, aap ki dukaan kab tak khuli hai?"
+    }
+   ]
+  }
+ ]
+}

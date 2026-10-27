@@ -1,0 +1,107 @@
+{
+ "lang": "hi-Latn",
+ "country": "IN",
+ "conversations": [
+  {
+   "id": "hi-Latn-01",
+   "turns": [
+    {
+     "text": "Namaste, ye suit available hai kya?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-02",
+   "turns": [
+    {
+     "text": "bhaiya iska price kya hai?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-03",
+   "turns": [
+    {
+     "text": "mujhe do suit chahiye medium mein"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-04",
+   "turns": [
+    {
+     "text": "COD hai kya?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-05",
+   "turns": [
+    {
+     "text": "delivery mein kitne din lagenge?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-06",
+   "turns": [
+    {
+     "text": "maine UPI se payment kar diya hai"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-07",
+   "turns": [
+    {
+     "text": "ye red colour mein milega kya?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-08",
+   "turns": [
+    {
+     "text": "thoda kam kar do na bhaiya"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-09",
+   "turns": [
+    {
+     "text": "Hello"
+    },
+    {
+     "text": "aapki shop kahan hai?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-10",
+   "turns": [
+    {
+     "text": "mera order kab tak aayega?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-v1",
+   "turns": [
+    {
+     "voice": "voice/hi-Latn-v1.ogg",
+     "transcript": "Bhaiya mujhe ye suit chahiye, kab tak bhej doge?"
+    }
+   ]
+  },
+  {
+   "id": "hi-Latn-v2",
+   "turns": [
+    {
+     "voice": "voice/hi-Latn-v2.ogg",
+     "transcript": "Namaste, aapki shop kab tak khuli rehti hai?"
+    }
+   ]
+  }
+ ]
+}

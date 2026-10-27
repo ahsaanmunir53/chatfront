@@ -1,0 +1,107 @@
+{
+ "lang": "ar-Latn",
+ "country": "EG",
+ "conversations": [
+  {
+   "id": "ar-Latn-01",
+   "turns": [
+    {
+     "text": "el ta2m da mawgood?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-02",
+   "turns": [
+    {
+     "text": "bkam da ya 3am?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-03",
+   "turns": [
+    {
+     "text": "3ayza etnein size medium"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-04",
+   "turns": [
+    {
+     "text": "fe cash 3and el estelam?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-05",
+   "turns": [
+    {
+     "text": "el delivery l eskendereya ya5od 2ad eh?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-06",
+   "turns": [
+    {
+     "text": "7awelt el flos 5alas, shoof el sora"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-07",
+   "turns": [
+    {
+     "text": "howa da mawgood bel a7mar?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-08",
+   "turns": [
+    {
+     "text": "momken te3mely discount?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-09",
+   "turns": [
+    {
+     "text": "Hello"
+    },
+    {
+     "text": "el ma7al fein?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-10",
+   "turns": [
+    {
+     "text": "el order hayewsal emta?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-v1",
+   "turns": [
+    {
+     "voice": "voice/ar-Latn-v1.ogg",
+     "transcript": "3ayza el ta2m da, hatb3atoh emta?"
+    }
+   ]
+  },
+  {
+   "id": "ar-Latn-v2",
+   "turns": [
+    {
+     "voice": "voice/ar-Latn-v2.ogg",
+     "transcript": "ahlan, el ma7al fate7 l7ad emta enaharda?"
+    }
+   ]
+  }
+ ]
+}

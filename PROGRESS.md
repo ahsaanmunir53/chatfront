@@ -55,6 +55,34 @@ calls and the real WhatsApp webhook (no keys yet).
   countdown shows while Render wakes, and chat messages wait and send when it answers.
   GitHub Pages deploy workflow (manual) for deploy day; CORS on the API.
 
+## Done on 27 October: the language layer and country packs (121, 122)
+
+Built first in Phase 1 so nothing has to be reworked later. Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 348 passed, 96.9% line coverage |
+| Lint, format, strict types | clean |
+| Web types and unit tests | clean, 18 passed (includes the ICU cases shared with the API) |
+| Browser tests, desktop and phone | 34 passed (right to left in ur, pa-Arab, ps, sd, ar; hi and bn left to right with their fonts; an Egyptian browser opens in Arabic; a Pashto reply renders right to left) |
+
+Language evaluation (`python -m chatfront.eval.languages`), mock models, 27 October:
+
+| Tier 1 language | Text conversations passed | Voice notes |
+|---|---|---|
+| ur, ur-Latn, en, ps, sd, hi, hi-Latn, bn, bn-Latn, ar, afb, arz, ar-Latn | 10 of 10 each | 2 each, pending recordings |
+| pa-Arab (Punjabi, Shahmukhi) | 10 of 10 (6 of 10 before Punjabi marker words were added) | 2, pending recordings |
+
+What the mock run measures: that each language is recognised and the reply is routed to that
+language. It does not measure how well the model writes Pashto or Sindhi; only a live run
+(`--live`, needs BASETEN_API_KEY) can, and only a live run can lift a language out of beta.
+The Punjabi word list was extended after the first run, using the misses; held-out Punjabi and
+Urdu lines in the unit tests check it did not overfit.
+
+Still open for 121 and 122: product translations (with the catalog), the handover screen
+(90), live eval, voice recordings, native-speaker review of every non-English catalog and of
+the eval lines, and real SMS samples to verify the parsers.
+
 ## Next: Phase 1 (Build features, by 2 November)
 
 In the timeline's order:
@@ -141,11 +169,15 @@ stays the same.
 
 ## Open questions for Ahsaan
 
-1. Render: which of the 25 services to free.
-2. Which credits arrived: Baseten, Fireworks, Modal.
-3. Payment samples: which wallets and banks; one real small transfer's credit SMS and
-   screenshot from each, with name, number and TID covered. Needed before 30 October.
+1. Render: which service to free. Ahsaan will say before deploy day.
+2. Credits: the Baseten form is submitted, Modal and Fireworks are in progress, nothing has
+   arrived. Building continues on the mock.
+3. Payment samples: real credit SMS and screenshots, with name, number and TID covered,
+   coming before 30 October. They will turn the JazzCash, Easypaisa and bank parsers from
+   unverified to verified.
 4. Pilot shops and their business types.
+5. Native speakers to read the Punjabi, Pashto, Sindhi, Hindi, Bengali and Arabic strings
+   and eval lines, and to record the two voice notes per language (script in the eval data).
 
 ## Decisions taken
 
@@ -161,8 +193,18 @@ stays the same.
 - Spark Open failover is Baseten -> Fireworks; Modal hosts only Glimmer.
 - Shop pages live at `/s/<slug>`; one Render service serves API and web.
 - Ids are UUIDv7; order codes will use the short Crockford code in `core/ids.py`.
-- The language defaults to the browser's (Urdu for Urdu browsers, else English), and the
-  choice is remembered.
+- The interface opens in the saved language, else the first browser language with a catalog
+  (an Egyptian browser gets Arabic), else English; the choice is remembered.
+- Pashto, Sindhi and Punjabi readers fall back to Urdu, then English, wherever a string or a
+  shop text has no translation of its own. Hinglish and Banglish readers get English.
+- A customer's explicit request ("English mein baat karo") is kept as their choice and wins
+  over detection until they ask for another. Asked for in Roman Urdu, Hinglish or Banglish,
+  "Urdu", "Hindi" or "Bangla" means the romanised form unless they mention the script.
+- In the evaluation, Gulf and Egyptian customers answered in Modern Standard Arabic, and
+  Roman Urdu answered as Hinglish, count as answered in their language (each reads the other);
+  the exact-language count is reported next to it.
+- SMS parser fixtures are synthetic and labelled so; every parser stays unverified until a
+  real message passes, and a test enforces that.
 
 ## Working notes for the next session
 
