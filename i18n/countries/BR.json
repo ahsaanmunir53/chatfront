@@ -2,6 +2,7 @@
   "code": "BR",
   "name": "Brazil",
   "currency": "BRL",
+  "minor_digits": 2,
   "money": {
     "symbol": "R$",
     "position": "before",

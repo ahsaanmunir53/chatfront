@@ -2,6 +2,7 @@
   "code": "VN",
   "name": "Vietnam",
   "currency": "VND",
+  "minor_digits": 0,
   "money": {
     "symbol": "₫",
     "position": "after",

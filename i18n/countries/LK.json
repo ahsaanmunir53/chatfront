@@ -2,6 +2,7 @@
   "code": "LK",
   "name": "Sri Lanka",
   "currency": "LKR",
+  "minor_digits": 2,
   "money": {
     "symbol": "Rs",
     "position": "before",

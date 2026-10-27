@@ -2,6 +2,7 @@
   "code": "KE",
   "name": "Kenya",
   "currency": "KES",
+  "minor_digits": 2,
   "money": {
     "symbol": "KSh",
     "position": "before",

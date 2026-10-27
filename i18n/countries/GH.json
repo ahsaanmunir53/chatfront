@@ -2,6 +2,7 @@
   "code": "GH",
   "name": "Ghana",
   "currency": "GHS",
+  "minor_digits": 2,
   "money": {
     "symbol": "GH₵",
     "position": "before",

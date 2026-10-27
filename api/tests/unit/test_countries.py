@@ -6,9 +6,10 @@ import json
 import re
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import pytest
-from babel.numbers import format_decimal
+from babel.numbers import format_decimal, get_currency_precision
 
 from chatfront.core.countries import date_locale, format_day, format_money, get_pack, load_packs
 from chatfront.core.languages import load_registry
@@ -17,6 +18,7 @@ from chatfront.core.phone import normalise_phone
 from chatfront.payments.sms import PARSERS, parse_sms, parsers_for
 
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "sms"
+I18N = Path(__file__).parents[3] / "i18n"
 # Countries the hackathon rules exclude. No pack may exist for them.
 EXCLUDED = {"BY", "CN", "CU", "IR", "KP", "RU", "SY", "UA"}
 
@@ -41,6 +43,7 @@ def test_every_pack_is_consistent(code: str) -> None:
         assert registry.resolve(tag) is not None, (code, tag)
     for tag in pack.local_symbols:
         assert tag in pack.languages, (code, tag)
+    assert pack.minor_digits == get_currency_precision(pack.currency), code
     expected = {"3": "1,234,567", "3;2": "12,34,567"}[pack.grouping]
     grouped = format_decimal(1234567, locale=pack.number_locale.replace("-", "_"))
     assert re.sub(r"\D", ",", grouped) == expected
@@ -60,28 +63,27 @@ def test_every_pack_is_consistent(code: str) -> None:
     assert len(e164) - 1 - len(phone.calling_code) in phone.national_lengths
 
 
+MONEY_CASES = json.loads((I18N / "money-cases.json").read_text(encoding="utf-8"))["cases"]
+
+
 @pytest.mark.parametrize(
-    ("code", "tag", "amount", "expected"),
-    [
-        ("PK", "en", 485_000, "Rs 4,850"),
-        ("PK", "ur-Latn", 485_050, "Rs 4,850.50"),
-        ("PK", "ur", 485_000, "4,850 روپے"),
-        ("PK", "sd", 10_000_000, "100,000 رپيا"),
-        ("IN", "hi", 12_345_678_900, "₹ 12,34,56,789"),
-        ("BD", "bn", 123_456_700, "৳ ১২,৩৪,৫৬৭"),
-        ("BD", "en", 123_456_750, "৳ 12,34,567.50"),
-        ("EG", "arz", 150_000, "١٬٥٠٠ ج.م"),
-        ("ZA", "en", 150_050, "R 1\u00a0500,50"),
-        ("SA", "en", 15_050, "SAR 150.50"),
-        ("ID", "id", 15_000_000, "Rp 150.000"),
-        ("BR", "pt-BR", 115_050, "R$ 1.150,50"),
-        ("VN", "vi", 1_500_000, "1.500.000 ₫"),
-        ("PK", "en", -50_000, "-Rs 500"),
-    ],
+    "case", MONEY_CASES, ids=lambda c: f"{c['country']}-{c['lang']}-{c['amount']}"
 )
-def test_money(code: str, tag: str, amount: int, expected: str) -> None:
-    language = load_registry().get(tag)
-    assert format_money(Minor(amount), get_pack(code), language) == expected
+def test_money(case: dict[str, Any]) -> None:
+    """The same cases the web app's formatMoney is tested with."""
+    language = load_registry().get(case["lang"])
+    pack = get_pack(case["country"])
+    assert format_money(Minor(case["amount"]), pack, language) == case["text"]
+
+
+def test_money_cases_cover_the_hard_ones() -> None:
+    texts = {(c["country"], c["lang"], c["amount"]): c["text"] for c in MONEY_CASES}
+    assert texts[("PK", "ur", 485_000)] == "4,850 روپے"
+    assert texts[("IN", "hi", 12_345_678_900)] == "₹ 12,34,56,789"
+    assert texts[("BD", "bn", 123_456_700)] == "৳ ১২,৩৪,৫৬৭"
+    assert texts[("EG", "arz", 150_000)] == "١٬٥٠٠ ج.م"
+    assert texts[("VN", "vi", 1_500_000)] == "1.500.000 ₫"
+    assert texts[("PK", "en", -50_000)] == "-Rs 500"
 
 
 def test_minor_units_come_from_cldr() -> None:

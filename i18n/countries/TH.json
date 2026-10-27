@@ -2,6 +2,7 @@
   "code": "TH",
   "name": "Thailand",
   "currency": "THB",
+  "minor_digits": 2,
   "money": {
     "symbol": "฿",
     "position": "before",

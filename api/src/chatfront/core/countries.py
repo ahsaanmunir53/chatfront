@@ -17,7 +17,6 @@ from babel import Locale, UnknownLocaleError
 from babel.dates import format_date as babel_format_date
 from babel.numbers import (
     UnsupportedNumberingSystemError,
-    get_currency_precision,
     get_decimal_symbol,
 )
 
@@ -58,6 +57,7 @@ class CountryPack:
     name: str
     currency: str
     symbol: Symbol
+    minor_digits: int  # minor units per major unit as a power of ten: 2 for paisa, 0 for dong
     show_minor: Literal["nonzero", "always", "never"]
     number_locale: str
     grouping: str
@@ -68,11 +68,6 @@ class CountryPack:
     languages: tuple[str, ...]
     wallets: tuple[Wallet, ...]
     local_symbols: dict[str, Symbol] = field(default_factory=dict)
-
-    @property
-    def minor_digits(self) -> int:
-        """Minor units per major unit, as a power of ten (2 for paisa, 0 for dong)."""
-        return int(get_currency_precision(self.currency))
 
     def symbol_for(self, language: Language) -> Symbol:
         return self.local_symbols.get(language.tag, self.symbol)
@@ -88,6 +83,7 @@ def _pack(raw: dict[str, object]) -> CountryPack:
         name=str(raw["name"]),
         currency=str(raw["currency"]),
         symbol=Symbol(money["symbol"], money["position"]),
+        minor_digits=int(raw["minor_digits"]),  # type: ignore[call-overload]
         show_minor=money["show_minor"],
         number_locale=str(raw["number_locale"]),
         grouping=str(raw["grouping"]),

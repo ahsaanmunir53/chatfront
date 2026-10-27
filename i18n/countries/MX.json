@@ -2,6 +2,7 @@
   "code": "MX",
   "name": "Mexico",
   "currency": "MXN",
+  "minor_digits": 2,
   "money": {
     "symbol": "$",
     "position": "before",

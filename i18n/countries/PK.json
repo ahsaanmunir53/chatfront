@@ -2,6 +2,7 @@
   "code": "PK",
   "name": "Pakistan",
   "currency": "PKR",
+  "minor_digits": 2,
   "money": {
     "symbol": "Rs",
     "position": "before",

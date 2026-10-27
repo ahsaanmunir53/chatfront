@@ -2,6 +2,7 @@
   "code": "BD",
   "name": "Bangladesh",
   "currency": "BDT",
+  "minor_digits": 2,
   "money": {
     "symbol": "৳",
     "position": "before",

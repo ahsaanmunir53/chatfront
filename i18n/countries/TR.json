@@ -2,6 +2,7 @@
   "code": "TR",
   "name": "Türkiye",
   "currency": "TRY",
+  "minor_digits": 2,
   "money": {
     "symbol": "₺",
     "position": "before",

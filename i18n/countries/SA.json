@@ -2,6 +2,7 @@
   "code": "SA",
   "name": "Saudi Arabia",
   "currency": "SAR",
+  "minor_digits": 2,
   "money": {
     "symbol": "SAR",
     "position": "before",

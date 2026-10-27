@@ -2,6 +2,7 @@
   "code": "AE",
   "name": "United Arab Emirates",
   "currency": "AED",
+  "minor_digits": 2,
   "money": {
     "symbol": "AED",
     "position": "before",

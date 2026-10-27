@@ -2,6 +2,7 @@
   "code": "ID",
   "name": "Indonesia",
   "currency": "IDR",
+  "minor_digits": 2,
   "money": {
     "symbol": "Rp",
     "position": "before",

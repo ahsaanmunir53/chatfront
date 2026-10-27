@@ -2,6 +2,7 @@
   "code": "MY",
   "name": "Malaysia",
   "currency": "MYR",
+  "minor_digits": 2,
   "money": {
     "symbol": "RM",
     "position": "before",

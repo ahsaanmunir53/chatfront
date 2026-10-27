@@ -2,6 +2,7 @@
   "code": "PH",
   "name": "Philippines",
   "currency": "PHP",
+  "minor_digits": 2,
   "money": {
     "symbol": "₱",
     "position": "before",

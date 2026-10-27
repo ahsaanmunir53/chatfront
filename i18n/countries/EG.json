@@ -2,6 +2,7 @@
   "code": "EG",
   "name": "Egypt",
   "currency": "EGP",
+  "minor_digits": 2,
   "money": {
     "symbol": "EGP",
     "position": "before",

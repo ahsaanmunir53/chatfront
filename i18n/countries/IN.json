@@ -2,6 +2,7 @@
   "code": "IN",
   "name": "India",
   "currency": "INR",
+  "minor_digits": 2,
   "money": {
     "symbol": "₹",
     "position": "before",

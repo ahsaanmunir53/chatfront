@@ -2,6 +2,7 @@
   "code": "NP",
   "name": "Nepal",
   "currency": "NPR",
+  "minor_digits": 2,
   "money": {
     "symbol": "रु",
     "position": "before",

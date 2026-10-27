@@ -2,6 +2,7 @@
   "code": "ZA",
   "name": "South Africa",
   "currency": "ZAR",
+  "minor_digits": 2,
   "money": {
     "symbol": "R",
     "position": "before",

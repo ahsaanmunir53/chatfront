@@ -2,6 +2,7 @@
   "code": "NG",
   "name": "Nigeria",
   "currency": "NGN",
+  "minor_digits": 2,
   "money": {
     "symbol": "₦",
     "position": "before",
