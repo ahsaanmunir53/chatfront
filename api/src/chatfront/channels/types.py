@@ -60,6 +60,7 @@ class Capability(StrEnum):
     LIST = "list"
     TEMPLATE = "template"
     LOCATION = "location"  # ask for a location pin with one tap
+    FLOW = "flow"  # a WhatsApp Flow: a form inside the chat
 
 
 @dataclass(frozen=True)
@@ -112,7 +113,20 @@ class OutLocationRequest:
     text: str
 
 
-Outbound = OutText | OutButtons | OutList | OutTemplate | OutLocationRequest
+@dataclass(frozen=True)
+class OutFlow:
+    """A WhatsApp Flow published in WhatsApp Manager, opened on its first screen with data.
+    The form comes back as an inbound message carrying what the owner filled in."""
+
+    text: str
+    flow_id: str
+    cta: str
+    token: str  # comes back with the answers, to tell which form they belong to
+    screen: str
+    data: dict[str, Any]
+
+
+Outbound = OutText | OutButtons | OutList | OutTemplate | OutLocationRequest | OutFlow
 
 
 def required_capability(message: Outbound) -> Capability:
@@ -127,6 +141,8 @@ def required_capability(message: Outbound) -> Capability:
             return Capability.TEMPLATE
         case OutLocationRequest():
             return Capability.LOCATION
+        case OutFlow():
+            return Capability.FLOW
     raise AssertionError(message)  # pragma: no cover
 
 
@@ -144,4 +160,6 @@ def to_record(message: Outbound) -> tuple[str, dict[str, Any]]:
             return " ".join(params), {"template": {"name": name, "lang": lang}}
         case OutLocationRequest(text=text):
             return text, {"location_request": True}
+        case OutFlow(text=text, token=token):
+            return text, {"flow": {"token": token}}
     raise AssertionError(message)  # pragma: no cover

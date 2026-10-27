@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.ai.client import AiClient
 from chatfront.ai.types import Part
 from chatfront.audit.service import Actor, ActorType
-from chatfront.books import reports
+from chatfront.books import ledger, reports
 from chatfront.books.chat import (
     KIND_MONEY,
     BillReading,
@@ -32,6 +32,7 @@ from chatfront.catalog.drafts import (
     MoneyLine,
     OwnerMessage,
     ProductDraft,
+    PurchaseLine,
     complete_draft,
     fields_text,
     price_from_words,
@@ -63,17 +64,31 @@ from chatfront.owner.cards import change_list, confirm_card, product_summary
 from chatfront.owner.changes import resolve_changes, typed_price_change
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.rights import Can, staff_rights
+from chatfront.owner.types import Problem
+from chatfront.stock import changes as stock_changes
+from chatfront.stock import ops as stock_ops
+from chatfront.stock import panel, profit, restock
 from chatfront.templates import get_template
 
 # A tap on a button another module put in the owner's chat (giving a chat back to the agent,
 # approving a payment): the replies, or None when the button is not that module's.
 ButtonHandler = Callable[[Turn], Awaitable[list[Outbound] | None]]
+# The owner's answer to a question another module asked in this chat (a new price, how many
+# pieces came in): the replies, or None when the open action is not that module's.
+FollowUp = Callable[[Turn, PendingAction | None], Awaitable[list[Outbound] | None]]
 
 KIND_PRODUCT = "product"
 KIND_UPDATE = "update"
-_RIGHT = {KIND_PRODUCT: Can.CATALOG, KIND_UPDATE: Can.CATALOG, KIND_MONEY: Can.BOOKS_WRITE}
+_RIGHT = {KIND_PRODUCT: Can.CATALOG, KIND_MONEY: Can.BOOKS_WRITE}
 TRANSLATE_JOB = "catalog.translate"
 _POLICY_FIELDS = ("delivery", "hours", "payment", "returns", "policies")
+
+
+def _rights_for(action: PendingAction) -> set[Can]:
+    """Who may confirm a card: catalog changes need the catalog right, stock needs stock."""
+    if action.kind == KIND_UPDATE:
+        return stock_ops.rights_for(action.payload.get("ops") or []) or {Can.CATALOG}
+    return {_RIGHT[action.kind]}
 
 
 def refuse(turn: Turn) -> list[Outbound]:
@@ -89,6 +104,7 @@ def prompt_context(tenant: Tenant) -> dict[str, str]:
         "country": pack.name,
         "currency": pack.currency,
         "fields": fields_text(template),
+        "today": ledger.today(tenant).isoformat(),
     }
 
 
@@ -100,12 +116,14 @@ class OwnerAssistant:
         storage: Storage,
         settings: Settings,
         buttons: Sequence[ButtonHandler] = (),
+        followups: Sequence[FollowUp] = (),
     ) -> None:
         self.db = db
         self.ai = ai
         self.storage = storage
         self.settings = settings
         self.buttons = tuple(buttons)
+        self.followups = tuple(followups)
 
     async def respond(self, turn: Turn) -> list[Outbound]:
         button = (turn.message.payload or {}).get("button_id")
@@ -121,10 +139,16 @@ class OwnerAssistant:
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
         words, kind = turn.message.body or "", turn.message.kind
+        if kind == Kind.IMAGE and restock.is_purchase(words):
+            return await self._purchase(turn) if Can.STOCK in allowed else refuse(turn)
         if kind == Kind.IMAGE and is_bill(words):
             return await self._bill(turn, None) if Can.BOOKS_WRITE in allowed else refuse(turn)
         if kind == Kind.IMAGE:
             return await self._product(turn, None, None) if Can.CATALOG in allowed else refuse(turn)
+        for followup in self.followups:
+            replies = await followup(turn, action)
+            if replies is not None:
+                return replies
         if action is not None and action.kind == KIND_PRODUCT:
             return await self._product(turn, action, None)
         waiting_bill = (
@@ -256,7 +280,9 @@ class OwnerAssistant:
             )
         read = await self._read(turn, items)
         if read.intent == "report" and read.report is not None:
-            return await self._report(turn, read.report, allowed)
+            return await self._report(turn, read.report, items, allowed)
+        if read.intent == "restock" and read.restock:
+            return await self._restock(turn, read.restock, read.supplier, items, allowed)
         if read.intent == "money" and read.money:
             return await self._money(turn, read.money, allowed)
         if read.intent == "new_product" and read.product is not None:
@@ -267,9 +293,13 @@ class OwnerAssistant:
             )
         digits = get_pack(tenant.country).minor_digits
         ops, problems = resolve_changes(read.changes, items, digits, tenant)
+        async with self.db.tenant(tenant.id) as session:
+            dated, undated = await stock_changes.expiry_changes(session, read.changes, items)
+        ops, problems = ops + dated, problems + undated
         if not ops and not problems:
             ops = typed_price_change(words, items, lang, digits)
-        if (ops or problems) and Can.CATALOG not in allowed:
+        needed = stock_ops.rights_for(ops) if ops else {Can.CATALOG}
+        if (ops or problems) and not needed <= allowed:
             return refuse(turn)
         problem_lines = [t(key, lang, **values) for key, values in problems]
         if ops:
@@ -301,12 +331,83 @@ class OwnerAssistant:
 
     # -- the books: expenses, udhaar, bills and reports (features 48, 49, 75) ---------------
 
-    async def _report(self, turn: Turn, report: str, allowed: frozenset[Can]) -> list[Outbound]:
+    async def _report(
+        self, turn: Turn, report: str, items: Sequence[CatalogItem], allowed: frozenset[Can]
+    ) -> list[Outbound]:
         if reports.NEEDS[report] not in allowed:
             return refuse(turn)
+        if report == "products":
+            return panel.products_list(turn.tenant, items, turn.lang)
         async with self.db.tenant(turn.tenant.id) as session:
-            text = await reports.report_text(session, turn.tenant, report, turn.lang)
+            if report == "orders":
+                waiting = await panel.waiting_orders(session)
+                return panel.orders_list(turn.tenant, waiting, turn.lang)
+            if report == "batches":
+                text = await profit.batches_text(session, turn.tenant, turn.lang)
+            else:
+                text = await reports.report_text(session, turn.tenant, report, turn.lang)
         return [OutText(text)]
+
+    # -- restock (feature 117) ------------------------------------------------------------
+
+    async def _restock_card(
+        self,
+        turn: Turn,
+        ops: list[dict[str, Any]],
+        problems: list[Problem],
+        payload: dict[str, Any],
+    ) -> list[Outbound]:
+        tenant, lang = turn.tenant, turn.lang
+        problem_lines = [t(key, lang, **values) for key, values in problems]
+        if not ops:
+            return [OutText("\n".join(problem_lines or [t("stock.bill_unread", lang)]))]
+        action = await self._open(turn, KIND_UPDATE, {"ops": ops, **payload})
+        text = restock.card_text(tenant, ops, payload.get("supplier"), lang)
+        return [confirm_card(action, "\n".join([text, *problem_lines]), "stock.confirm", lang)]
+
+    async def _restock(
+        self,
+        turn: Turn,
+        lines: Sequence[PurchaseLine],
+        supplier: str | None,
+        items: Sequence[CatalogItem],
+        allowed: frozenset[Can],
+    ) -> list[Outbound]:
+        if Can.STOCK not in allowed:
+            return refuse(turn)
+        ops, problems = restock.resolve_lines(lines, items, restock.digits_of(turn.tenant))
+        source = "voice" if turn.message.kind == Kind.AUDIO else "chat"
+        return await self._restock_card(
+            turn, ops, problems, {"source": source, "supplier": supplier}
+        )
+
+    async def _purchase(self, turn: Turn) -> list[Outbound]:
+        """A supplier's bill or challan: its lines read, matched, and shown to confirm."""
+        tenant, message = turn.tenant, turn.message
+        async with self.db.tenant(tenant.id) as session:
+            items = await load_items(
+                session, statuses=(ProductStatus.ACTIVE, ProductStatus.ARCHIVED)
+            )
+        media_id = str(message.media_id) if message.media_id else None
+        try:
+            reading = await restock.read_purchase(
+                self.ai,
+                tenant_id=tenant.id,
+                context=prompt_context(tenant),
+                media=await self._photos(tenant.id, [media_id] if media_id else []),
+                words=message.body or "",
+                lang=turn.lang,
+            )
+        except AppError:  # no model: the owner can type the lines or use the console
+            return [OutText(t("stock.bill_unread", turn.lang))]
+        ops, problems = restock.resolve_lines(reading.lines, items, restock.digits_of(tenant))
+        payload = {
+            "source": "bill",
+            "supplier": reading.supplier,
+            "phone": restock.supplier_phone(tenant, reading.supplier_phone),
+            "media_id": media_id,
+        }
+        return await self._restock_card(turn, ops, problems, payload)
 
     async def _money(
         self, turn: Turn, lines: Sequence[MoneyLine], allowed: frozenset[Can]
@@ -389,7 +490,7 @@ class OwnerAssistant:
                 if answer != "yes":
                     actions.close(action, ActionStatus.CANCELLED)
                     return [OutText(t("owner.cancelled", lang))]
-                if _RIGHT[action.kind] not in allowed:
+                if not _rights_for(action) <= allowed:
                     return refuse(turn)
                 reply = await self._apply(session, tenant, action, actor, lang)
                 actions.close(action, ActionStatus.CONFIRMED)
@@ -414,7 +515,10 @@ class OwnerAssistant:
         if action.kind == KIND_UPDATE:
             stored = await session.get(Tenant, tenant.id)
             assert stored is not None
-            count = await apply_changes(session, stored, action.payload["ops"], actor)
+            ops = action.payload["ops"]
+            catalog = [op for op in ops if op["op"] not in stock_ops.STOCK_OPS]
+            count = await apply_changes(session, stored, catalog, actor) if catalog else 0
+            count += await stock_ops.apply(session, stored, ops, actor, action.payload)
             return t("owner.changes_applied", lang, count=count)
         media_ids = action.payload.get("media_ids")
         product = to_input(

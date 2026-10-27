@@ -46,6 +46,9 @@ from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
 from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
 from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
 from chatfront.shield.approvals import tell_job as approval_tell_job
+from chatfront.stock import expiry, panel
+from chatfront.stock.chat import stock_button
+from chatfront.stock.notices import NOTICE_JOB, notice_job
 
 REQUEUE_STALE_JOB = "jobs.requeue_stale"
 
@@ -105,7 +108,14 @@ def build_registries() -> Registries:
     registries.approvals[REMINDER] = reminder_kind
     books.jobs |= {CARDS_JOB: cards_job, CARD_JOB: card_job}
     books.periodic.append(Periodic("profit-cards", CARDS_EVERY, CARDS_JOB))
-    registries.modules.modules["growth"].jobs[LOW_STOCK_JOB] = low_stock_alert
+    growth = registries.modules.modules["growth"]
+    growth.jobs |= {
+        LOW_STOCK_JOB: low_stock_alert,
+        NOTICE_JOB: notice_job,
+        expiry.DAILY_JOB: expiry.daily_job,
+        expiry.DAY_JOB: expiry.day_job,
+    }
+    growth.periodic.append(Periodic("stock-mornings", expiry.EVERY, expiry.DAILY_JOB))
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
@@ -177,7 +187,10 @@ def build_services(settings: Settings, registries: Registries) -> Services:
                 partial(resume_button, services),
                 partial(payment_button, services),
                 partial(approval_button, services),
+                partial(stock_button, services),
+                partial(panel.panel_button, services),
             ),
+            followups=(partial(panel.panel_followup, services),),
         ),
         Party.ONBOARDING: OnboardingAssistant(db, ai, storage, settings, registries.modules),
     }

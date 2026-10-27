@@ -1,0 +1,118 @@
+{
+  "version": "6.0",
+  "screens": [
+    {
+      "id": "EDIT_PRODUCT",
+      "title": "Chatfront",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "product_id": { "type": "string", "__example__": "0192f0c4-7a1e-7c3a-9a55-3f1d2b4c5d6e" },
+        "name": { "type": "string", "__example__": "Printed lawn 3-piece" },
+        "price": { "type": "string", "__example__": "4850" },
+        "floor_price": { "type": "string", "__example__": "4400" },
+        "limit": { "type": "string", "__example__": "3" },
+        "variant": { "type": "string", "__example__": "v1" },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+          },
+          "__example__": [
+            { "id": "v1", "title": "Rust" },
+            { "id": "v2", "title": "Sea green" }
+          ]
+        },
+        "status": { "type": "string", "__example__": "on" },
+        "sale": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+          },
+          "__example__": [
+            { "id": "on", "title": "On sale" },
+            { "id": "off", "title": "Off sale" }
+          ]
+        },
+        "label_price": { "type": "string", "__example__": "Price" },
+        "label_floor": { "type": "string", "__example__": "Lowest price when bargaining" },
+        "label_limit": { "type": "string", "__example__": "Warn me when stock falls to" },
+        "label_variant": { "type": "string", "__example__": "Which one came in" },
+        "label_add": { "type": "string", "__example__": "Pieces that came in" },
+        "label_status": { "type": "string", "__example__": "On sale" },
+        "label_save": { "type": "string", "__example__": "Check and save" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextSubheading", "text": "${data.name}" },
+          {
+            "type": "TextInput",
+            "name": "price",
+            "label": "${data.label_price}",
+            "input-type": "number",
+            "required": true,
+            "init-value": "${data.price}"
+          },
+          {
+            "type": "TextInput",
+            "name": "floor_price",
+            "label": "${data.label_floor}",
+            "input-type": "number",
+            "required": false,
+            "init-value": "${data.floor_price}"
+          },
+          {
+            "type": "TextInput",
+            "name": "limit",
+            "label": "${data.label_limit}",
+            "input-type": "number",
+            "required": false,
+            "init-value": "${data.limit}"
+          },
+          {
+            "type": "Dropdown",
+            "name": "variant",
+            "label": "${data.label_variant}",
+            "data-source": "${data.variants}",
+            "required": false,
+            "init-value": "${data.variant}"
+          },
+          {
+            "type": "TextInput",
+            "name": "add_stock",
+            "label": "${data.label_add}",
+            "input-type": "number",
+            "required": false
+          },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "status",
+            "label": "${data.label_status}",
+            "data-source": "${data.sale}",
+            "required": true,
+            "init-value": "${data.status}"
+          },
+          {
+            "type": "Footer",
+            "label": "${data.label_save}",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "product_id": "${data.product_id}",
+                "price": "${form.price}",
+                "floor_price": "${form.floor_price}",
+                "limit": "${form.limit}",
+                "variant": "${form.variant}",
+                "add_stock": "${form.add_stock}",
+                "status": "${form.status}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

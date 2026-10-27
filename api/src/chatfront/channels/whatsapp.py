@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -16,6 +17,7 @@ from chatfront.channels.types import (
     Kind,
     Outbound,
     OutButtons,
+    OutFlow,
     OutList,
     OutLocationRequest,
     OutTemplate,
@@ -76,6 +78,11 @@ def _parse_message(raw: dict[str, Any], account_id: str, names: dict[str, str]) 
             k: raw["location"].get(k) for k in ("latitude", "longitude", "name", "address")
         }
         return Inbound(**base, kind=Kind.LOCATION, payload=payload)
+    if kind_name == "interactive" and raw["interactive"].get("type") == "nfm_reply":
+        answers = _flow_answers(raw["interactive"].get("nfm_reply") or {})
+        payload["flow"] = answers
+        payload["button_id"] = f"flow:{answers.get('flow_token', '')}"
+        return Inbound(**base, kind=Kind.BUTTON, text=None, payload=payload)
     if kind_name == "interactive":
         reply = raw["interactive"].get("button_reply") or raw["interactive"].get("list_reply") or {}
         payload["button_id"] = reply.get("id")
@@ -88,6 +95,15 @@ def _parse_message(raw: dict[str, Any], account_id: str, names: dict[str, str]) 
         return Inbound(**base, kind=Kind.ORDER, text=raw["order"].get("text"), payload=payload)
     payload["type"] = kind_name
     return Inbound(**base, kind=Kind.UNSUPPORTED, payload=payload)
+
+
+def _flow_answers(reply: dict[str, Any]) -> dict[str, Any]:
+    """What the owner filled in a Flow: response_json is a JSON string."""
+    try:
+        answers = json.loads(reply.get("response_json") or "{}")
+    except ValueError:
+        return {}
+    return answers if isinstance(answers, dict) else {}
 
 
 def _body(message: Outbound) -> dict[str, Any]:
@@ -154,6 +170,25 @@ def _body(message: Outbound) -> dict[str, Any]:
                     "action": {"name": "send_location"},
                 },
             }
+        case OutFlow(text=text, flow_id=flow_id, cta=cta, token=token, screen=screen, data=data):
+            return {
+                "type": "interactive",
+                "interactive": {
+                    "type": "flow",
+                    "body": {"text": text},
+                    "action": {
+                        "name": "flow",
+                        "parameters": {
+                            "flow_message_version": "3",
+                            "flow_token": token,
+                            "flow_id": flow_id,
+                            "flow_cta": cta[:BUTTON_TITLE_MAX],
+                            "flow_action": "navigate",
+                            "flow_action_payload": {"screen": screen, "data": data},
+                        },
+                    },
+                },
+            }
     raise AssertionError(message)  # pragma: no cover
 
 
@@ -166,6 +201,7 @@ class WhatsAppAdapter:
             Capability.LIST,
             Capability.TEMPLATE,
             Capability.LOCATION,
+            Capability.FLOW,
         }
     )
     has_service_window = True
