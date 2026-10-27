@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, record
+from chatfront.catalog import stock
 from chatfront.catalog.models import Product, ProductStatus, StockMovement, StockReason, Variant
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
@@ -71,6 +72,15 @@ class CatalogItem:
 
 def actor_label(actor: Actor) -> str:
     return f"{actor.type}:{actor.id}" if actor.id else str(actor.type)
+
+
+MAX_LIMIT = 100_000  # a low-stock limit
+
+
+def _count(value: object) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= MAX_LIMIT:
+        raise AppError("invalid_limit", "A stock limit is a count from 0 up")
+    return value
 
 
 def check_price(price: int) -> Minor:
@@ -175,6 +185,7 @@ async def move_stock(
     variant.stock = after
     session.add(movement)
     await session.flush()
+    await stock.crossed(session, locked, delta)  # feature 52
     return movement
 
 
@@ -304,6 +315,10 @@ async def apply_changes(
             profile[DELIVERY_RATES] = _delivery_rates(profile.get(DELIVERY_RATES) or {}, op)
             applied += 1
             continue
+        if op["op"] == "low_stock_limit" and op.get("product_id") is None:
+            profile[stock.SHOP_LIMIT] = _count(op["new"])
+            applied += 1
+            continue
         product = await session.get(Product, uuid.UUID(op["product_id"]))
         if product is None:
             continue
@@ -313,6 +328,8 @@ async def apply_changes(
                 product.floor_price = product.price
         elif op["op"] == "floor_price":
             product.floor_price = min(check_price(op["new"]), product.price)
+        elif op["op"] == "low_stock_limit":
+            product.low_stock_limit = _count(op["new"])
         elif op["op"] in ("available", "unavailable"):
             available = op["op"] == "available"
             product.status = ProductStatus.ACTIVE if available else ProductStatus.ARCHIVED
