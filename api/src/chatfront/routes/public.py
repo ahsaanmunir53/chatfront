@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from chatfront.catalog.service import load_items
 from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
+from chatfront.core.clock import utcnow
 from chatfront.core.errors import NotFound
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
+from chatfront.media import service as media_service
+from chatfront.media.models import Media
 from chatfront.services import Services, get_services
 from chatfront.templates import get_template
 
@@ -31,6 +36,8 @@ class ChannelLink(BaseModel):
 class PublicShop(BaseModel):
     slug: str
     name: str
+    country: str
+    currency: str
     business_type: dict[str, str]
     city: str | None
     tagline: dict[str, str]
@@ -38,6 +45,28 @@ class PublicShop(BaseModel):
     is_demo: bool
     attribution: str
     channels: list[ChannelLink]
+
+
+class VariantOut(BaseModel):
+    id: uuid.UUID
+    options: dict[str, str]
+    price: int
+    in_stock: bool
+
+
+class ProductOut(BaseModel):
+    """A product on the shop page. Prices are minor units of the shop's currency."""
+
+    code: str
+    name: str
+    description: str
+    category: str | None
+    price: int
+    attributes: dict[str, Any]
+    translations: dict[str, dict[str, str]]  # per language: name and description
+    image_url: str | None
+    in_stock: bool
+    variants: list[VariantOut]
 
 
 class ShopSummary(BaseModel):
@@ -61,7 +90,8 @@ def _limit(services: Services, request: Request) -> None:
 async def _tenant(services: Services, slug: str) -> Tenant:
     async with services.db.system() as session:  # public lookup by slug, before any tenant
         tenant = await session.scalar(select(Tenant).where(Tenant.slug == slug))
-    if tenant is None:
+    expired = tenant is not None and tenant.expires_at is not None and tenant.expires_at < utcnow()
+    if tenant is None or tenant.is_platform or expired:
         raise NotFound("Shop")
     return tenant
 
@@ -130,6 +160,8 @@ async def get_shop(slug: str, request: Request, services: ServicesDep) -> Public
     return PublicShop(
         slug=tenant.slug,
         name=tenant.name,
+        country=tenant.country,
+        currency=tenant.currency,
         business_type=template.name.model_dump(by_alias=True),
         city=profile.get("city"),
         tagline=profile.get("tagline") or {},
@@ -138,3 +170,53 @@ async def get_shop(slug: str, request: Request, services: ServicesDep) -> Public
         attribution=t("app.attribution"),
         channels=await _channels(services, tenant),
     )
+
+
+@router.get("/api/shops/{slug}/products")
+async def list_products(slug: str, request: Request, services: ServicesDep) -> list[ProductOut]:
+    """The shop's products on sale, newest first, with short-lived photo links."""
+    _limit(services, request)
+    tenant = await _tenant(services, slug)
+    async with services.db.tenant(tenant.id) as session:
+        items = await load_items(session)
+        photos = {
+            m.id: m
+            for m in await session.scalars(
+                select(Media).where(Media.id.in_([i.product.image_media_id for i in items]))
+            )
+        }
+    ttl = services.settings.signed_url_ttl_seconds
+    out = []
+    for item in items:
+        product, photo = item.product, photos.get(item.product.image_media_id)  # type: ignore[arg-type]
+        out.append(
+            ProductOut(
+                code=product.code,
+                name=product.name,
+                description=product.description,
+                category=product.category,
+                price=product.price,
+                attributes=product.attributes,
+                translations={
+                    lang: {"name": text.get("name", ""), "description": text.get("description", "")}
+                    for lang, text in product.translations.items()
+                },
+                image_url=(
+                    await media_service.signed_url(services.storage, photo, ttl, blurred=False)
+                    if photo is not None
+                    else None
+                ),
+                in_stock=item.in_stock,
+                variants=[
+                    VariantOut(
+                        id=v.id,
+                        options=v.options,
+                        price=item.price_of(v),
+                        in_stock=v.stock is None or v.stock > 0,
+                    )
+                    for v in item.variants
+                    if v.active
+                ],
+            )
+        )
+    return out

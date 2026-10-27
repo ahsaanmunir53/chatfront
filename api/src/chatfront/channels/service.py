@@ -19,6 +19,7 @@ from chatfront.channels.models import (
     CustomerIdentity,
     Direction,
     Message,
+    Party,
 )
 from chatfront.channels.types import MEDIA_KINDS, Inbound, Outbound, StatusUpdate, to_record
 from chatfront.core.clock import utcnow
@@ -26,7 +27,7 @@ from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import new_id
-from chatfront.core.models import Customer, Tenant
+from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.core.secretbox import seal, unseal
 from chatfront.jobs.queue import enqueue
@@ -132,6 +133,19 @@ async def _conversation(
     return conversation
 
 
+async def _party(session: AsyncSession, tenant: Tenant, customer: Customer, msg: Inbound) -> Party:
+    """Who is writing: someone making a shop, the shop's own staff, or a customer."""
+    if tenant.is_platform:
+        return Party.ONBOARDING
+    if msg.staff_id is not None:
+        customer.staff_id = msg.staff_id
+    elif customer.staff_id is None and customer.phone_hash is not None:
+        customer.staff_id = await session.scalar(
+            select(Staff.id).where(Staff.phone_hash == customer.phone_hash, Staff.active.is_(True))
+        )
+    return Party.STAFF if customer.staff_id is not None else Party.CUSTOMER
+
+
 async def accept(
     db: Database, account: ChannelAccount, msg: Inbound, keys: Keys
 ) -> uuid.UUID | None:
@@ -144,6 +158,7 @@ async def accept(
             payload["media_ref"] = msg.media_ref
         tenant = await session.get(Tenant, account.tenant_id)
         assert tenant is not None
+        conversation.party = await _party(session, tenant, customer, msg)
         detected = note_language(conversation, msg.text, get_pack(tenant.country).languages)
         if detected is not None:
             payload["lang"] = detected.tag
@@ -158,6 +173,7 @@ async def accept(
                 external_id=msg.message_id,
                 kind=msg.kind,
                 body=msg.text,
+                media_id=msg.media_id,
                 payload=payload,
                 status="received",
             )

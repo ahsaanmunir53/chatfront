@@ -1,25 +1,96 @@
 {
   "id": "services",
-  "name": {"en": "Services (salon, tutor, repair)", "ur": "خدمات (سیلون، ٹیوٹر، مرمت)", "ur-Latn": "Services (salon, tutor, repair)"},
+  "name": {
+    "en": "Services (salon, tutor, repair)",
+    "ur": "خدمات (سیلون، ٹیوٹر، مرمت)",
+    "ur-Latn": "Services (salon, tutor, repair)"
+  },
   "product_fields": [
-    {"key": "duration_minutes", "type": "number", "required": true,
-     "label": {"en": "Duration (minutes)", "ur": "دورانیہ (منٹ)", "ur-Latn": "Dauraaniya (minute)"}},
-    {"key": "staff", "type": "text",
-     "label": {"en": "Staff member", "ur": "عملے کا فرد", "ur-Latn": "Staff"}}
+    {
+      "key": "duration_minutes",
+      "type": "number",
+      "required": true,
+      "label": {
+        "en": "Duration (minutes)",
+        "ur": "دورانیہ (منٹ)",
+        "ur-Latn": "Dauraaniya (minute)"
+      }
+    },
+    {
+      "key": "staff",
+      "type": "text",
+      "label": {
+        "en": "Staff member",
+        "ur": "عملے کا فرد",
+        "ur-Latn": "Staff"
+      }
+    }
   ],
-  "order_flow": ["appointment", "payment_choice"],
-  "payment_methods": ["deposit", "transfer"],
+  "order_flow": [
+    "appointment",
+    "payment_choice"
+  ],
+  "payment_methods": [
+    "deposit",
+    "transfer"
+  ],
   "agent_questions": [
-    {"key": "when", "text": {
-      "en": "Which day and time suits you?",
-      "ur": "آپ کے لیے کون سا دن اور وقت مناسب ہے؟",
-      "ur-Latn": "Aap ke liye kaunsa din aur waqt munasib hai?"}}
+    {
+      "key": "when",
+      "text": {
+        "en": "Which day and time suits you?",
+        "ur": "آپ کے لیے کون سا دن اور وقت مناسب ہے؟",
+        "ur-Latn": "Aap ke liye kaunsa din aur waqt munasib hai?"
+      }
+    }
   ],
   "demo": {
-    "slug": "noor-salon", "name": "Noor Beauty Salon", "tier": "small", "city": "Lahore",
+    "slug": "noor-salon",
+    "name": "Noor Beauty Salon",
+    "tier": "small",
+    "city": "Lahore",
     "tagline": {
       "en": "Bridal, party and everyday looks by appointment",
       "ur": "برائیڈل، پارٹی اور روزمرہ میک اپ، اپائنٹمنٹ پر",
-      "ur-Latn": "Bridal, party aur rozmarra makeup, appointment par"}
+      "ur-Latn": "Bridal, party aur rozmarra makeup, appointment par"
+    },
+    "products": [
+      {
+        "name": "Haircut and blow-dry",
+        "price": 1500,
+        "category": "hair",
+        "description": "Haircut with wash and blow-dry.",
+        "attributes": {
+          "duration_minutes": "45"
+        }
+      },
+      {
+        "name": "Party makeup",
+        "price": 6000,
+        "category": "makeup",
+        "description": "Full party makeup with hairstyling.",
+        "attributes": {
+          "duration_minutes": "90"
+        }
+      },
+      {
+        "name": "Manicure and pedicure",
+        "price": 2500,
+        "category": "nails",
+        "description": "Manicure and pedicure with polish.",
+        "attributes": {
+          "duration_minutes": "60"
+        }
+      },
+      {
+        "name": "Mehndi, both hands",
+        "price": 2000,
+        "category": "mehndi",
+        "description": "Mehndi design on both hands, front and back.",
+        "attributes": {
+          "duration_minutes": "60"
+        }
+      }
+    ]
   }
 }

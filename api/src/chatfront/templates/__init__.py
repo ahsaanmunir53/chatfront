@@ -61,6 +61,27 @@ class AgentQuestion(BaseModel):
     text: Text3
 
 
+class DemoVariant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    options: dict[str, str] = Field(default_factory=dict)
+    price: int | None = None  # major units; None means the product's price
+    stock: int | None = None
+
+
+class DemoProduct(BaseModel):
+    """A synthetic product for the demo shop. Prices are in major units (rupees)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    price: int
+    category: str
+    description: str
+    attributes: dict[str, str] = Field(default_factory=dict)
+    variants: list[DemoVariant] = Field(default_factory=lambda: [DemoVariant()])
+
+
 class DemoShop(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -69,6 +90,7 @@ class DemoShop(BaseModel):
     tier: Tier
     city: str
     tagline: Text3
+    products: list[DemoProduct] = Field(default_factory=list)
 
 
 class BusinessTemplate(BaseModel):

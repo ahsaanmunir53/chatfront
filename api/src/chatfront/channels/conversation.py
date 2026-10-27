@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal, Protocol
 
@@ -17,26 +18,33 @@ from chatfront.ai.client import AiClient, ModelUnavailable
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.translate import translate
 from chatfront.ai.types import (
-    AudioPart,
     ChatMessage,
     ChatRequest,
-    ImagePart,
     Part,
     Role,
     TextPart,
-    VideoPart,
 )
 from chatfront.audit.service import AGENT, record
+from chatfront.catalog.service import CatalogItem, load_items
 from chatfront.channels import service as channels
 from chatfront.channels.base import WindowClosed
 from chatfront.channels.language import reply_language
-from chatfront.channels.models import Channel, ChannelAccount, Conversation, Direction, Message
+from chatfront.channels.models import (
+    Channel,
+    ChannelAccount,
+    Conversation,
+    Direction,
+    Message,
+    Party,
+)
 from chatfront.channels.types import Kind, Outbound, OutText
-from chatfront.core.countries import get_pack
+from chatfront.core.countries import format_money, get_pack
+from chatfront.core.db import Database
 from chatfront.core.i18n import t
 from chatfront.core.langdetect import load_detector
 from chatfront.core.languages import Language, load_registry, mutually_readable
-from chatfront.core.models import Tenant
+from chatfront.core.models import Customer, Tenant
+from chatfront.core.money import Minor
 from chatfront.jobs.queue import JobContext
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
@@ -55,11 +63,6 @@ _CHANNEL_NAMES = {
     Channel.WEBCHAT: "the shop's website chat",
 }
 _ROLE_FOR_KIND = {Kind.IMAGE: Role.VISION, Kind.AUDIO: Role.AUDIO, Kind.VIDEO: Role.VIDEO}
-_PART_FOR_KIND: dict[Kind, type[ImagePart] | type[AudioPart] | type[VideoPart]] = {
-    Kind.IMAGE: ImagePart,
-    Kind.AUDIO: AudioPart,
-    Kind.VIDEO: VideoPart,
-}
 
 
 @dataclass(frozen=True)
@@ -68,15 +71,39 @@ class Turn:
     conversation: Conversation
     message: Message
     history: list[Message]
-    media_url: str | None
+    media: Part | None  # the photo, voice note or video of this message, ready for a model
     lang: str  # the language to answer in, a registry tag
+    staff_id: uuid.UUID | None = None  # set when the shop's own staff are writing
 
 
 class Responder(Protocol):
     async def respond(self, turn: Turn) -> list[Outbound]: ...
 
 
-def shop_details(tenant: Tenant) -> str:
+CATALOG_LINES = 40
+
+
+def catalog_lines(tenant: Tenant, items: Sequence[CatalogItem]) -> list[str]:
+    """The products the assistant may talk about, with the exact prices code allows."""
+    pack, english = get_pack(tenant.country), load_registry().get("en")
+    lines = []
+    for item in items[:CATALOG_LINES]:
+        prices = sorted({item.price_of(v) for v in item.variants if v.active})
+        ends = dict.fromkeys((prices[0], prices[-1])) if prices else {}
+        shown = " to ".join(format_money(Minor(p), pack, english) for p in ends)
+        options: dict[str, list[str]] = {}
+        for variant in item.variants:
+            for key, value in variant.options.items():
+                options.setdefault(key, []).append(str(value))
+        parts = [f"- {item.product.name} (code {item.product.code}): {shown}"]
+        parts += [f"{key}: {', '.join(values)}" for key, values in options.items()]
+        if not item.in_stock:
+            parts.append("out of stock")
+        lines.append("; ".join(parts))
+    return lines
+
+
+def shop_details(tenant: Tenant, items: Sequence[CatalogItem] = ()) -> str:
     profile = tenant.profile or {}
     lines = [f"Name: {tenant.name}"]
     if city := profile.get("city"):
@@ -87,10 +114,14 @@ def shop_details(tenant: Tenant) -> str:
     for key, label in (
         ("hours", "Opening hours"),
         ("delivery", "Delivery"),
+        ("payment", "Payment"),
+        ("returns", "Returns"),
         ("policies", "Policies"),
     ):
         if value := profile.get(key):
             lines.append(f"{label}: {value}")
+    if items:
+        lines += ["Products:", *catalog_lines(tenant, items)]
     return "\n".join(lines)
 
 
@@ -104,9 +135,7 @@ def _as_chat(message: Message) -> ChatMessage:
 
 def _current(turn: Turn) -> ChatMessage:
     kind = Kind(turn.message.kind)
-    parts: list[Part] = []
-    if turn.media_url and kind in _PART_FOR_KIND:
-        parts.append(_PART_FOR_KIND[kind](turn.media_url))
+    parts: list[Part] = [turn.media] if turn.media else []
     parts.append(TextPart(turn.message.body or f"(the customer sent a {kind.value})"))
     return ChatMessage("user", parts)
 
@@ -118,11 +147,16 @@ def written_in(text: str, language: Language) -> bool:
 
 
 class ShopAssistant:
-    def __init__(self, ai: AiClient) -> None:
+    def __init__(self, ai: AiClient, db: Database | None = None) -> None:
         self.ai = ai
+        self.db = db
 
     async def respond(self, turn: Turn) -> list[Outbound]:
         language = load_registry().get(turn.lang)
+        items: list[CatalogItem] = []
+        if self.db is not None:
+            async with self.db.tenant(turn.tenant.id) as session:
+                items = await load_items(session)
         prompt = load_prompt("shop_assistant")
         system = prompt.render(
             shop_name=turn.tenant.name,
@@ -130,7 +164,7 @@ class ShopAssistant:
             country=get_pack(turn.tenant.country).name,
             channel=_CHANNEL_NAMES[Channel(turn.message.channel)],
             reply_language=language.prompt,
-            shop_details=shop_details(turn.tenant),
+            shop_details=shop_details(turn.tenant, items),
         )
         request = ChatRequest(
             role=_ROLE_FOR_KIND.get(Kind(turn.message.kind), Role.CHAT),
@@ -192,7 +226,7 @@ async def _already_replied(services: Services, tenant_id: uuid.UUID, message_id:
 
 async def _attach_media(
     services: Services, message: Message, account: ChannelAccount
-) -> str | None:
+) -> Part | None:
     """Fetch the customer's photo or voice note from the channel and keep our own copy."""
     media_ref = (message.payload or {}).get("media_ref")
     db, settings = services.db, services.settings
@@ -218,8 +252,8 @@ async def _attach_media(
     async with db.tenant(message.tenant_id) as session:
         saved = await session.get(Media, message.media_id)
     assert saved is not None
-    return await media_service.signed_url(
-        services.storage, saved, settings.signed_url_ttl_seconds, blurred=False
+    return await media_service.model_part(
+        services.storage, saved, video_ttl_seconds=settings.signed_url_ttl_seconds
     )
 
 
@@ -239,7 +273,9 @@ async def handle_reply(ctx: JobContext) -> None:
         assert conversation is not None
         assert tenant is not None
         account = await session.get(ChannelAccount, conversation.channel_account_id)
+        customer = await session.get(Customer, conversation.customer_id)
         assert account is not None
+        assert customer is not None
         history = list(
             await session.scalars(
                 select(Message)
@@ -252,11 +288,17 @@ async def handle_reply(ctx: JobContext) -> None:
                 .limit(HISTORY_LIMIT)
             )
         )[::-1]
-    media_url = await _attach_media(services, message, account)
+    media = await _attach_media(services, message, account)
     turn = Turn(
-        tenant, conversation, message, history, media_url, reply_language(conversation, tenant)
+        tenant,
+        conversation,
+        message,
+        history,
+        media,
+        reply_language(conversation, tenant),
+        staff_id=customer.staff_id,
     )
-    replies = await services.responder.respond(turn)
+    replies = await services.responders[Party(conversation.party)].respond(turn)
     adapter = services.adapters[Channel(message.channel)]
     sent = 0
     try:

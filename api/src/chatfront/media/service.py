@@ -1,9 +1,14 @@
-"""Storing media: size limits, type sniffing, per-tenant keys, dedupe and blurred copies."""
+"""Storing media: size limits, type sniffing, per-tenant keys, dedupe and blurred copies; and
+the form a model reads it in."""
 
 from __future__ import annotations
 
+import asyncio
+import base64
 import hashlib
 import io
+import logging
+import shutil
 import uuid
 from dataclasses import dataclass
 
@@ -11,11 +16,17 @@ from PIL import Image, ImageFilter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.ai.types import AudioPart, ImagePart, Part, VideoPart
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError
 from chatfront.core.ids import new_id
 from chatfront.media.models import Media, MediaKind
 from chatfront.media.storage import Storage
+
+log = logging.getLogger(__name__)
+
+MODEL_IMAGE_SIDE = 1600  # longest side sent to the model; phone photos are often 4000
+AUDIO_TIMEOUT_SECONDS = 30
 
 
 @dataclass(frozen=True)
@@ -45,6 +56,8 @@ def sniff(data: bytes) -> FileType:
         if brand in (b"M4A ", b"M4B "):
             return FileType("audio/mp4", MediaKind.AUDIO, "m4a")
         return FileType("video/mp4", MediaKind.VIDEO, "mp4")
+    if head.startswith(b"\x1a\x45\xdf\xa3"):  # WebM, what browsers record voice notes in
+        return FileType("audio/webm", MediaKind.AUDIO, "webm")
     if head.startswith(b"%PDF-"):
         return FileType("application/pdf", MediaKind.DOCUMENT, "pdf")
     raise AppError("unsupported_media", "This file type is not supported", status_code=415)
@@ -113,3 +126,65 @@ async def signed_url(storage: Storage, media: Media, ttl_seconds: int, *, blurre
     if key is None:
         raise AppError("no_blurred_copy", "This media has no blurred copy")
     return await storage.signed_url(key, ttl_seconds)
+
+
+def data_url(mime: str, data: bytes) -> str:
+    return f"data:{mime};base64,{base64.b64encode(data).decode()}"
+
+
+def shrink_image(data: bytes) -> bytes:
+    """A JPEG no larger than MODEL_IMAGE_SIDE on its longest side."""
+    with Image.open(io.BytesIO(data)) as image:
+        rgb = image.convert("RGB")
+        rgb.thumbnail((MODEL_IMAGE_SIDE, MODEL_IMAGE_SIDE))
+        out = io.BytesIO()
+        rgb.save(out, "JPEG", quality=85)
+        return out.getvalue()
+
+
+async def to_wav(data: bytes) -> bytes | None:
+    """16 kHz mono WAV from any voice note (WhatsApp OGG, browser WebM), with ffmpeg."""
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        return None
+    process = await asyncio.create_subprocess_exec(
+        ffmpeg,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        "pipe:0",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-f",
+        "wav",
+        "pipe:1",
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        out, _ = await asyncio.wait_for(process.communicate(data), AUDIO_TIMEOUT_SECONDS)
+    except TimeoutError:
+        process.kill()
+        return None
+    return out if process.returncode == 0 and out else None
+
+
+async def model_part(storage: Storage, media: Media, *, video_ttl_seconds: int = 900) -> Part:
+    """What a model is given for this media: images and voice notes inline as data URLs, so
+    no public link is needed; videos, which are large, as a short-lived signed link."""
+    if media.kind == MediaKind.VIDEO:
+        return VideoPart(await storage.signed_url(media.storage_key, video_ttl_seconds))
+    data = await storage.get(media.storage_key)
+    if media.kind == MediaKind.IMAGE:
+        return ImagePart(data_url("image/jpeg", shrink_image(data)))
+    if media.kind == MediaKind.AUDIO:
+        wav = await to_wav(data)
+        if wav is None:
+            log.warning("ffmpeg could not read a voice note; sending it as it came")
+            return AudioPart(data_url(media.mime, data))
+        return AudioPart(data_url("audio/wav", wav))
+    raise AppError("unsupported_media", "This file cannot be read by the model")

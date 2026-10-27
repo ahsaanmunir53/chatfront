@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     env: Literal["dev", "test", "prod"] = "dev"
     public_base_url: str = "http://localhost:8000"
+    # Where the web app lives, for links sent in chats. Empty means PUBLIC_BASE_URL.
+    web_base_url: str | None = None
     log_level: str = "INFO"
 
     # Database: one URL as the owner role; tenant work switches to the app role (see core.db).
@@ -81,6 +83,10 @@ class Settings(BaseSettings):
     # Origins allowed to call the API from a browser, comma-separated: the static frontend
     # when it is hosted apart from the API (for example on GitHub Pages).
     cors_origins: str = ""
+
+    @property
+    def web_url(self) -> str:
+        return (self.web_base_url or self.public_base_url).rstrip("/")
 
     @property
     def cors_origin_list(self) -> list[str]:

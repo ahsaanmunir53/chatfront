@@ -1,27 +1,101 @@
 {
   "id": "wholesale",
-  "name": {"en": "Wholesale and B2B", "ur": "ہول سیل اور بی ٹو بی", "ur-Latn": "Wholesale aur B2B"},
+  "name": {
+    "en": "Wholesale and B2B",
+    "ur": "ہول سیل اور بی ٹو بی",
+    "ur-Latn": "Wholesale aur B2B"
+  },
   "product_fields": [
-    {"key": "min_order", "type": "number", "required": true,
-     "label": {"en": "Minimum order", "ur": "کم از کم آرڈر", "ur-Latn": "Kam az kam order"}},
-    {"key": "price_tier", "type": "text",
-     "label": {"en": "Price tier", "ur": "قیمت کا درجہ", "ur-Latn": "Price tier"}},
-    {"key": "credit_days", "type": "number",
-     "label": {"en": "Credit terms (days)", "ur": "ادھار کی مدت (دن)", "ur-Latn": "Udhaar ki muddat (din)"}}
+    {
+      "key": "min_order",
+      "type": "number",
+      "required": true,
+      "label": {
+        "en": "Minimum order",
+        "ur": "کم از کم آرڈر",
+        "ur-Latn": "Kam az kam order"
+      }
+    },
+    {
+      "key": "price_tier",
+      "type": "text",
+      "label": {
+        "en": "Price tier",
+        "ur": "قیمت کا درجہ",
+        "ur-Latn": "Price tier"
+      }
+    },
+    {
+      "key": "credit_days",
+      "type": "number",
+      "label": {
+        "en": "Credit terms (days)",
+        "ur": "ادھار کی مدت (دن)",
+        "ur-Latn": "Udhaar ki muddat (din)"
+      }
+    }
   ],
-  "order_flow": ["quote_approval", "address", "payment_choice"],
-  "payment_methods": ["credit", "transfer"],
+  "order_flow": [
+    "quote_approval",
+    "address",
+    "payment_choice"
+  ],
+  "payment_methods": [
+    "credit",
+    "transfer"
+  ],
   "agent_questions": [
-    {"key": "quantity", "text": {
-      "en": "How many pieces or cartons do you need?",
-      "ur": "آپ کو کتنے پیس یا کارٹن چاہئیں؟",
-      "ur-Latn": "Aap ko kitne piece ya carton chahiyein?"}}
+    {
+      "key": "quantity",
+      "text": {
+        "en": "How many pieces or cartons do you need?",
+        "ur": "آپ کو کتنے پیس یا کارٹن چاہئیں؟",
+        "ur-Latn": "Aap ko kitne piece ya carton chahiyein?"
+      }
+    }
   ],
   "demo": {
-    "slug": "ravi-traders", "name": "Ravi Textile Traders", "tier": "large", "city": "Faisalabad",
+    "slug": "ravi-traders",
+    "name": "Ravi Textile Traders",
+    "tier": "large",
+    "city": "Faisalabad",
     "tagline": {
       "en": "Wholesale cloth for shops across Punjab, on credit terms",
       "ur": "پنجاب بھر کی دکانوں کے لیے ہول سیل کپڑا، ادھار پر",
-      "ur-Latn": "Punjab bhar ki dukaanon ke liye wholesale kapra, udhaar par"}
+      "ur-Latn": "Punjab bhar ki dukaanon ke liye wholesale kapra, udhaar par"
+    },
+    "products": [
+      {
+        "name": "Lawn fabric, bulk (per metre)",
+        "price": 420,
+        "category": "fabric",
+        "description": "Printed lawn fabric sold by the metre, for bulk orders.",
+        "attributes": {
+          "min_order": "200",
+          "price_tier": "200 metres and up",
+          "credit_days": "30"
+        }
+      },
+      {
+        "name": "Cotton yarn, 10 kg bundle",
+        "price": 9800,
+        "category": "yarn",
+        "description": "Cotton yarn in 10 kilogram bundles.",
+        "attributes": {
+          "min_order": "5",
+          "credit_days": "15"
+        }
+      },
+      {
+        "name": "Khaddar fabric, bulk (per metre)",
+        "price": 520,
+        "category": "fabric",
+        "description": "Khaddar fabric sold by the metre, for bulk orders.",
+        "attributes": {
+          "min_order": "150",
+          "credit_days": "30"
+        }
+      }
+    ]
   }
 }

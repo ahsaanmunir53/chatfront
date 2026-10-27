@@ -1,4 +1,5 @@
-"""Seed one synthetic demo shop per business template: `python -m chatfront.seed`.
+"""Seed Chatfront's own shop (where new shops are made) and one synthetic demo shop per business
+template, with its demo products: `python -m chatfront.seed`.
 
 Safe to run again: shops that already exist are left alone.
 """
@@ -10,14 +11,30 @@ import logging
 
 from sqlalchemy import select
 
+from chatfront.catalog.demo import add_demo_products
+from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
-from chatfront.core.models import Tenant
+from chatfront.core.models import Tenant, Tier
 from chatfront.core.provisioning import NewShop, create_shop
 from chatfront.core.settings import get_settings
 from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.templates import all_templates
 
 log = logging.getLogger(__name__)
+
+
+PLATFORM_SLUG = "chatfront"
+
+PLATFORM = NewShop(
+    slug=PLATFORM_SLUG,
+    name="Chatfront",
+    template="services",
+    tier=Tier.SMALL,
+    owner_name="Chatfront",
+    owner_email="team@chatfront.invalid",
+    profile={},
+    is_platform=True,
+)
 
 
 def demo_shops() -> list[NewShop]:
@@ -41,11 +58,14 @@ def demo_shops() -> list[NewShop]:
 
 async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
     created = []
-    for shop in demo_shops():
+    for shop in [PLATFORM, *demo_shops()]:
         async with db.system() as session:
             exists = await session.scalar(select(Tenant.id).where(Tenant.slug == shop.slug))
         if exists is None:
-            await create_shop(db, modules, shop)
+            tenant = await create_shop(db, modules, shop)
+            if shop.is_demo:
+                digits = get_pack(tenant.country).minor_digits
+                await add_demo_products(db, tenant.id, shop.template, digits)
             created.append(shop.slug)
     return created
 

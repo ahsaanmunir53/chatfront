@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -39,6 +40,10 @@ class Inbound:
     media_ref: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
     profile_name: str | None = None
+    # Set only by trusted code: the owner console after checking a signed session.
+    staff_id: uuid.UUID | None = None
+    # Media already stored by us (web uploads); channel media arrives as media_ref instead.
+    media_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)

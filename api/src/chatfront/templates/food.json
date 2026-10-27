@@ -1,29 +1,148 @@
 {
   "id": "food",
-  "name": {"en": "Food and home kitchens", "ur": "کھانا اور گھریلو کچن", "ur-Latn": "Khana aur ghar ka kitchen"},
+  "name": {
+    "en": "Food and home kitchens",
+    "ur": "کھانا اور گھریلو کچن",
+    "ur-Latn": "Khana aur ghar ka kitchen"
+  },
   "product_fields": [
-    {"key": "portion", "type": "choice", "options": ["half", "full", "family"],
-     "label": {"en": "Portion", "ur": "مقدار", "ur-Latn": "Miqdar"}},
-    {"key": "prep_minutes", "type": "number",
-     "label": {"en": "Prep time (minutes)", "ur": "تیاری کا وقت (منٹ)", "ur-Latn": "Tayyari ka waqt (minute)"}},
-    {"key": "spice", "type": "choice", "options": ["mild", "medium", "hot"],
-     "label": {"en": "Spice level", "ur": "مرچ", "ur-Latn": "Mirch"}}
+    {
+      "key": "portion",
+      "type": "choice",
+      "options": [
+        "half",
+        "full",
+        "family"
+      ],
+      "label": {
+        "en": "Portion",
+        "ur": "مقدار",
+        "ur-Latn": "Miqdar"
+      }
+    },
+    {
+      "key": "prep_minutes",
+      "type": "number",
+      "label": {
+        "en": "Prep time (minutes)",
+        "ur": "تیاری کا وقت (منٹ)",
+        "ur-Latn": "Tayyari ka waqt (minute)"
+      }
+    },
+    {
+      "key": "spice",
+      "type": "choice",
+      "options": [
+        "mild",
+        "medium",
+        "hot"
+      ],
+      "label": {
+        "en": "Spice level",
+        "ur": "مرچ",
+        "ur-Latn": "Mirch"
+      }
+    }
   ],
-  "order_flow": ["delivery_slot", "address", "location_pin", "payment_choice"],
-  "payment_methods": ["cod", "transfer"],
+  "order_flow": [
+    "delivery_slot",
+    "address",
+    "location_pin",
+    "payment_choice"
+  ],
+  "payment_methods": [
+    "cod",
+    "transfer"
+  ],
   "agent_questions": [
-    {"key": "slot", "text": {
-      "en": "When should we deliver? Same-day orders close at 4 PM.",
-      "ur": "ڈیلیوری کب چاہیے؟ اسی دن کے آرڈر شام 4 بجے تک لیے جاتے ہیں۔",
-      "ur-Latn": "Delivery kab chahiye? Usi din ke order shaam 4 baje tak liye jate hain."}},
-    {"key": "spice", "text": {
-      "en": "How spicy should it be?", "ur": "مرچ کتنی رکھیں؟", "ur-Latn": "Mirch kitni rakhein?"}}
+    {
+      "key": "slot",
+      "text": {
+        "en": "When should we deliver? Same-day orders close at 4 PM.",
+        "ur": "ڈیلیوری کب چاہیے؟ اسی دن کے آرڈر شام 4 بجے تک لیے جاتے ہیں۔",
+        "ur-Latn": "Delivery kab chahiye? Usi din ke order shaam 4 baje tak liye jate hain."
+      }
+    },
+    {
+      "key": "spice",
+      "text": {
+        "en": "How spicy should it be?",
+        "ur": "مرچ کتنی رکھیں؟",
+        "ur-Latn": "Mirch kitni rakhein?"
+      }
+    }
   ],
   "demo": {
-    "slug": "saffron-kitchen", "name": "Saffron Home Kitchen", "tier": "small", "city": "Karachi",
+    "slug": "saffron-kitchen",
+    "name": "Saffron Home Kitchen",
+    "tier": "small",
+    "city": "Karachi",
     "tagline": {
       "en": "Home-cooked biryani, karahi and platters for every occasion",
       "ur": "ہر موقع کے لیے گھر کی بنی بریانی، کڑاہی اور پلیٹرز",
-      "ur-Latn": "Har mauqe ke liye ghar ki bani biryani, karahi aur platters"}
+      "ur-Latn": "Har mauqe ke liye ghar ki bani biryani, karahi aur platters"
+    },
+    "products": [
+      {
+        "name": "Chicken biryani",
+        "price": 1800,
+        "category": "rice",
+        "description": "Home-cooked chicken biryani with raita.",
+        "attributes": {
+          "spice": "medium",
+          "prep_minutes": "60"
+        },
+        "variants": [
+          {
+            "options": {
+              "portion": "half"
+            },
+            "price": 950
+          },
+          {
+            "options": {
+              "portion": "full"
+            }
+          },
+          {
+            "options": {
+              "portion": "family"
+            },
+            "price": 3200
+          }
+        ]
+      },
+      {
+        "name": "Mutton karahi",
+        "price": 4800,
+        "category": "karahi",
+        "description": "Mutton karahi, about one kilogram, made to order.",
+        "attributes": {
+          "spice": "hot",
+          "prep_minutes": "90",
+          "portion": "full"
+        }
+      },
+      {
+        "name": "Chapli kebab, 6 pieces",
+        "price": 1350,
+        "category": "kebab",
+        "description": "Six chapli kebabs, made fresh.",
+        "attributes": {
+          "spice": "medium",
+          "prep_minutes": "40"
+        }
+      },
+      {
+        "name": "Kheer",
+        "price": 900,
+        "category": "dessert",
+        "description": "Rice kheer with almonds, in a family bowl.",
+        "attributes": {
+          "spice": "mild",
+          "portion": "family"
+        }
+      }
+    ]
   }
 }

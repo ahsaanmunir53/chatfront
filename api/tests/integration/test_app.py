@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import io
@@ -24,6 +25,8 @@ from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
 from chatfront.jobs.models import Job
 from chatfront.main import create_app
+from chatfront.media import service as media_service
+from chatfront.media.models import Media
 from chatfront.services import Services
 from tests.integration.conftest import SHOP, app_settings
 
@@ -176,7 +179,7 @@ async def test_whatsapp_message_to_reply(
     async with seeded.tenant(reply.tenant_id) as session:
         actions = list(await session.scalars(select(AuditEntry.action).order_by(AuditEntry.seq)))
         chain = await verify_chain(session, reply.tenant_id)
-    assert actions == ["tenant.created", "message.replied"]
+    assert actions == ["tenant.created", *["product.created"] * 4, "message.replied"]
     assert chain.ok
 
 
@@ -251,13 +254,17 @@ async def test_photo_is_downloaded_stored_and_sent_to_vision(
     request = mock.requests[-1]  # type: ignore[attr-defined]
     assert request.role.value == "vision"
     parts = request.messages[-1].content
-    assert parts[0].url.startswith("http://testserver/media/")
-    media_page = await client.get(parts[0].url.removeprefix("http://testserver"))
-    assert media_page.status_code == 200
-    assert media_page.content == out.getvalue()
-    assert (
-        await client.get(parts[0].url.removeprefix("http://testserver") + "0")
-    ).status_code == 404
+    prefix = "data:image/jpeg;base64,"
+    assert parts[0].url.startswith(prefix)  # inline, so the model needs no public link
+    with Image.open(io.BytesIO(base64.b64decode(parts[0].url.removeprefix(prefix)))) as sent:
+        assert sent.size == (20, 20)
+    async with seeded.tenant(inbound.tenant_id) as session:
+        stored = await session.get(Media, inbound.media_id)
+    assert stored is not None
+    url = await media_service.signed_url(services.storage, stored, 60, blurred=False)
+    path = url.removeprefix("http://testserver")
+    assert (await client.get(path)).content == out.getvalue()
+    assert (await client.get(path + "0")).status_code == 404
 
 
 async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
@@ -309,12 +316,12 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
     client, services = app
     assert (await client.post("/internal/cron")).status_code == 403
     response = await client.post("/internal/cron", headers={"X-Cron-Secret": "test-cron-secret"})
-    assert response.json() == {"enqueued": ["requeue-stale"]}
+    assert response.json() == {"enqueued": ["requeue-stale", "remove-expired-shops"]}
     assert services.worker is not None
-    assert await services.worker.run_once() == 1
+    assert await services.worker.run_once() == 2
     async with seeded.system() as session:
         statuses = list(await session.scalars(select(Job.status)))
-    assert statuses == ["done"]
+    assert statuses == ["done", "done"]
 
 
 async def test_web_app_is_served(seeded: Database, tmp_path: Path) -> None:

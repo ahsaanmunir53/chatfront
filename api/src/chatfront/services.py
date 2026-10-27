@@ -11,10 +11,11 @@ from fastapi import Request
 from chatfront.ai.client import AiClient
 from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
+from chatfront.catalog.translations import translate_product
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.conversation import Responder, ShopAssistant, handle_reply
 from chatfront.channels.messaging import instagram_adapter, messenger_adapter
-from chatfront.channels.models import Channel
+from chatfront.channels.models import Channel, Party
 from chatfront.channels.service import REPLY_JOB, Keys
 from chatfront.channels.webchat import WebChatAdapter
 from chatfront.channels.whatsapp import WhatsAppAdapter
@@ -25,6 +26,9 @@ from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
+from chatfront.owner.onboarding import OnboardingAssistant
+from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 
 REQUEUE_STALE_JOB = "jobs.requeue_stale"
 
@@ -48,7 +52,7 @@ class Services:
     storage: Storage
     ai: AiClient
     adapters: dict[Channel, ChannelAdapter]
-    responder: Responder
+    responders: dict[Party, Responder]
     keys: Keys
     limiter: RateLimiter
     worker: Worker | None = None
@@ -71,7 +75,10 @@ def build_registries() -> Registries:
     registries = Registries()
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
+    registries.jobs.register(TRANSLATE_JOB)(translate_product)
+    registries.jobs.register(REMOVE_EXPIRED_JOB)(remove_expired_shops)
     registries.cron.add(Periodic("requeue-stale", timedelta(minutes=5), REQUEUE_STALE_JOB))
+    registries.cron.add(Periodic("remove-expired-shops", timedelta(hours=6), REMOVE_EXPIRED_JOB))
     return registries
 
 
@@ -121,10 +128,16 @@ def build_services(settings: Settings, registries: Registries) -> Services:
             ),
             Channel.WEBCHAT: WebChatAdapter(),
         },
-        responder=ShopAssistant(ai),
+        responders={},
         keys=Keys.from_settings(settings),
         limiter=RateLimiter(settings.public_rate_limit_per_minute),
     )
+    storage = services.storage
+    services.responders = {
+        Party.CUSTOMER: ShopAssistant(ai, db),
+        Party.STAFF: OwnerAssistant(db, ai, storage, settings),
+        Party.ONBOARDING: OnboardingAssistant(db, ai, storage, settings, registries.modules),
+    }
     services.worker = Worker(
         db,
         registries.jobs,

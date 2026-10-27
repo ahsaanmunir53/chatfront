@@ -1,25 +1,138 @@
 {
   "id": "grocery",
-  "name": {"en": "Grocery and kiryana", "ur": "کریانہ", "ur-Latn": "Kiryana"},
+  "name": {
+    "en": "Grocery and kiryana",
+    "ur": "کریانہ",
+    "ur-Latn": "Kiryana"
+  },
   "product_fields": [
-    {"key": "unit", "type": "choice", "options": ["kg", "g", "litre", "dozen", "packet", "piece"],
-     "required": true, "label": {"en": "Unit", "ur": "اکائی", "ur-Latn": "Unit"}},
-    {"key": "brand", "type": "text", "label": {"en": "Brand", "ur": "برانڈ", "ur-Latn": "Brand"}},
-    {"key": "pack_size", "type": "text",
-     "label": {"en": "Pack size", "ur": "پیک کا سائز", "ur-Latn": "Pack size"}}
+    {
+      "key": "unit",
+      "type": "choice",
+      "options": [
+        "kg",
+        "g",
+        "litre",
+        "dozen",
+        "packet",
+        "piece"
+      ],
+      "required": true,
+      "label": {
+        "en": "Unit",
+        "ur": "اکائی",
+        "ur-Latn": "Unit"
+      }
+    },
+    {
+      "key": "brand",
+      "type": "text",
+      "label": {
+        "en": "Brand",
+        "ur": "برانڈ",
+        "ur-Latn": "Brand"
+      }
+    },
+    {
+      "key": "pack_size",
+      "type": "text",
+      "label": {
+        "en": "Pack size",
+        "ur": "پیک کا سائز",
+        "ur-Latn": "Pack size"
+      }
+    }
   ],
-  "order_flow": ["address", "payment_choice"],
-  "payment_methods": ["cod", "credit", "transfer"],
+  "order_flow": [
+    "address",
+    "payment_choice"
+  ],
+  "payment_methods": [
+    "cod",
+    "credit",
+    "transfer"
+  ],
   "agent_questions": [
-    {"key": "repeat", "text": {
-      "en": "Same as your last order?", "ur": "پچھلے آرڈر جیسا ہی؟", "ur-Latn": "Pichle order jaisa hi?"}}
+    {
+      "key": "repeat",
+      "text": {
+        "en": "Same as your last order?",
+        "ur": "پچھلے آرڈر جیسا ہی؟",
+        "ur-Latn": "Pichle order jaisa hi?"
+      }
+    }
   ],
-  "modules": ["growth"],
+  "modules": [
+    "growth"
+  ],
   "demo": {
-    "slug": "barkat-kiryana", "name": "Barkat Kiryana Store", "tier": "small", "city": "Rawalpindi",
+    "slug": "barkat-kiryana",
+    "name": "Barkat Kiryana Store",
+    "tier": "small",
+    "city": "Rawalpindi",
     "tagline": {
       "en": "Daily groceries with home delivery in the neighbourhood",
       "ur": "محلے میں گھر تک روزمرہ کا سودا",
-      "ur-Latn": "Mohalle mein ghar tak rozmarra ka sauda"}
+      "ur-Latn": "Mohalle mein ghar tak rozmarra ka sauda"
+    },
+    "products": [
+      {
+        "name": "Basmati rice",
+        "price": 380,
+        "category": "rice",
+        "description": "Long-grain basmati rice, sold by the kilogram.",
+        "attributes": {
+          "unit": "kg"
+        },
+        "variants": [
+          {
+            "stock": 120
+          }
+        ]
+      },
+      {
+        "name": "Cooking oil, 5 litre",
+        "price": 2950,
+        "category": "oil",
+        "description": "Cooking oil in a 5 litre bottle.",
+        "attributes": {
+          "unit": "litre",
+          "pack_size": "5 litre"
+        },
+        "variants": [
+          {
+            "stock": 15
+          }
+        ]
+      },
+      {
+        "name": "Eggs",
+        "price": 330,
+        "category": "dairy",
+        "description": "Farm eggs, sold by the dozen.",
+        "attributes": {
+          "unit": "dozen"
+        },
+        "variants": [
+          {
+            "stock": 40
+          }
+        ]
+      },
+      {
+        "name": "Sugar",
+        "price": 160,
+        "category": "basics",
+        "description": "White sugar, sold by the kilogram.",
+        "attributes": {
+          "unit": "kg"
+        },
+        "variants": [
+          {
+            "stock": 200
+          }
+        ]
+      }
+    ]
   }
 }

@@ -1,29 +1,150 @@
 {
   "id": "electronics",
-  "name": {"en": "Electronics and mobiles", "ur": "الیکٹرانکس اور موبائل", "ur-Latn": "Electronics aur mobile"},
+  "name": {
+    "en": "Electronics and mobiles",
+    "ur": "الیکٹرانکس اور موبائل",
+    "ur-Latn": "Electronics aur mobile"
+  },
   "product_fields": [
-    {"key": "model", "type": "text", "required": true,
-     "label": {"en": "Model", "ur": "ماڈل", "ur-Latn": "Model"}},
-    {"key": "storage", "type": "choice", "options": ["64GB", "128GB", "256GB", "512GB"],
-     "label": {"en": "Storage", "ur": "اسٹوریج", "ur-Latn": "Storage"}},
-    {"key": "serial", "type": "text",
-     "label": {"en": "IMEI or serial", "ur": "آئی ایم ای آئی یا سیریل", "ur-Latn": "IMEI ya serial"}},
-    {"key": "warranty_months", "type": "number",
-     "label": {"en": "Warranty (months)", "ur": "وارنٹی (مہینے)", "ur-Latn": "Warranty (mahine)"}}
+    {
+      "key": "model",
+      "type": "text",
+      "required": true,
+      "label": {
+        "en": "Model",
+        "ur": "ماڈل",
+        "ur-Latn": "Model"
+      }
+    },
+    {
+      "key": "storage",
+      "type": "choice",
+      "options": [
+        "64GB",
+        "128GB",
+        "256GB",
+        "512GB"
+      ],
+      "label": {
+        "en": "Storage",
+        "ur": "اسٹوریج",
+        "ur-Latn": "Storage"
+      }
+    },
+    {
+      "key": "serial",
+      "type": "text",
+      "label": {
+        "en": "IMEI or serial",
+        "ur": "آئی ایم ای آئی یا سیریل",
+        "ur-Latn": "IMEI ya serial"
+      }
+    },
+    {
+      "key": "warranty_months",
+      "type": "number",
+      "label": {
+        "en": "Warranty (months)",
+        "ur": "وارنٹی (مہینے)",
+        "ur-Latn": "Warranty (mahine)"
+      }
+    }
   ],
-  "order_flow": ["address", "full_payment_before_dispatch"],
-  "payment_methods": ["transfer", "cod_with_advance"],
+  "order_flow": [
+    "address",
+    "full_payment_before_dispatch"
+  ],
+  "payment_methods": [
+    "transfer",
+    "cod_with_advance"
+  ],
   "agent_questions": [
-    {"key": "pta", "text": {
-      "en": "Do you need a PTA-approved set?",
-      "ur": "کیا آپ کو پی ٹی اے منظور شدہ سیٹ چاہیے؟",
-      "ur-Latn": "Kya aap ko PTA approved set chahiye?"}}
+    {
+      "key": "pta",
+      "text": {
+        "en": "Do you need a PTA-approved set?",
+        "ur": "کیا آپ کو پی ٹی اے منظور شدہ سیٹ چاہیے؟",
+        "ur-Latn": "Kya aap ko PTA approved set chahiye?"
+      }
+    }
   ],
   "demo": {
-    "slug": "indus-mobiles", "name": "Indus Mobile Zone", "tier": "mid", "city": "Faisalabad",
+    "slug": "indus-mobiles",
+    "name": "Indus Mobile Zone",
+    "tier": "mid",
+    "city": "Faisalabad",
     "tagline": {
       "en": "New and used phones with warranty and verified payments",
       "ur": "وارنٹی اور تصدیق شدہ ادائیگی کے ساتھ نئے اور استعمال شدہ فون",
-      "ur-Latn": "Warranty aur verified payment ke saath naye aur used phone"}
+      "ur-Latn": "Warranty aur verified payment ke saath naye aur used phone"
+    },
+    "products": [
+      {
+        "name": "6.6-inch Android phone",
+        "price": 54999,
+        "category": "phones",
+        "description": "Android phone with a 6.6-inch screen, dual SIM, PTA approved.",
+        "attributes": {
+          "warranty_months": "12"
+        },
+        "variants": [
+          {
+            "options": {
+              "storage": "128GB"
+            },
+            "stock": 4
+          },
+          {
+            "options": {
+              "storage": "256GB"
+            },
+            "price": 62999,
+            "stock": 2
+          }
+        ]
+      },
+      {
+        "name": "25W fast charger",
+        "price": 2499,
+        "category": "accessories",
+        "description": "25 watt USB-C fast charger with cable.",
+        "attributes": {
+          "warranty_months": "6"
+        },
+        "variants": [
+          {
+            "stock": 20
+          }
+        ]
+      },
+      {
+        "name": "Wireless earbuds",
+        "price": 4999,
+        "category": "audio",
+        "description": "Bluetooth earbuds with a charging case.",
+        "attributes": {
+          "warranty_months": "6"
+        },
+        "variants": [
+          {
+            "stock": 10
+          }
+        ]
+      },
+      {
+        "name": "Power bank, 20000 mAh",
+        "price": 5499,
+        "category": "accessories",
+        "description": "20000 mAh power bank with two USB ports.",
+        "attributes": {
+          "warranty_months": "6"
+        },
+        "variants": [
+          {
+            "stock": 7
+          }
+        ]
+      }
+    ]
   }
 }

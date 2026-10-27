@@ -7,10 +7,11 @@ import json
 import logging
 import secrets
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, File, Form, Header, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -28,6 +29,9 @@ from chatfront.channels.types import Inbound, Kind
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.phone import hash_phone
+from chatfront.media import service as media_service
+from chatfront.media.models import Media, MediaKind
+from chatfront.owner.sessions import NotSignedIn, verify
 from chatfront.services import Services, get_services
 
 log = logging.getLogger(__name__)
@@ -97,7 +101,12 @@ async def meta_webhook(
     return {"ok": True}
 
 
-# --- the try-it chat ---------------------------------------------------------------------
+# --- the try-it chat, the start page and the owner console -------------------------------
+#
+# One chat API for three kinds of people. A customer holds a random chat token (X-Chat-Token);
+# the owner holds a signed session (Authorization: Bearer), which marks them as staff; someone
+# making a shop talks to Chatfront's own shop. Which assistant answers is decided when the
+# message is accepted, from who is writing.
 
 
 class ChatSession(BaseModel):
@@ -105,9 +114,10 @@ class ChatSession(BaseModel):
 
 
 class ChatPost(BaseModel):
-    token: str = Field(min_length=20, max_length=100)
+    token: str | None = Field(default=None, min_length=20, max_length=100)
     client_id: uuid.UUID
     text: str = Field(min_length=1, max_length=MAX_CHAT_TEXT)
+    button_id: str | None = Field(default=None, max_length=200)
 
 
 class ChatMessageOut(BaseModel):
@@ -117,7 +127,18 @@ class ChatMessageOut(BaseModel):
     body: str | None
     lang: str | None  # the language the message is in, so the page sets direction and font
     payload: dict[str, Any]
+    media_url: str | None  # a short-lived link to the photo or voice note in the message
     created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class ChatIdentity:
+    sender_id: str
+    staff_id: uuid.UUID | None
+
+
+ChatToken = Annotated[str | None, Header(alias="X-Chat-Token", max_length=100)]
+Authorization = Annotated[str | None, Header(max_length=600)]
 
 
 async def _webchat_account(services: Services, slug: str) -> ChannelAccount:
@@ -132,6 +153,50 @@ def _limit(services: Services, request: Request, slug: str) -> None:
     services.limiter.check(f"chat:{slug}:{client}")
 
 
+def _identity(
+    services: Services, account: ChannelAccount, chat_token: str | None, authorization: str | None
+) -> ChatIdentity:
+    """The owner (a valid session for this shop) or a customer (their chat token)."""
+    if authorization:
+        scheme, _, value = authorization.partition(" ")
+        if scheme.lower() != "bearer":
+            raise NotSignedIn
+        session = verify(value, services.settings.secret_key.get_secret_value())
+        if session.tenant_id != account.tenant_id:
+            raise NotSignedIn
+        return ChatIdentity(f"staff:{session.staff_id}", session.staff_id)
+    if chat_token is None or len(chat_token) < 20:
+        raise AppError("no_chat_token", "Start a chat first")
+    return ChatIdentity(chat_token, None)
+
+
+async def _accept(
+    services: Services,
+    account: ChannelAccount,
+    identity: ChatIdentity,
+    client_id: uuid.UUID,
+    *,
+    kind: Kind,
+    text: str | None,
+    button_id: str | None = None,
+    media_id: uuid.UUID | None = None,
+) -> bool:
+    tag = hashlib.sha256(identity.sender_id.encode()).hexdigest()[:12]
+    message = Inbound(
+        channel=Channel.WEBCHAT,
+        account_external_id=account.external_id,
+        sender_id=identity.sender_id,
+        message_id=f"web:{tag}:{client_id}",
+        sent_at=utcnow(),
+        kind=kind,
+        text=text,
+        payload={"button_id": button_id} if button_id else {},
+        staff_id=identity.staff_id,
+        media_id=media_id,
+    )
+    return await channels.accept(services.db, account, message, services.keys) is not None
+
+
 @router.post("/api/shops/{slug}/chat/session")
 async def start_chat(slug: str, request: Request, services: ServicesDep) -> ChatSession:
     _limit(services, request, slug)
@@ -141,22 +206,63 @@ async def start_chat(slug: str, request: Request, services: ServicesDep) -> Chat
 
 @router.post("/api/shops/{slug}/chat/messages", status_code=202)
 async def post_chat_message(
-    slug: str, body: ChatPost, request: Request, services: ServicesDep
+    slug: str,
+    body: ChatPost,
+    request: Request,
+    services: ServicesDep,
+    authorization: Authorization = None,
 ) -> dict[str, bool]:
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    token_tag = hashlib.sha256(body.token.encode()).hexdigest()[:12]
-    message = Inbound(
-        channel=Channel.WEBCHAT,
-        account_external_id=slug,
-        sender_id=body.token,
-        message_id=f"web:{token_tag}:{body.client_id}",
-        sent_at=utcnow(),
-        kind=Kind.TEXT,
+    identity = _identity(services, account, body.token, authorization)
+    kind = Kind.BUTTON if body.button_id else Kind.TEXT
+    accepted = await _accept(
+        services,
+        account,
+        identity,
+        body.client_id,
+        kind=kind,
         text=body.text,
+        button_id=body.button_id,
     )
-    accepted = await channels.accept(services.db, account, message, services.keys)
-    return {"accepted": accepted is not None}
+    return {"accepted": accepted}
+
+
+_MEDIA_KINDS = {MediaKind.IMAGE: Kind.IMAGE, MediaKind.AUDIO: Kind.AUDIO}
+
+
+@router.post("/api/shops/{slug}/chat/media", status_code=202)
+async def post_chat_media(
+    slug: str,
+    request: Request,
+    services: ServicesDep,
+    file: Annotated[UploadFile, File()],
+    client_id: Annotated[uuid.UUID, Form()],
+    caption: Annotated[str | None, Form(max_length=MAX_CHAT_TEXT)] = None,
+    chat_token: ChatToken = None,
+    authorization: Authorization = None,
+) -> dict[str, bool]:
+    """A photo or voice note typed into the chat. The type is read from the bytes."""
+    _limit(services, request, slug)
+    account = await _webchat_account(services, slug)
+    identity = _identity(services, account, chat_token, authorization)
+    data = await file.read(services.settings.max_upload_bytes + 1)
+    async with services.db.tenant(account.tenant_id) as session:
+        media = await media_service.store(
+            session,
+            services.storage,
+            account.tenant_id,
+            data,
+            source=Channel.WEBCHAT,
+            max_bytes=services.settings.max_upload_bytes,
+        )
+    kind = _MEDIA_KINDS.get(MediaKind(media.kind))
+    if kind is None:
+        raise AppError("unsupported_media", "Send a photo or a voice note", status_code=415)
+    accepted = await _accept(
+        services, account, identity, client_id, kind=kind, text=caption or None, media_id=media.id
+    )
+    return {"accepted": accepted}
 
 
 @router.get("/api/shops/{slug}/chat/messages")
@@ -164,18 +270,23 @@ async def list_chat_messages(
     slug: str,
     request: Request,
     services: ServicesDep,
-    token: Annotated[str, Header(alias="X-Chat-Token", min_length=20, max_length=100)],
+    chat_token: ChatToken = None,
+    authorization: Authorization = None,
     after: datetime | None = None,
 ) -> list[ChatMessageOut]:
-    """The chat so far. The token travels in a header so it never lands in access logs."""
+    """The chat so far. Tokens travel in headers so they never land in access logs."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    external_hash = hash_phone(f"{Channel.WEBCHAT}:{token}", services.keys.phone_hash_key)
+    identity = _identity(services, account, chat_token, authorization)
+    external_hash = hash_phone(
+        f"{Channel.WEBCHAT}:{identity.sender_id}", services.keys.phone_hash_key
+    )
     async with services.db.tenant(account.tenant_id) as session:
         query = (
-            select(Message)
+            select(Message, Media)
             .join(Conversation, Conversation.id == Message.conversation_id)
             .join(CustomerIdentity, CustomerIdentity.customer_id == Conversation.customer_id)
+            .outerjoin(Media, Media.id == Message.media_id)
             .where(
                 Conversation.channel_account_id == account.id,
                 CustomerIdentity.channel == Channel.WEBCHAT,
@@ -186,16 +297,22 @@ async def list_chat_messages(
         )
         if after is not None:
             query = query.where(Message.created_at > after)
-        rows = await session.scalars(query)
-        return [
-            ChatMessageOut(
-                id=m.id,
-                direction=m.direction,
-                kind=m.kind,
-                body=m.body,
-                lang=(m.payload or {}).get("lang"),
-                payload={k: v for k, v in (m.payload or {}).items() if k in ("buttons", "list")},
-                created_at=m.created_at,
-            )
-            for m in rows
-        ]
+        rows = (await session.execute(query)).all()
+    ttl = services.settings.signed_url_ttl_seconds
+    return [
+        ChatMessageOut(
+            id=message.id,
+            direction=message.direction,
+            kind=message.kind,
+            body=message.body,
+            lang=(message.payload or {}).get("lang"),
+            payload={k: v for k, v in (message.payload or {}).items() if k in ("buttons", "list")},
+            media_url=(
+                await media_service.signed_url(services.storage, media, ttl, blurred=False)
+                if media is not None
+                else None
+            ),
+            created_at=message.created_at,
+        )
+        for message, media in rows
+    ]
