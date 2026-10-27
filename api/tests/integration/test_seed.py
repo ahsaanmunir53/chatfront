@@ -1,8 +1,8 @@
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from chatfront.audit.service import verify_chain
-from chatfront.catalog.models import Product
+from chatfront.catalog.models import Product, Variant
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError
@@ -39,6 +39,20 @@ async def test_seed_makes_one_shop_per_template(clean_db: Database) -> None:
     assert len(owners) == 7
     async with clean_db.tenant(grocery.id) as session:
         assert (await verify_chain(session, grocery.id)).checked == 5  # shop and 4 products
+
+
+async def test_seed_restocks_a_demo_shop_seeded_before_it_had_products(clean_db: Database) -> None:
+    await seed(clean_db, core_modules())
+    async with clean_db.system() as session:
+        lawn = await session.scalar(select(Tenant).where(Tenant.slug == "gulmohar-lawn"))
+        assert lawn is not None
+        await session.execute(delete(Variant).where(Variant.tenant_id == lawn.id))
+        await session.execute(delete(Product).where(Product.tenant_id == lawn.id))
+    assert await seed(clean_db, core_modules()) == []
+    async with clean_db.tenant(lawn.id) as session:
+        names = set(await session.scalars(select(Product.name)))
+    assert "Printed lawn 3-piece" in names
+    assert len(names) == 4
 
 
 async def test_slug_must_be_free(clean_db: Database) -> None:

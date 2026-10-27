@@ -34,6 +34,7 @@ async def add_demo_products(
 ) -> int:
     products = get_template(template_id).demo.products
     async with db.tenant(tenant_id) as session:
-        for product in products:
+        # Last first: the catalog lists newest first, so the template's first product leads.
+        for product in reversed(products):
             await create_product(session, tenant_id, demo_input(product, digits), SYSTEM)
     return len(products)

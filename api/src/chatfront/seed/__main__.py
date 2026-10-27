@@ -1,7 +1,8 @@
 """Seed Chatfront's own shop (where new shops are made) and one synthetic demo shop per business
 template, with its demo products: `python -m chatfront.seed`.
 
-Safe to run again: shops that already exist are left alone.
+Safe to run again: shops that already exist are left alone, except that a demo shop with no
+products (one seeded before demo products existed) gets them.
 """
 
 from __future__ import annotations
@@ -9,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from chatfront.catalog.demo import add_demo_products
 from chatfront.core.countries import get_pack
@@ -17,6 +18,7 @@ from chatfront.core.db import Database
 from chatfront.core.models import Tenant, Tier
 from chatfront.core.provisioning import NewShop, create_shop
 from chatfront.core.settings import get_settings
+from chatfront.models import Product  # all models, so foreign keys resolve when run alone
 from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.templates import all_templates
 
@@ -56,17 +58,25 @@ def demo_shops() -> list[NewShop]:
     return shops
 
 
+async def _stock_if_empty(db: Database, tenant: Tenant) -> None:
+    async with db.tenant(tenant.id) as session:
+        count = await session.scalar(select(func.count()).select_from(Product))
+    if not count:
+        digits = get_pack(tenant.country).minor_digits
+        await add_demo_products(db, tenant.id, tenant.template, digits)
+
+
 async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
+    """Make whatever is missing; returns the slugs of the shops it created."""
     created = []
     for shop in [PLATFORM, *demo_shops()]:
         async with db.system() as session:
-            exists = await session.scalar(select(Tenant.id).where(Tenant.slug == shop.slug))
-        if exists is None:
+            tenant = await session.scalar(select(Tenant).where(Tenant.slug == shop.slug))
+        if tenant is None:
             tenant = await create_shop(db, modules, shop)
-            if shop.is_demo:
-                digits = get_pack(tenant.country).minor_digits
-                await add_demo_products(db, tenant.id, shop.template, digits)
             created.append(shop.slug)
+        if shop.is_demo:
+            await _stock_if_empty(db, tenant)
     return created
 
 
