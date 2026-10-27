@@ -47,6 +47,7 @@ class Product(Base):
     attributes: Mapped[dict[str, Any]] = mapped_column(default=dict)  # template product fields
     price: Mapped[int] = mapped_column(BigInteger)  # minor units of the tenant's currency
     floor_price: Mapped[int | None] = mapped_column(BigInteger)  # lowest the agent may agree to
+    low_stock_limit: Mapped[int | None]  # alert at or below this; None: the shop's default
     # Name and description per language: {"ur": {"name": ..., "description": ..., "by": ...}}
     translations: Mapped[dict[str, Any]] = mapped_column(default=dict)
     image_media_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -72,6 +73,7 @@ class Variant(Base):
     options: Mapped[dict[str, Any]] = mapped_column(default=dict)  # {"size": "M", "colour": "blue"}
     price: Mapped[int | None] = mapped_column(BigInteger)  # None: the product's price
     stock: Mapped[int | None]  # None: not counted
+    low_alerted: Mapped[bool] = mapped_column(default=False, server_default="false")
     position: Mapped[int] = mapped_column(default=0)
     active: Mapped[bool] = mapped_column(default=True)
 

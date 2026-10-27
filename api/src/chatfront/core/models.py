@@ -102,5 +102,6 @@ class Customer(Base):
     # Set when this chat identity belongs to the shop's own staff, not a buyer.
     staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
     verified_buyer: Mapped[bool] = mapped_column(default=False)
+    verified_by: Mapped[str | None] = mapped_column(String(10))  # "rule" or "owner" (feature 38)
     risk_score: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = created_at_column()

@@ -2,6 +2,7 @@
 
 from chatfront.ai.models import AiCall
 from chatfront.audit.models import AuditEntry
+from chatfront.books.models import LedgerEntry, UdhaarAccount
 from chatfront.catalog.models import Product, StockMovement, Variant
 from chatfront.channels.models import (
     ChannelAccount,
@@ -18,9 +19,11 @@ from chatfront.media.models import Media
 from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.owner.models import PendingAction
 from chatfront.payments.models import Payment, PaymentClaim, Receipt, WalletCredit
+from chatfront.shield.models import Approval
 
 __all__ = [
     "AiCall",
+    "Approval",
     "AuditEntry",
     "Base",
     "ChannelAccount",
@@ -30,6 +33,7 @@ __all__ = [
     "CustomerIdentity",
     "Handover",
     "Job",
+    "LedgerEntry",
     "Media",
     "Message",
     "Order",
@@ -45,6 +49,7 @@ __all__ = [
     "StockMovement",
     "Tenant",
     "TenantModule",
+    "UdhaarAccount",
     "Variant",
     "WalletCredit",
 ]
