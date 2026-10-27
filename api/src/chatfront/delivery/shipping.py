@@ -1,0 +1,171 @@
+"""The parcel's way to the customer: packed, dispatched with a courier and tracking number,
+delivered or returned. The owner moves it on; code checks every move against the order's
+states, keeps the parcel's times, and tells the customer when it leaves and when it arrives.
+Returned orders are what the RTO risk score learns from (feature 34).
+"""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from chatfront.audit.service import Actor, ActorType
+from chatfront.channels.language import reply_language
+from chatfront.channels.models import Conversation
+from chatfront.channels.notify import send_to
+from chatfront.channels.types import OutText
+from chatfront.core.clock import utcnow
+from chatfront.core.countries import shop_money
+from chatfront.core.errors import AppError, NotFound
+from chatfront.core.i18n import t
+from chatfront.core.ids import short_code
+from chatfront.core.models import Tenant
+from chatfront.delivery.models import Shipment
+from chatfront.orders import service as orders
+from chatfront.orders.models import Order
+from chatfront.orders.states import OrderStatus, can_move
+
+if TYPE_CHECKING:
+    from chatfront.services import Services
+
+PUBLIC_CODE_LENGTH = 10
+# The moves the owner makes from the console, in the order a parcel goes.
+OWNER_MOVES = (
+    OrderStatus.PACKED,
+    OrderStatus.DISPATCHED,
+    OrderStatus.DELIVERED,
+    OrderStatus.RETURNED,
+    OrderStatus.CANCELLED,
+)
+# A label can be printed once the order may be packed.
+LABEL_STATES = frozenset(
+    {OrderStatus.PAID, OrderStatus.CONFIRMED, OrderStatus.PACKED, OrderStatus.DISPATCHED}
+)
+
+
+def next_moves(order: Order) -> list[str]:
+    return [str(move) for move in OWNER_MOVES if can_move(order.status, move)]
+
+
+def to_collect(order: Order) -> int:
+    """What the rider collects at the door: the rest of a cash-on-delivery order."""
+    return max(order.total - order.paid, 0) if order.payment_method == "cod" else 0
+
+
+async def shipment_for(session: AsyncSession, order: Order) -> Shipment:
+    """The order's parcel, made the first time it is needed; what to collect is kept current."""
+    shipment = await session.scalar(select(Shipment).where(Shipment.order_id == order.id))
+    if shipment is None:
+        shipment = Shipment(
+            tenant_id=order.tenant_id,
+            order_id=order.id,
+            public_code=short_code(PUBLIC_CODE_LENGTH),
+        )
+        session.add(shipment)
+    shipment.cod_amount = to_collect(order)
+    await session.flush()
+    return shipment
+
+
+async def order_by_code(session: AsyncSession, code: str) -> Order:
+    order = await session.scalar(
+        select(Order).where(Order.code == code.strip().upper(), Order.status != OrderStatus.CART)
+    )
+    if order is None:
+        raise NotFound("order")
+    return order
+
+
+@dataclass(frozen=True, slots=True)
+class Moved:
+    order: Order
+    shipment: Shipment
+
+
+async def move(
+    services: Services,
+    tenant_id: uuid.UUID,
+    code: str,
+    wanted: OrderStatus,
+    staff_id: uuid.UUID,
+    *,
+    courier: str = "",
+    tracking: str = "",
+) -> Moved:
+    """The owner moves an order on. Stock comes back on a return or a cancellation."""
+    if wanted not in OWNER_MOVES:
+        raise AppError("invalid_transition", "Not a move the owner makes", status_code=409)
+    async with services.db.tenant(tenant_id) as session:
+        tenant = await session.get(Tenant, tenant_id)
+        assert tenant is not None
+        order = await order_by_code(session, code)
+        await orders.move(
+            session, order, wanted, Actor(ActorType.STAFF, str(staff_id)), reason="owner"
+        )
+        shipment = await shipment_for(session, order)
+        _stamp(shipment, wanted, courier=courier, tracking=tracking)
+        conversation = (
+            await session.get(Conversation, order.conversation_id)
+            if order.conversation_id
+            else None
+        )
+        lang = reply_language(conversation, tenant) if conversation else tenant.default_lang
+        tell = _update(tenant, order, shipment, wanted, lang, services.settings.web_url)
+    if tell and order.conversation_id:
+        await send_to(services, tenant_id, order.conversation_id, OutText(tell), lang)
+    return Moved(order, shipment)
+
+
+def _stamp(shipment: Shipment, wanted: OrderStatus, *, courier: str, tracking: str) -> None:
+    now = utcnow()
+    if wanted == OrderStatus.PACKED:
+        shipment.packed_at = now
+    elif wanted == OrderStatus.DISPATCHED:
+        shipment.dispatched_at = now
+        shipment.courier = " ".join(courier.split())[:60] or shipment.courier
+        shipment.tracking_number = " ".join(tracking.split())[:60] or shipment.tracking_number
+    elif wanted == OrderStatus.DELIVERED:
+        shipment.delivered_at = now
+    elif wanted == OrderStatus.RETURNED:
+        shipment.returned_at = now
+
+
+def track_url(web_url: str, shipment: Shipment) -> str:
+    return f"{web_url}/t/{shipment.public_code}"
+
+
+def _update(
+    tenant: Tenant,
+    order: Order,
+    shipment: Shipment,
+    wanted: OrderStatus,
+    lang: str,
+    web_url: str,
+) -> str | None:
+    """The customer hears when the parcel leaves, when it arrives, and when the shop
+    cancels; packing and returns are the shop's own business."""
+    if wanted == OrderStatus.DISPATCHED:
+        lines = [t("delivery.dispatched", lang, code=order.code)]
+        if shipment.courier or shipment.tracking_number:
+            lines.append(
+                t(
+                    "delivery.courier",
+                    lang,
+                    courier=shipment.courier or "—",
+                    tracking=shipment.tracking_number or "—",
+                )
+            )
+        if shipment.cod_amount:
+            amount = shop_money(tenant, shipment.cod_amount, lang)
+            lines.append(t("delivery.collect", lang, amount=amount))
+        lines.append(t("delivery.track", lang, url=track_url(web_url, shipment)))
+        return "\n".join(lines)
+    if wanted == OrderStatus.DELIVERED:
+        return t("delivery.delivered", lang, code=order.code, shop=tenant.name)
+    if wanted == OrderStatus.CANCELLED:
+        return t("delivery.cancelled_by_shop", lang, code=order.code)
+    return None
