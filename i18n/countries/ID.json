@@ -1,0 +1,54 @@
+{
+  "code": "ID",
+  "name": "Indonesia",
+  "currency": "IDR",
+  "money": {
+    "symbol": "Rp",
+    "position": "before",
+    "show_minor": "never",
+    "local_symbols": {}
+  },
+  "number_locale": "id-ID",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Jakarta",
+  "phone": {
+    "calling_code": "62",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9,
+      10,
+      11,
+      12
+    ],
+    "example": "0812 3456 7890"
+  },
+  "tax_label": "PPN",
+  "languages": [
+    "id",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "gopay",
+      "name": "GoPay",
+      "kind": "wallet",
+      "parser": "id.gopay",
+      "source": "notification"
+    },
+    {
+      "id": "ovo",
+      "name": "OVO",
+      "kind": "wallet",
+      "parser": "id.ovo",
+      "source": "notification"
+    },
+    {
+      "id": "dana",
+      "name": "DANA",
+      "kind": "wallet",
+      "parser": "id.dana",
+      "source": "notification"
+    }
+  ]
+}

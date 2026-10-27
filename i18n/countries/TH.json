@@ -1,0 +1,29 @@
+{
+  "code": "TH",
+  "name": "Thailand",
+  "currency": "THB",
+  "money": {
+    "symbol": "฿",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "th-TH",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Bangkok",
+  "phone": {
+    "calling_code": "66",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "081 234 5678"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "th",
+    "en"
+  ],
+  "wallets": []
+}

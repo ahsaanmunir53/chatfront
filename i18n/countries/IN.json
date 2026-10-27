@@ -1,0 +1,47 @@
+{
+  "code": "IN",
+  "name": "India",
+  "currency": "INR",
+  "money": {
+    "symbol": "₹",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-IN",
+  "grouping": "3;2",
+  "date_style": "medium",
+  "timezone": "Asia/Kolkata",
+  "phone": {
+    "calling_code": "91",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "098765 43210"
+  },
+  "tax_label": "GST",
+  "languages": [
+    "hi-Latn",
+    "hi",
+    "en",
+    "bn",
+    "ta",
+    "te",
+    "mr",
+    "gu",
+    "kn",
+    "ml",
+    "pa-Guru",
+    "ur"
+  ],
+  "wallets": [
+    {
+      "id": "upi",
+      "name": "UPI (bank SMS)",
+      "kind": "bank",
+      "parser": "in.upi",
+      "source": "sms"
+    }
+  ]
+}

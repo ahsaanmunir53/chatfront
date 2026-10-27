@@ -1,0 +1,43 @@
+{
+  "code": "AE",
+  "name": "United Arab Emirates",
+  "currency": "AED",
+  "money": {
+    "symbol": "AED",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {
+      "ar": {
+        "symbol": "د.إ",
+        "position": "after"
+      },
+      "afb": {
+        "symbol": "د.إ",
+        "position": "after"
+      }
+    }
+  },
+  "number_locale": "en-AE",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Dubai",
+  "phone": {
+    "calling_code": "971",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "050 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "afb",
+    "ar",
+    "en",
+    "ur",
+    "hi",
+    "ml",
+    "fil-x-taglish"
+  ],
+  "wallets": []
+}

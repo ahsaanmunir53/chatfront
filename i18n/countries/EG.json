@@ -1,0 +1,55 @@
+{
+  "code": "EG",
+  "name": "Egypt",
+  "currency": "EGP",
+  "money": {
+    "symbol": "EGP",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {
+      "ar": {
+        "symbol": "ج.م",
+        "position": "after"
+      },
+      "arz": {
+        "symbol": "ج.م",
+        "position": "after"
+      }
+    }
+  },
+  "number_locale": "ar-EG",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Africa/Cairo",
+  "phone": {
+    "calling_code": "20",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "0100 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "arz",
+    "ar",
+    "ar-Latn",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "instapay",
+      "name": "InstaPay",
+      "kind": "bank",
+      "parser": "eg.instapay",
+      "source": "sms"
+    },
+    {
+      "id": "vodafone-cash",
+      "name": "Vodafone Cash",
+      "kind": "wallet",
+      "parser": "eg.vodafone_cash",
+      "source": "sms"
+    }
+  ]
+}

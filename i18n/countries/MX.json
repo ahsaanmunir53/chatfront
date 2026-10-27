@@ -1,0 +1,29 @@
+{
+  "code": "MX",
+  "name": "Mexico",
+  "currency": "MXN",
+  "money": {
+    "symbol": "$",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "es-MX",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "America/Mexico_City",
+  "phone": {
+    "calling_code": "52",
+    "trunk_prefix": "",
+    "national_lengths": [
+      10
+    ],
+    "example": "55 1234 5678"
+  },
+  "tax_label": "IVA",
+  "languages": [
+    "es-419",
+    "en"
+  ],
+  "wallets": []
+}

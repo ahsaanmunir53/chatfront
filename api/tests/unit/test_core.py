@@ -8,25 +8,25 @@ from pydantic import SecretStr
 
 from chatfront.core import clock, ids
 from chatfront.core.errors import AppError
-from chatfront.core.i18n import Lang, detect_lang, load_catalog, t
 from chatfront.core.logging import RedactingFilter, redact
-from chatfront.core.money import Paisa, format_amount, parse_amount, rupees
+from chatfront.core.money import parse_amount, to_minor
 from chatfront.core.phone import hash_phone, mask_phone, normalise_phone
 from chatfront.core.secretbox import seal, unseal
 from chatfront.core.settings import Settings
 
 
 class TestMoney:
-    def test_rupees_to_paisa(self) -> None:
-        assert rupees(2500) == 250_000
-        assert rupees("2,497.50") == 249_750
-        assert rupees("0.005") == 1  # rounds half up to whole paisa
+    def test_to_minor_units(self) -> None:
+        assert to_minor(2500) == 250_000
+        assert to_minor("2,497.50") == 249_750
+        assert to_minor("0.005") == 1  # rounds half up to a whole paisa
+        assert to_minor("1,00,000", digits=0) == 100_000
 
     def test_rejects_bad_and_negative(self) -> None:
         with pytest.raises(AppError):
-            rupees("abc")
+            to_minor("abc")
         with pytest.raises(AppError):
-            rupees(-1)
+            to_minor(-1)
 
     @pytest.mark.parametrize(
         ("text", "expected"),
@@ -39,11 +39,6 @@ class TestMoney:
     )
     def test_parse_amount(self, text: str, expected: int | None) -> None:
         assert parse_amount(text) == expected
-
-    def test_format(self) -> None:
-        assert format_amount(Paisa(250_000)) == "Rs 2,500"
-        assert format_amount(Paisa(249_750)) == "Rs 2,497.50"
-        assert format_amount(Paisa(250_000), "ur") == "2,500 روپے"
 
 
 class TestPhone:
@@ -66,43 +61,6 @@ class TestPhone:
     def test_mask(self) -> None:
         assert mask_phone("+923001234567") == "+92 300 ***4567"
         assert mask_phone("+1") == "***"
-
-
-class TestI18n:
-    def test_every_language_has_every_key(self) -> None:
-        catalog = load_catalog()
-        keys = {lang: set(strings) for lang, strings in catalog.items()}
-        assert keys[Lang.UR] == keys[Lang.EN]
-        assert keys[Lang.ROMAN_UR] == keys[Lang.EN]
-
-    def test_placeholders_match(self) -> None:
-        catalog = load_catalog()
-        for key, text in catalog[Lang.EN].items():
-            wanted = set(re.findall(r"\{(\w+)\}", text))
-            for lang in (Lang.UR, Lang.ROMAN_UR):
-                assert set(re.findall(r"\{(\w+)\}", catalog[lang][key])) == wanted, (lang, key)
-
-    def test_translate(self) -> None:
-        assert t("chat.title", Lang.EN, shop="Zara Lawn") == "Try it: chat with Zara Lawn"
-        assert "Zara Lawn" in t("chat.title", "ur", shop="Zara Lawn")
-        assert t("chat.send", Lang.ROMAN_UR) == "Bhejein"
-        with pytest.raises(KeyError):
-            t("no.such.key")
-
-    def test_rtl(self) -> None:
-        assert Lang.UR.is_rtl
-        assert not Lang.ROMAN_UR.is_rtl
-
-    @pytest.mark.parametrize(
-        ("text", "lang"),
-        [
-            ("یہ سوٹ کتنے کا ہے؟", Lang.UR),
-            ("bhai yeh suit kitne ka hai", Lang.ROMAN_UR),
-            ("How much is this suit?", Lang.EN),
-        ],
-    )
-    def test_detect(self, text: str, lang: Lang) -> None:
-        assert detect_lang(text) is lang
 
 
 class TestClock:

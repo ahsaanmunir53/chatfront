@@ -1,0 +1,45 @@
+{
+  "code": "BD",
+  "name": "Bangladesh",
+  "currency": "BDT",
+  "money": {
+    "symbol": "৳",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "bn-BD",
+  "grouping": "3;2",
+  "date_style": "medium",
+  "timezone": "Asia/Dhaka",
+  "phone": {
+    "calling_code": "880",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "01712 345678"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "bn",
+    "bn-Latn",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "bkash",
+      "name": "bKash",
+      "kind": "wallet",
+      "parser": "bd.bkash",
+      "source": "sms"
+    },
+    {
+      "id": "nagad",
+      "name": "Nagad",
+      "kind": "wallet",
+      "parser": "bd.nagad",
+      "source": "sms"
+    }
+  ]
+}

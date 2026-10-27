@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "ng.palmpay",
+ "samples": [
+  {
+   "real": false,
+   "sender": "PalmPay",
+   "body": "You received ₦15,000.00 from CHIOMA TEST. Ref: PP2410271234. Balance ₦20,000.00",
+   "expect": {
+    "amount": 1500000,
+    "tid": "PP2410271234",
+    "payer": "CHIOMA TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "PalmPay",
+   "body": "You sent ₦2,000.00 to EMEKA TEST. Ref: PP2410271235.",
+   "expect": null
+  }
+ ]
+}

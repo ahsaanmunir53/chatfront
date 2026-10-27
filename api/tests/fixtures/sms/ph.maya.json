@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "ph.maya",
+ "samples": [
+  {
+   "real": false,
+   "sender": "Maya",
+   "body": "You've received ₱1,500.00 from MARIA TEST. Ref no. 123456789012",
+   "expect": {
+    "amount": 150000,
+    "tid": "123456789012",
+    "payer": "MARIA TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "Maya",
+   "body": "Your Maya OTP is 998877.",
+   "expect": null
+  }
+ ]
+}

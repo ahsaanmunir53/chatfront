@@ -1,0 +1,29 @@
+{
+  "code": "VN",
+  "name": "Vietnam",
+  "currency": "VND",
+  "money": {
+    "symbol": "₫",
+    "position": "after",
+    "show_minor": "never",
+    "local_symbols": {}
+  },
+  "number_locale": "vi-VN",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "phone": {
+    "calling_code": "84",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "091 234 56 78"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "vi",
+    "en"
+  ],
+  "wallets": []
+}

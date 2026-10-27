@@ -1,0 +1,37 @@
+{
+  "code": "GH",
+  "name": "Ghana",
+  "currency": "GHS",
+  "money": {
+    "symbol": "GH₵",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-GH",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Africa/Accra",
+  "phone": {
+    "calling_code": "233",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "024 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "en",
+    "ha"
+  ],
+  "wallets": [
+    {
+      "id": "mtn-momo",
+      "name": "MTN MoMo",
+      "kind": "wallet",
+      "parser": "gh.mtn_momo",
+      "source": "sms"
+    }
+  ]
+}

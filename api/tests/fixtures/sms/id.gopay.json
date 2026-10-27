@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "id.gopay",
+ "samples": [
+  {
+   "real": false,
+   "sender": "GoPay",
+   "body": "Kamu terima Rp150.000 dari Budi Test. ID transaksi: GP-123456789",
+   "expect": {
+    "amount": 15000000,
+    "tid": "GP-123456789",
+    "payer": "Budi Test"
+   }
+  },
+  {
+   "real": false,
+   "sender": "GoPay",
+   "body": "Pembayaran Rp25.000 ke Toko Test berhasil.",
+   "expect": null
+  }
+ ]
+}

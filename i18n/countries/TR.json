@@ -1,0 +1,29 @@
+{
+  "code": "TR",
+  "name": "Türkiye",
+  "currency": "TRY",
+  "money": {
+    "symbol": "₺",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "tr-TR",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Europe/Istanbul",
+  "phone": {
+    "calling_code": "90",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "0532 123 45 67"
+  },
+  "tax_label": "KDV",
+  "languages": [
+    "tr",
+    "en"
+  ],
+  "wallets": []
+}

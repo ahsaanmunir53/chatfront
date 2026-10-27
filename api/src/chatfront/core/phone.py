@@ -11,21 +11,35 @@ from chatfront.core.errors import AppError
 _NON_DIGITS = re.compile(r"\D")
 
 
-def normalise_phone(raw: str, default_country_code: str = "92") -> str:
-    """Return E.164 ('+923001234567'). Local Pakistani forms like '0300-1234567' are accepted."""
+def normalise_phone(
+    raw: str,
+    default_country_code: str = "92",
+    *,
+    trunk_prefix: str = "0",
+    national_lengths: tuple[int, ...] = (),
+) -> str:
+    """Return E.164 ('+923001234567') from international or national forms: '0300-1234567' in
+    Pakistan, '(11) 91234-5678' in Brazil. The country pack gives the code, trunk and lengths."""
     stripped = raw.strip()
     digits = _NON_DIGITS.sub("", stripped)
+    national = digits.removeprefix(trunk_prefix) if trunk_prefix else digits
     if stripped.startswith("+"):
         e164 = digits
     elif digits.startswith("00"):
         e164 = digits[2:]
-    elif digits.startswith("0"):
-        e164 = default_country_code + digits[1:]
+    elif trunk_prefix and digits.startswith(trunk_prefix) and _fits(national, national_lengths):
+        e164 = default_country_code + national
+    elif national_lengths and len(digits) in national_lengths:
+        e164 = default_country_code + digits
     else:
         e164 = digits
     if not 8 <= len(e164) <= 15:
         raise AppError("invalid_phone", "Not a phone number")
     return "+" + e164
+
+
+def _fits(national: str, lengths: tuple[int, ...]) -> bool:
+    return not lengths or len(national) in lengths
 
 
 def hash_phone(e164: str, key: str) -> str:

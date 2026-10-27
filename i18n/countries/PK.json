@@ -1,0 +1,73 @@
+{
+  "code": "PK",
+  "name": "Pakistan",
+  "currency": "PKR",
+  "money": {
+    "symbol": "Rs",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {
+      "ur": {
+        "symbol": "روپے",
+        "position": "after"
+      },
+      "pa-Arab": {
+        "symbol": "روپے",
+        "position": "after"
+      },
+      "sd": {
+        "symbol": "رپيا",
+        "position": "after"
+      },
+      "ps": {
+        "symbol": "روپۍ",
+        "position": "after"
+      }
+    }
+  },
+  "number_locale": "en-PK",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Karachi",
+  "phone": {
+    "calling_code": "92",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "0300 1234567"
+  },
+  "tax_label": "Sales tax (GST)",
+  "languages": [
+    "ur-Latn",
+    "ur",
+    "en",
+    "pa-Arab",
+    "ps",
+    "sd",
+    "skr"
+  ],
+  "wallets": [
+    {
+      "id": "jazzcash",
+      "name": "JazzCash",
+      "kind": "wallet",
+      "parser": "pk.jazzcash",
+      "source": "sms"
+    },
+    {
+      "id": "easypaisa",
+      "name": "Easypaisa",
+      "kind": "wallet",
+      "parser": "pk.easypaisa",
+      "source": "sms"
+    },
+    {
+      "id": "bank",
+      "name": "Bank transfer (IBFT, Raast)",
+      "kind": "bank",
+      "parser": "pk.bank",
+      "source": "sms"
+    }
+  ]
+}

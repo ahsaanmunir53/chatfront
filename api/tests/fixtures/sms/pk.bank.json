@@ -1,0 +1,32 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "pk.bank",
+ "samples": [
+  {
+   "real": false,
+   "sender": "HBL",
+   "body": "PKR 4,850.00 received via Raast from AYESHA TEST (IBAN ending 1234). TxID RST1234567890.",
+   "expect": {
+    "amount": 485000,
+    "tid": "RST1234567890",
+    "payer": "AYESHA TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "MEEZAN",
+   "body": "Your A/C **1234 has been credited with PKR 12,000.00 via IBFT from SARA TEST. Ref# 987654321.",
+   "expect": {
+    "amount": 1200000,
+    "tid": "987654321",
+    "payer": "SARA TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "HBL",
+   "body": "Your A/C **1234 has been debited with PKR 900.00. Ref# 555555.",
+   "expect": null
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "id.ovo",
+ "samples": [
+  {
+   "real": false,
+   "sender": "OVO",
+   "body": "Kamu menerima Rp150.000 dari 0812****7890. No. Ref: OVO123456",
+   "expect": {
+    "amount": 15000000,
+    "tid": "OVO123456",
+    "payer": "0812****7890"
+   }
+  },
+  {
+   "real": false,
+   "sender": "OVO",
+   "body": "Transfer Rp50.000 ke 0813****0000 berhasil.",
+   "expect": null
+  }
+ ]
+}

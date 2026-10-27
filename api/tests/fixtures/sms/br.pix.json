@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "br.pix",
+ "samples": [
+  {
+   "real": false,
+   "sender": "Pix",
+   "body": "Pix recebido: R$ 1.150,50 de JOAO TEST. ID: E12345678202610271234abcdEFGH",
+   "expect": {
+    "amount": 115050,
+    "tid": "E12345678202610271234abcdEFGH",
+    "payer": "JOAO TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "Pix",
+   "body": "Pix enviado: R$ 20,00 para MARIA TEST.",
+   "expect": null
+  }
+ ]
+}

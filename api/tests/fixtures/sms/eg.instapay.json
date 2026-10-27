@@ -1,0 +1,32 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "eg.instapay",
+ "samples": [
+  {
+   "real": false,
+   "sender": "InstaPay",
+   "body": "You have received EGP 1,500.00 from AHMED TEST via InstaPay. Ref: 123456789",
+   "expect": {
+    "amount": 150000,
+    "tid": "123456789",
+    "payer": "AHMED TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "InstaPay",
+   "body": "تم استلام ١٬٥٠٠٫٠٠ جنيه من AHMED TEST عبر InstaPay. رقم المرجع ١٢٣٤٥٦٧٨٩",
+   "expect": {
+    "amount": 150000,
+    "tid": "123456789",
+    "payer": "AHMED TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "InstaPay",
+   "body": "You have sent EGP 100.00 to SARA TEST via InstaPay.",
+   "expect": null
+  }
+ ]
+}

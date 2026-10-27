@@ -1,0 +1,45 @@
+{
+  "code": "PH",
+  "name": "Philippines",
+  "currency": "PHP",
+  "money": {
+    "symbol": "₱",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-PH",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Manila",
+  "phone": {
+    "calling_code": "63",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "0917 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "fil-x-taglish",
+    "fil",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "gcash",
+      "name": "GCash",
+      "kind": "wallet",
+      "parser": "ph.gcash",
+      "source": "sms"
+    },
+    {
+      "id": "maya",
+      "name": "Maya",
+      "kind": "wallet",
+      "parser": "ph.maya",
+      "source": "sms"
+    }
+  ]
+}

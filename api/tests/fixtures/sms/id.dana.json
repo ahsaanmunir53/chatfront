@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "id.dana",
+ "samples": [
+  {
+   "real": false,
+   "sender": "DANA",
+   "body": "Kamu menerima saldo Rp1.250.000 dari SITI TEST. ID Transaksi 2024102712345",
+   "expect": {
+    "amount": 125000000,
+    "tid": "2024102712345",
+    "payer": "SITI TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "DANA",
+   "body": "Kamu mengirim Rp10.000 ke TOKO TEST.",
+   "expect": null
+  }
+ ]
+}

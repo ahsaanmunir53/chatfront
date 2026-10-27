@@ -1,0 +1,37 @@
+{
+  "code": "KE",
+  "name": "Kenya",
+  "currency": "KES",
+  "money": {
+    "symbol": "KSh",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-KE",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Africa/Nairobi",
+  "phone": {
+    "calling_code": "254",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "0712 345678"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "sw",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "mpesa",
+      "name": "M-Pesa",
+      "kind": "wallet",
+      "parser": "ke.mpesa",
+      "source": "sms"
+    }
+  ]
+}

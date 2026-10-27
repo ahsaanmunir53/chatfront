@@ -1,0 +1,30 @@
+{
+  "code": "LK",
+  "name": "Sri Lanka",
+  "currency": "LKR",
+  "money": {
+    "symbol": "Rs",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "si-LK",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Colombo",
+  "phone": {
+    "calling_code": "94",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "071 234 5678"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "si",
+    "ta",
+    "en"
+  ],
+  "wallets": []
+}

@@ -1,0 +1,48 @@
+{
+  "code": "SA",
+  "name": "Saudi Arabia",
+  "currency": "SAR",
+  "money": {
+    "symbol": "SAR",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {
+      "ar": {
+        "symbol": "ر.س",
+        "position": "after"
+      },
+      "afb": {
+        "symbol": "ر.س",
+        "position": "after"
+      }
+    }
+  },
+  "number_locale": "ar-SA",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Riyadh",
+  "phone": {
+    "calling_code": "966",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "050 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "afb",
+    "ar",
+    "en",
+    "ur"
+  ],
+  "wallets": [
+    {
+      "id": "stc-pay",
+      "name": "STC Pay",
+      "kind": "wallet",
+      "parser": "sa.stc_pay",
+      "source": "sms"
+    }
+  ]
+}

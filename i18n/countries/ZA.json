@@ -1,0 +1,29 @@
+{
+  "code": "ZA",
+  "name": "South Africa",
+  "currency": "ZAR",
+  "money": {
+    "symbol": "R",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-ZA",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Africa/Johannesburg",
+  "phone": {
+    "calling_code": "27",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9
+    ],
+    "example": "082 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "en",
+    "zu"
+  ],
+  "wallets": []
+}

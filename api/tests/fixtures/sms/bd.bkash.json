@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "bd.bkash",
+ "samples": [
+  {
+   "real": false,
+   "sender": "bKash",
+   "body": "You have received Tk 1,500.00 from 01712345678. Ref shoes. Fee Tk 0.00. Balance Tk 2,000.00. TrxID 9JK8L7M6N5 at 27/10/2026 14:30",
+   "expect": {
+    "amount": 150000,
+    "tid": "9JK8L7M6N5",
+    "payer": "01712345678"
+   }
+  },
+  {
+   "real": false,
+   "sender": "bKash",
+   "body": "Cash Out Tk 500.00 to 01812345678 successful. TrxID 1A2B3C4D5E",
+   "expect": null
+  }
+ ]
+}

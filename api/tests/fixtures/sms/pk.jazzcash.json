@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "pk.jazzcash",
+ "samples": [
+  {
+   "real": false,
+   "sender": "JazzCash",
+   "body": "You have received Rs 4,850.00 from Ayesha Test 03001234567. TID: 012345678901. Your balance is Rs 10,000.00.",
+   "expect": {
+    "amount": 485000,
+    "tid": "012345678901",
+    "payer": "Ayesha Test"
+   }
+  },
+  {
+   "real": false,
+   "sender": "JazzCash",
+   "body": "You have sent Rs 500.00 to Ali Test. TID: 112233445566.",
+   "expect": null
+  }
+ ]
+}

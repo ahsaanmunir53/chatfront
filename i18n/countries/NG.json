@@ -1,0 +1,47 @@
+{
+  "code": "NG",
+  "name": "Nigeria",
+  "currency": "NGN",
+  "money": {
+    "symbol": "₦",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "en-NG",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Africa/Lagos",
+  "phone": {
+    "calling_code": "234",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "0803 123 4567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "en",
+    "pcm",
+    "ha",
+    "yo",
+    "ig"
+  ],
+  "wallets": [
+    {
+      "id": "opay",
+      "name": "OPay",
+      "kind": "wallet",
+      "parser": "ng.opay",
+      "source": "sms"
+    },
+    {
+      "id": "palmpay",
+      "name": "PalmPay",
+      "kind": "wallet",
+      "parser": "ng.palmpay",
+      "source": "sms"
+    }
+  ]
+}

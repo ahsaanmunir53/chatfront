@@ -1,0 +1,31 @@
+{
+  "code": "MY",
+  "name": "Malaysia",
+  "currency": "MYR",
+  "money": {
+    "symbol": "RM",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "ms-MY",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "Asia/Kuala_Lumpur",
+  "phone": {
+    "calling_code": "60",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      9,
+      10
+    ],
+    "example": "012 345 6789"
+  },
+  "tax_label": "SST",
+  "languages": [
+    "ms",
+    "en",
+    "ta"
+  ],
+  "wallets": []
+}

@@ -1,0 +1,32 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "in.upi",
+ "samples": [
+  {
+   "real": false,
+   "sender": "HDFCBK",
+   "body": "Your a/c no. XXXXXXXX1234 is credited by Rs.1,500.00 on 27-10-26 from rahul.test@okhdfc (UPI Ref No 629812345678).",
+   "expect": {
+    "amount": 150000,
+    "tid": "629812345678",
+    "payer": "rahul.test@okhdfc"
+   }
+  },
+  {
+   "real": false,
+   "sender": "SBIUPI",
+   "body": "Rs.2,25,000.00 credited to A/c XX1234 on 27-10-26 by UPI ref no 629812345679.",
+   "expect": {
+    "amount": 22500000,
+    "tid": "629812345679",
+    "payer": null
+   }
+  },
+  {
+   "real": false,
+   "sender": "HDFCBK",
+   "body": "Rs.300.00 debited from A/c XX1234 for UPI ref no 629812345670.",
+   "expect": null
+  }
+ ]
+}

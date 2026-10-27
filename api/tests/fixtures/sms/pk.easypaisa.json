@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "pk.easypaisa",
+ "samples": [
+  {
+   "real": false,
+   "sender": "Easypaisa",
+   "body": "Rs. 2,500.00 received from Bilal Test 0345*****67 in your Easypaisa account. Trx ID 123456789012.",
+   "expect": {
+    "amount": 250000,
+    "tid": "123456789012",
+    "payer": "Bilal Test"
+   }
+  },
+  {
+   "real": false,
+   "sender": "Easypaisa",
+   "body": "Your Easypaisa OTP is 1234. Do not share it.",
+   "expect": null
+  }
+ ]
+}

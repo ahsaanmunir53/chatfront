@@ -1,0 +1,38 @@
+{
+  "code": "BR",
+  "name": "Brazil",
+  "currency": "BRL",
+  "money": {
+    "symbol": "R$",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "pt-BR",
+  "grouping": "3",
+  "date_style": "medium",
+  "timezone": "America/Sao_Paulo",
+  "phone": {
+    "calling_code": "55",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10,
+      11
+    ],
+    "example": "(11) 91234-5678"
+  },
+  "tax_label": "ICMS",
+  "languages": [
+    "pt-BR",
+    "en"
+  ],
+  "wallets": [
+    {
+      "id": "pix",
+      "name": "Pix",
+      "kind": "bank",
+      "parser": "br.pix",
+      "source": "notification"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "sa.stc_pay",
+ "samples": [
+  {
+   "real": false,
+   "sender": "STC Pay",
+   "body": "You received SAR 150.00 from Mohammed Test. Ref: 1234567890",
+   "expect": {
+    "amount": 15000,
+    "tid": "1234567890",
+    "payer": "Mohammed Test"
+   }
+  },
+  {
+   "real": false,
+   "sender": "STC Pay",
+   "body": "استلمت 150.00 ريال من محمد تجربة. المرجع: 1234567891",
+   "expect": {
+    "amount": 15000,
+    "tid": "1234567891",
+    "payer": "محمد تجربة"
+   }
+  },
+  {
+   "real": false,
+   "sender": "STC Pay",
+   "body": "You sent SAR 50.00 to Ali Test.",
+   "expect": null
+  }
+ ]
+}

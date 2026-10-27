@@ -1,0 +1,45 @@
+{
+  "code": "NP",
+  "name": "Nepal",
+  "currency": "NPR",
+  "money": {
+    "symbol": "रु",
+    "position": "before",
+    "show_minor": "nonzero",
+    "local_symbols": {}
+  },
+  "number_locale": "ne-NP",
+  "grouping": "3;2",
+  "date_style": "medium",
+  "timezone": "Asia/Kathmandu",
+  "phone": {
+    "calling_code": "977",
+    "trunk_prefix": "0",
+    "national_lengths": [
+      10
+    ],
+    "example": "984 1234567"
+  },
+  "tax_label": "VAT",
+  "languages": [
+    "ne",
+    "en",
+    "hi"
+  ],
+  "wallets": [
+    {
+      "id": "esewa",
+      "name": "eSewa",
+      "kind": "wallet",
+      "parser": "np.esewa",
+      "source": "sms"
+    },
+    {
+      "id": "khalti",
+      "name": "Khalti",
+      "kind": "wallet",
+      "parser": "np.khalti",
+      "source": "sms"
+    }
+  ]
+}

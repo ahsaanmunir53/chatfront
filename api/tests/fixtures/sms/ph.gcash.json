@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "ph.gcash",
+ "samples": [
+  {
+   "real": false,
+   "sender": "GCash",
+   "body": "You have received PHP 1,500.00 of GCash from JUAN TEST 09171234567. Ref. No. 1234567890123. Your new balance is PHP 2,000.00.",
+   "expect": {
+    "amount": 150000,
+    "tid": "1234567890123",
+    "payer": "JUAN TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "GCash",
+   "body": "You have sent PHP 100.00 of GCash to MARIA TEST. Ref. No. 1234567890124.",
+   "expect": null
+  }
+ ]
+}

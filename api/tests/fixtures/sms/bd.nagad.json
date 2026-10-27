@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "bd.nagad",
+ "samples": [
+  {
+   "real": false,
+   "sender": "Nagad",
+   "body": "Money Received. Amount: Tk 1,500.00 Sender: 01712345678 Ref: N/A TxnID: 7A6B5C4D Balance: Tk 3,000.00",
+   "expect": {
+    "amount": 150000,
+    "tid": "7A6B5C4D",
+    "payer": "01712345678"
+   }
+  },
+  {
+   "real": false,
+   "sender": "Nagad",
+   "body": "Send Money successful. Amount: Tk 200.00",
+   "expect": null
+  }
+ ]
+}

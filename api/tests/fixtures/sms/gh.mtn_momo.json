@@ -1,0 +1,22 @@
+{
+ "_about": "SYNTHETIC test strings written to the parser's guessed format. They are not real messages and prove only that the plugin runs; the parser stays unverified until a real sample (with personal details removed) is added here with \"real\": true.",
+ "parser": "gh.mtn_momo",
+ "samples": [
+  {
+   "real": false,
+   "sender": "MobileMoney",
+   "body": "Payment received for GHS 150.00 from KOFI TEST Current Balance: GHS 300.00. Available Balance: GHS 300.00. Reference: shoes. Transaction ID: 12345678901.",
+   "expect": {
+    "amount": 15000,
+    "tid": "12345678901",
+    "payer": "KOFI TEST"
+   }
+  },
+  {
+   "real": false,
+   "sender": "MobileMoney",
+   "body": "Payment made for GHS 20.00 to ECG. Transaction ID: 12345678902.",
+   "expect": null
+  }
+ ]
+}
