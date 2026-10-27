@@ -16,7 +16,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.ai.tools import Tool
 from chatfront.audit.service import Actor, ActorType
@@ -36,11 +35,13 @@ from chatfront.orders import service as orders
 from chatfront.orders.bargain import Outcome
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.delivery import Quote
+from chatfront.orders.discounts import DISCOUNT, discount_question
 from chatfront.orders.models import Order, OrderItem
 from chatfront.orders.states import OrderStatus
 from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus
 from chatfront.payments.due import cod_advance, shop_methods
+from chatfront.shield import approvals
 from chatfront.shield.answer_check import Facts
 
 MAX_RESULTS = 5
@@ -63,6 +64,7 @@ class AgentContext:
     facts: Facts
     modules: frozenset[str] = frozenset()  # the tenant's switched-on modules: their tools only
     phone_hash_key: str = ""  # to know a buyer by their number (feature 34)
+    trusted: bool = False  # a verified buyer (feature 38)
     cards: list[Outbound] = field(default_factory=list)
     handover: str | None = None  # the reason, when the agent asked for a person
 
@@ -391,7 +393,22 @@ async def make_offer(ctx: AgentContext, params: Offer) -> dict[str, Any]:
         assert product is not None
         decision = await orders.offer(session, ctx.tenant, ctx.conversation_id, product, amount)
         if decision.outcome is Outcome.ACCEPTED:
-            await _reprice_cart_line(ctx, session, product.id, decision.price)
+            await orders.apply_agreed_price(
+                session,
+                ctx.tenant,
+                ctx.customer_id,
+                ctx.conversation_id,
+                product.id,
+                decision.price,
+            )
+        elif decision.outcome is Outcome.ASKED:
+            await approvals.ask_once(
+                session,
+                ctx.tenant.id,
+                DISCOUNT,
+                discount_question(ctx.conversation_id, product, decision.price, decision.round),
+                ("conversation_id", "product_id", "price"),
+            )
     return {
         "ok": True,
         "outcome": decision.outcome.value,
@@ -402,45 +419,37 @@ async def make_offer(ctx: AgentContext, params: Offer) -> dict[str, Any]:
             Outcome.COUNTER: "the shop cannot do that price; this is its counter offer",
             Outcome.FINAL: "this is the shop's last price for it",
             Outcome.FIXED: "this product has a fixed price",
+            Outcome.ASKED: "the shop owner is asked about this price; say you will tell the "
+            "customer the answer here",
         }[decision.outcome],
     }
-
-
-async def _reprice_cart_line(
-    ctx: AgentContext, session: AsyncSession, product_id: uuid.UUID, price: int
-) -> None:
-    cart = await orders.open_cart(
-        session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
-    )
-    for line in await orders.lines(session, cart):
-        if line.product_id == product_id:
-            await orders.set_quantity(
-                session, cart, line.variant_id, line.quantity, agreed_price=price
-            )
 
 
 # -- checkout ---------------------------------------------------------------------------------
 
 
-def accepted_methods(tenant: Tenant) -> list[str]:
-    """Cash on delivery and/or transfer, from what the shop said it takes."""
+def accepted_methods(tenant: Tenant, *, trusted: bool = False) -> list[str]:
+    """Cash on delivery and/or transfer, from what the shop said it takes; the khata too, for a
+    verified buyer at a shop that gives credit (features 38 and 49)."""
     methods = []
     for method in shop_methods(tenant):
-        kind = "cod" if method.startswith("cod") else "transfer"
-        if method in ("credit", "deposit") or kind in methods:
+        if method == "deposit" or (method == "credit" and not trusted):
             continue
-        methods.append(kind)
+        kind = method if method == "credit" else "cod" if method.startswith("cod") else "transfer"
+        if kind not in methods:
+            methods.append(kind)
     return methods or ["cod"]
 
 
 class Checkout(BaseModel):
-    payment_method: Literal["cod", "transfer"]
+    payment_method: Literal["cod", "transfer", "credit"]
 
 
 async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
     """Show the customer a summary card. Only their tap on Place order places the order."""
-    if params.payment_method not in accepted_methods(ctx.tenant):
-        return _error("payment_method_not_taken", taken=accepted_methods(ctx.tenant))
+    taken = accepted_methods(ctx.tenant, trusted=ctx.trusted)
+    if params.payment_method not in taken:
+        return _error("payment_method_not_taken", taken=taken)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id

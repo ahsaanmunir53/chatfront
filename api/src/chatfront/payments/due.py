@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor
+from chatfront.books import udhaar
 from chatfront.core.countries import get_pack
 from chatfront.core.models import Tenant
 from chatfront.delivery.risk import HIGH
@@ -22,10 +23,11 @@ from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
 from chatfront.payments.amounts import default_advance, unique_due
+from chatfront.shield import buyers
+from chatfront.shield.autonomy import Action, Level, level
 from chatfront.templates import PaymentMethod, get_template
 
 COD_ADVANCE = "cod_advance"  # profile key: a fixed advance in minor units, 0 for none
-RISK_ADVANCE = "risk_advance"  # profile key: False lets high-risk orders go without an advance
 
 
 def shop_methods(tenant: Tenant) -> list[str]:
@@ -36,15 +38,20 @@ def shop_methods(tenant: Tenant) -> list[str]:
     return [str(method) for method in get_template(tenant.template).payment_methods]
 
 
-def cod_advance(tenant: Tenant, total: int, delivery_fee: int, *, risky: bool = False) -> int:
+def cod_advance(
+    tenant: Tenant, total: int, delivery_fee: int, *, risky: bool = False, trusted: bool = False
+) -> int:
     """The advance a cash-on-delivery order pays first: the owner's fixed amount, else the
-    delivery charge (or a tenth of the order). None at a shop that takes plain cash on
-    delivery, unless the order is high risk (feature 34) and the shop also takes transfers."""
+    delivery charge (or a tenth of the order). None for a verified buyer (feature 38), and
+    none at a shop that takes plain cash on delivery unless the order is high risk (feature
+    34), the shop also takes transfers and its autonomy level for this is auto (feature 104)."""
     methods, profile = shop_methods(tenant), tenant.profile or {}
     asks = PaymentMethod.COD_WITH_ADVANCE in methods or (
-        risky and PaymentMethod.TRANSFER in methods and profile.get(RISK_ADVANCE, True) is not False
+        risky
+        and PaymentMethod.TRANSFER in methods
+        and level(tenant, Action.RISK_ADVANCE) == Level.AUTO
     )
-    if not asks or total <= 0:
+    if trusted or not asks or total <= 0:
         return 0
     fixed = profile.get(COD_ADVANCE)
     if isinstance(fixed, int) and not isinstance(fixed, bool):
@@ -54,6 +61,11 @@ def cod_advance(tenant: Tenant, total: int, delivery_fee: int, *, risky: bool = 
 
 def risky(order: Order) -> bool:
     return order.risk_score >= HIGH
+
+
+async def advance_for(session: AsyncSession, tenant: Tenant, order: Order, total: int) -> int:
+    trusted = await buyers.trusted(session, order.customer_id)
+    return cod_advance(tenant, total, order.delivery_fee, risky=risky(order), trusted=trusted)
 
 
 def _lock_key(tenant_id: uuid.UUID) -> int:
@@ -85,7 +97,7 @@ async def ask_for(session: AsyncSession, tenant: Tenant, order: Order) -> None:
         order.due_now = max((order.advance if cod else order.total) - order.paid, 0) or None
         return
     full = max(order.subtotal + order.delivery_fee - order.discount, 0)
-    stage = cod_advance(tenant, full, order.delivery_fee, risky=risky(order)) if cod else full
+    stage = await advance_for(session, tenant, order, full) if cod else full
     taken = await _taken(session, tenant.id, order.id)
     asked, off = unique_due(stage, taken, get_pack(tenant.country).minor_digits)
     order.unique_off = off
@@ -97,8 +109,12 @@ async def ask_for(session: AsyncSession, tenant: Tenant, order: Order) -> None:
 
 async def start_payment(session: AsyncSession, tenant: Tenant, order: Order, actor: Actor) -> None:
     """Right after placing: wait for a transfer or an advance, or confirm plain cash on
-    delivery at once."""
-    advance = cod_advance(tenant, order.total, order.delivery_fee, risky=risky(order))
+    delivery, or an order on the khata, at once."""
+    if order.payment_method == "credit":
+        await orders.move(session, order, OrderStatus.CONFIRMED, actor)
+        await udhaar.on_credit(session, tenant, order, actor)
+        return
+    advance = await advance_for(session, tenant, order, order.total)
     if order.payment_method == "cod" and not advance:
         await orders.move(session, order, OrderStatus.CONFIRMED, actor)
         return

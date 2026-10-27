@@ -113,11 +113,14 @@ class CardMaker:
 
     def placed(self, order: Order) -> str:
         """The order is placed: what to pay now, where, and how to make it easy to match."""
+        total = self.money(order.total)
+        if order.payment_method == "credit":
+            return t("order.placed_credit", self.lang, code=order.code, total=total)
         if order.due_now is None:
-            return t("order.placed_cod", self.lang, code=order.code, total=self.money(order.total))
+            return t("order.placed_cod", self.lang, code=order.code, total=total)
         values = {
             "code": order.code,
-            "total": self.money(order.total),
+            "total": total,
             "due": self.money(order.due_now),
             "account": pay_details(self.tenant, self.lang),
         }
