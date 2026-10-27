@@ -12,6 +12,7 @@ from chatfront.channels.models import (
 )
 from chatfront.core.db import Base
 from chatfront.core.models import Customer, Staff, Tenant, TenantModule
+from chatfront.delivery.models import Shipment
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
 from chatfront.orders.models import Order, OrderItem, PriceOffer
@@ -39,6 +40,7 @@ __all__ = [
     "PriceOffer",
     "Product",
     "Receipt",
+    "Shipment",
     "Staff",
     "StockMovement",
     "Tenant",

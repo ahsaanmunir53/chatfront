@@ -43,6 +43,10 @@ class Order(Base):
     due_now: Mapped[int | None] = mapped_column(BigInteger)
     unique_off: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     reminded_at: Mapped[datetime | None]  # the watcher's one reminder (feature 30)
+    # How likely a cash-on-delivery order is to come back unpaid, 0 to 100, with the reasons
+    # code found (feature 34): [{"code": ..., "points": ...}].
+    risk_score: Mapped[int] = mapped_column(default=0, server_default="0")
+    risk_reasons: Mapped[list[Any]] = mapped_column(default=list, server_default="[]")
     placed_at: Mapped[datetime | None]
     closed_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
