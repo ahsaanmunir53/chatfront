@@ -1,0 +1,133 @@
+# Features
+
+All 116 features from the spec, numbered as there. Phase says when each is planned:
+Build (works end to end by 2 November), Stretch (after Build passes), Later (roadmap).
+
+Status values:
+
+- `done`: built, tested, and reachable from the try-it chat or the dashboard.
+- `partial`: part of it is built and tested; the note says what is missing.
+- `needs-key`: built and tested against its adapter with a mock; the env var named turns it on.
+- `model-api-only`: needs the Meta Model API (blocked from Pakistan); built behind its interface with the stand-in named.
+- `planned`: not started.
+
+Phase 0 (the foundation every feature stands on) is done; see PROGRESS.md.
+
+| # | Feature | Module | Meta model | Phase | Status | Notes | Code | Tests |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Product from a photo and a voice note | Catalog | Spark Open (vision, audio) | Build | `planned` |  |  |  |
+| 2 | Whole shop from one video of a rack or shelf | Catalog | Spark Open (video); cut-outs Model API only (SAM) | Stretch | `planned` |  |  |  |
+| 3 | Clean and lifestyle catalog images | Catalog | Model API only (Muse Image, SAM); card templates for now | Later | `planned` |  |  |  |
+| 4 | Product details from the photo: description, tags, size and colour variants | Catalog | Spark Open (vision) | Build | `planned` |  |  |  |
+| 5 | Size chart, and size advice from the customer's measurements | Catalog | Spark Open | Stretch | `planned` |  |  |  |
+| 6 | WhatsApp catalog and Instagram shop sync | Catalog | None (Meta Commerce catalog) | Stretch | `planned` |  |  |  |
+| 7 | Daily Status and Instagram post from new stock, Urdu and English captions | Catalog | Spark Open captions; images Model API only, templates for now | Later | `planned` |  |  |  |
+| 8 | Flash sale and live sale mode: timer and first-come reservation | Catalog | None | Later | `planned` |  |  |  |
+| 9 | Order agent in Urdu, Roman Urdu and English; understands Pashto, Punjabi, Sindhi | Order agent | Spark Open | Build | `planned` |  |  |  |
+| 10 | Order from a voice note | Order agent | Spark Open (audio) | Build | `planned` |  |  |  |
+| 11 | Search by photo: "yeh wala chahiye" | Order agent | Spark Open (vision) | Build | `planned` |  |  |  |
+| 12 | Bargaining agent that stays above the owner's lowest price | Order agent | Spark Open and rules | Build | `planned` |  |  |  |
+| 13 | Upsell and bundles | Order agent | Spark Open | Stretch | `planned` |  |  |  |
+| 14 | Abandoned-cart reminders inside the free 24-hour window | Order agent | None | Later | `planned` |  |  |  |
+| 15 | Smart broadcast to interested customers, with the return on each | Order agent | None | Later | `planned` |  |  |  |
+| 16 | Pre-order and waitlist | Order agent | None | Stretch | `planned` |  |  |  |
+| 17 | Custom order mockup (cake, tailoring, print) | Order agent | Model API only (Muse Image) | Later | `planned` |  |  |  |
+| 18 | Appointment booking for salons and tutors | Order agent | None (WhatsApp Flows) | Later | `planned` |  |  |  |
+| 19 | Coupons, discount codes and loyalty points | Order agent | None | Stretch | `planned` |  |  |  |
+| 20 | Referral programme | Order agent | None | Later | `planned` |  |  |  |
+| 21 | Gift order with a message card | Order agent | Card image Model API only; template for now | Later | `planned` |  |  |  |
+| 22 | Group order with split payment | Order agent | None (shared cart link) | Later | `planned` |  |  |  |
+| 23 | Payment screenshot forensics | Payments | Spark Open (vision) | Build | `planned` |  |  |  |
+| 24 | Payment match from the seller's credit SMS (Android forwarder) | Payments | None | Build | `planned` |  |  |  |
+| 25 | Approve and Reject buttons for the owner on WhatsApp | Payments | None | Build | `planned` |  |  |  |
+| 26 | Signed QR receipt anyone can check | Payments | None | Build | `planned` |  |  |  |
+| 27 | Advance on COD, and instalment tracking | Payments | None | Build | `planned` |  |  |  |
+| 28 | Refund with verified proof | Payments | None | Stretch | `planned` |  |  |  |
+| 29 | "Sent too much by mistake" scam check against the real SMS amount | Payments | None | Stretch | `planned` |  |  |  |
+| 30 | Always-on watcher for pending payments and orders | Payments | Glimmer | Build | `planned` |  |  |  |
+| 31 | Courier booking and tracking with customer updates | Delivery | None | Later | `planned` |  |  |  |
+| 32 | Courier COD settlement matched to orders | Delivery | None | Later | `planned` |  |  |  |
+| 33 | Address clean-up, asking for a location pin when needed | Delivery | Spark Open | Build | `planned` |  |  |  |
+| 34 | RTO and COD risk score | Delivery | None | Build | `planned` |  |  |  |
+| 35 | Proof of delivery from the rider's photo | Delivery | Spark Open (vision); masks Model API only | Later | `planned` |  |  |  |
+| 36 | Dispute decision: unboxing video against the catalog photo | Delivery | Spark Open (video); masks Model API only | Later | `planned` |  |  |  |
+| 37 | Fraud-buyer list, hashed, only after review | Shield | None | Stretch | `planned` |  |  |  |
+| 38 | Verified-buyer list: good buyers get COD at once | Shield | None | Build | `planned` |  |  |  |
+| 39 | Call and voice-note guardian against fake couriers and agents | Shield | Spark Open (audio) | Later | `planned` |  |  |  |
+| 40 | Fake "Meta or WhatsApp support" links caught; OTP alert | Shield | Spark Open and Safe Browsing | Stretch | `planned` |  |  |  |
+| 41 | The shop's official numbers on a trust page | Shield | None | Later | `partial` | Trust page lists the shop's official channels from `channel_accounts`; numbers per branch and the verification badge come later. | api/src/chatfront/routes/public.py, web/src/pages/InfoPages.tsx | tests/integration/test_app.py::test_health_and_shop, web/e2e/try-it.spec.ts |
+| 42 | Staff roles and a hash-chained audit log | Shield | None | Build | `partial` | Hash-chained, append-only audit log (the app role cannot update or delete it) with chain verification. Staff table and roles exist; permissions per role come with the dashboard. | api/src/chatfront/audit/, api/migrations/versions/0001_foundation.py | tests/integration/test_audit.py, tests/integration/test_rls.py |
+| 43 | Privacy guard: CNIC and card photos saved blurred | Shield | Spark Open (vision); masks Model API only | Stretch | `planned` |  |  |  |
+| 44 | Customer data export, and deletion on request | Shield | None | Later | `planned` |  |  |  |
+| 45 | Trust page for buyers: delivered orders, reply time, return rate | Shield | None | Stretch | `planned` |  |  |  |
+| 46 | Reviews from verified buyers only | Shield | None | Stretch | `planned` |  |  |  |
+| 47 | STIX report of scam numbers for NCCIA and CERT | Shield | None | Later | `planned` |  |  |  |
+| 48 | Ledger from bill and expense photos or voice notes | Books | Spark Open (vision, audio) | Build | `planned` |  |  |  |
+| 49 | Udhaar khata with reminders that grow firmer | Books | None | Build | `planned` |  |  |  |
+| 50 | Daily and weekly profit and loss card on WhatsApp | Books | None | Build | `planned` |  |  |  |
+| 51 | True profit per product after courier costs and returns | Books | None | Stretch | `planned` |  |  |  |
+| 52 | Stock tracking with low-stock alerts | Growth | None | Build | `planned` |  |  |  |
+| 53 | Reorder drafts for suppliers, and supplier price comparison | Growth | Spark Open | Later | `planned` |  |  |  |
+| 54 | B2B orders from wholesalers in the same network | Growth | None | Later | `planned` |  |  |  |
+| 55 | Season forecast: Ramzan, Eid, weddings, 14 August, winter | Growth | Spark Open and a calendar file | Later | `planned` |  |  |  |
+| 56 | Price check: what the same item sells for elsewhere | Growth | Model API only (web search) | Later | `planned` |  |  |  |
+| 57 | Ask your data: "what sold most last month?" | Growth | Spark Open | Stretch | `planned` |  |  |  |
+| 58 | Cash-flow forecast | Books | None | Later | `planned` |  |  |  |
+| 59 | Customer CRM: repeat customers, lifetime value, Eid greetings | Growth | None | Stretch | `planned` |  |  |  |
+| 60 | Staff salary and commission | Growth | None | Later | `planned` |  |  |  |
+| 61 | Several branches and their staff | Growth | None | Later | `planned` |  |  |  |
+| 62 | Yearly summary and zakat calculation | Books | None | Later | `planned` |  |  |  |
+| 63 | Sales and expense export for FBR filing | Books | None | Later | `planned` |  |  |  |
+| 64 | Credit Passport: verified sales history for a microfinance bank | Growth | None | Later | `planned` |  |  |  |
+| 65 | AI business coach with weekly advice | Growth | Spark Open | Later | `planned` |  |  |  |
+| 66 | Agent-to-agent commerce: MCP endpoint for outside assistants | Future | Spark Open | Stretch | `planned` |  |  |  |
+| 67 | Buyer's AI and shop's AI bargain with each other (A2A) | Future | Spark Open | Later | `planned` |  |  |  |
+| 68 | Network marketplace with verified money splits | Future | None | Later | `planned` |  |  |  |
+| 69 | Glasses and shelf mode: count stock by looking | Future | Needs Meta glasses; 87 is the phone version | Later | `planned` |  |  |  |
+| 70 | Offline and privacy mode: Glimmer on the shop's own PC | Future | Glimmer | Later | `planned` |  |  |  |
+| 71 | Run the whole shop by voice, for owners who cannot read | Future | Spark Open (audio) | Later | `planned` |  |  |  |
+| 72 | Open "verified commerce" standard for signed receipts | Future | None | Later | `planned` |  |  |  |
+| 73 | Other countries: bKash, M-Pesa and other wallet SMS formats | Future | None | Later | `planned` |  |  |  |
+| 74 | Web dashboard: orders, money, fraud and books | Future | None | Build | `planned` |  |  |  |
+| 75 | Owner's WhatsApp commands: "aaj ki sale?" | Future | Spark Open | Build | `planned` |  |  |  |
+| 76 | Unified inbox for WhatsApp, Instagram and Messenger, with staff assignment | Channels | None | Stretch | `planned` |  |  |  |
+| 77 | Comment-to-DM: a product card by private reply | Channels | None | Stretch | `planned` |  |  |  |
+| 78 | Story replies and mentions handled as leads | Channels | None | Later | `planned` |  |  |  |
+| 79 | One customer identity across channels | Channels | None | Stretch | `partial` | Each channel id is stored sealed with a keyed hash; a WhatsApp id links to the customer's phone hash. Instagram and Messenger linking comes with those channels. | api/src/chatfront/channels/service.py (identify) | tests/integration/test_app.py |
+| 80 | Hosted shop page as the checkout for Facebook and Instagram shop links | Channels | None | Build | `partial` | Hosted shop page per tenant at /s/<slug>; products, cart and checkout come with the catalog and payments. | web/src/pages/ShopPage.tsx, api/src/chatfront/routes/public.py | tests/integration/test_app.py, web/e2e/try-it.spec.ts |
+| 81 | Ad attribution: which ad brought which order | Channels | None | Later | `planned` |  |  |  |
+| 82 | Cross-posting one new product to every channel | Channels | None | Later | `planned` |  |  |  |
+| 83 | Shop in five minutes over WhatsApp | Catalog | Spark Open | Build | `planned` |  |  |  |
+| 84 | Instagram import of past posts as draft products | Catalog | Spark Open (vision) | Stretch | `planned` |  |  |  |
+| 85 | Excel or WhatsApp Business catalog import | Catalog | Spark Open | Stretch | `planned` |  |  |  |
+| 86 | Teach by voice: prices and policy updated after the owner confirms | Catalog | Spark Open (audio) | Build | `planned` |  |  |  |
+| 87 | Shelf photo stock count, confirmed by the owner | Catalog | Spark Open (vision) | Stretch | `planned` |  |  |  |
+| 88 | Video search: find the item in a clip or reel | Order agent | Spark Open (video) | Stretch | `planned` |  |  |  |
+| 89 | Handwritten kiryana list photo becomes a cart | Order agent | Spark Open (vision) | Build | `planned` |  |  |  |
+| 90 | Human handover with a three-line summary | Order agent | Spark Open | Build | `planned` |  |  |  |
+| 91 | Approved answers reused only after the owner approves | Order agent | Spark Open | Stretch | `planned` |  |  |  |
+| 92 | Exchange and return flow | Order agent | Spark Open | Stretch | `planned` |  |  |  |
+| 93 | Edit or cancel before dispatch, stock put back | Order agent | None | Build | `planned` |  |  |  |
+| 94 | Delivery charge by city and weight, free-delivery threshold | Order agent | None | Build | `planned` |  |  |  |
+| 95 | Eid and sale cut-off countdown | Order agent | None | Stretch | `planned` |  |  |  |
+| 96 | Diaspora gift orders with proof from a foreign transfer | Order agent | Spark Open (vision) | Later | `planned` |  |  |  |
+| 97 | Unique amount per transfer order (Rs 2,497 instead of 2,500) | Payments | None | Build | `planned` |  |  |  |
+| 98 | Order code in the transfer remarks, read from SMS and screenshot | Payments | Spark Open (vision) | Build | `planned` |  |  |  |
+| 99 | Reused-screenshot catch by perceptual hash | Payments | None | Build | `planned` |  |  |  |
+| 100 | Partial payment: ask for the balance, link both claims | Payments | Spark Open | Stretch | `planned` |  |  |  |
+| 101 | Shipping label PDF with order QR and COD amount | Delivery | None | Build | `planned` |  |  |  |
+| 102 | Packing check: packed items photo against the order | Delivery | Spark Open (vision) | Stretch | `planned` |  |  |  |
+| 103 | Daily pick list and packing slips | Delivery | None | Stretch | `planned` |  |  |  |
+| 104 | Autonomy levels per action: auto, ask me, never | Shield | None | Build | `planned` |  |  |  |
+| 105 | Answer check: prices, stock and totals checked before sending | Shield | None | Build | `planned` |  |  |  |
+| 106 | Prompt-injection guard: tools enforce the policy | Shield | Spark Open and rules | Build | `planned` |  |  |  |
+| 107 | Why panel: evidence and the rule that fired | Shield | None | Build | `planned` |  |  |  |
+| 108 | Consent log for broadcasts, fraud list and credit passport | Shield | None | Later | `planned` |  |  |  |
+| 109 | Try-it page for judges and a demo owner login | Demo | Spark Open | Build | `partial` | Phone-style try-it chat on the shop page runs the same reply job as WhatsApp. Demo owner login comes with the dashboard. | web/src/pages/ChatPage.tsx, api/src/chatfront/channels/routes.py | tests/integration/test_app.py::test_try_it_chat, web/e2e/try-it.spec.ts |
+| 110 | Customer simulator: Glimmer plays 50 customers | Demo | Glimmer and Spark Open | Stretch | `planned` |  |  |  |
+| 111 | Evaluation set: 100 scripted conversations, pass rate in CI | Demo | Spark Open | Build | `planned` |  |  |  |
+| 112 | Cost meter: tokens and rupees per order | Demo | None | Build | `partial` | Every model call records tokens, cost in thousandths of a paisa, latency and what it was for (`ai_calls`). Per-order view on the dashboard comes with feature 74. | api/src/chatfront/ai/client.py, api/src/chatfront/ai/meter.py | tests/unit/test_ai.py, tests/integration/test_ai_meter.py |
+| 113 | Reasoning routing: light for chat, deepest for forensics | Demo | Spark Open (reasoning setting) | Build | `partial` | Reasoning effort per role (low for chat, medium for vision and audio) with a per-call override; payment forensics will call it with xhigh. | api/src/chatfront/ai/config.py | tests/unit/test_ai.py::TestConfig |
+| 114 | Failover between Baseten, Modal and Fireworks | Demo | Spark Open | Stretch | `needs-key` | Failover Baseten -> Fireworks for Spark Open (Modal hosts Glimmer), tested against mocked endpoints. Runs live with BASETEN_API_KEY and FIREWORKS_API_KEY. | api/src/chatfront/ai/client.py, api/src/chatfront/ai/config.py | tests/unit/test_ai.py::TestClient |
+| 115 | Urdu right-to-left dashboard, installable, with push alerts | Demo | None | Stretch | `partial` | The web app reads right to left in Urdu and installs as a PWA. The dashboard and push alerts come later. | web/src/lang.tsx, web/public/manifest.webmanifest, web/public/sw.js | web/src/i18n.test.ts, web/e2e/try-it.spec.ts |
+| 116 | Share cards: product link previews for WhatsApp and X | Growth | None | Stretch | `planned` |  |  |  |

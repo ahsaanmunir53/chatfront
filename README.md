@@ -1,0 +1,132 @@
+# Chatfront
+
+Chatfront runs a small business inside WhatsApp, Instagram and Facebook: catalog, orders,
+verified payments, delivery, books and fraud protection. Meta's models read photos, voice
+notes and screenshots; tested rules make every decision that touches money, stock or a
+customer's standing.
+
+It starts with sellers in Pakistan who are paid by JazzCash, Easypaisa or bank transfer and
+lose money to fake payment screenshots. Chatfront matches each screenshot against the credit
+SMS from the seller's own phone, and sends a signed receipt anyone can check. The same idea
+fits any market that pays by wallet transfer instead of WhatsApp Pay.
+
+Built with Muse Spark Open.
+
+## Try it
+
+Every shop gets a page at `/s/<shop>` with a chat that runs the same agent as the shop's
+WhatsApp number. WhatsApp test numbers can only message their verified recipients, so this
+chat is how anyone outside the shop can try it. Six demo shops, one per business type, are
+created on first start: open `/` and pick one. They and their customers are made up.
+
+## Run it locally in ten steps
+
+You need Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22 and PostgreSQL 16.
+
+1. Create the owner role and database (the owner must not be a superuser, so row-level
+   security is tested the way it runs on Neon):
+   `psql -U postgres -c "CREATE ROLE chatfront_owner LOGIN PASSWORD 'owner' CREATEROLE" -c "CREATE DATABASE chatfront OWNER chatfront_owner"`
+2. `cp .env.example api/.env` and check `DATABASE_URL`.
+3. `cd api && uv sync`
+4. `uv run alembic upgrade head`
+5. `uv run python -m chatfront.seed`
+6. `uv run uvicorn chatfront.main:create_app --factory --reload` (API and job worker on :8000)
+7. In another terminal: `cd web && npm ci && npm run dev` (web app on :5173, proxied to :8000)
+8. Open http://localhost:5173, pick a shop, open its chat and say salam.
+9. With no model keys the replies come from recorded fixtures and start with `[mock reply]`.
+   Add `BASETEN_API_KEY` to `api/.env` for real answers.
+10. Tests: `cd api && uv run pytest --cov`, then `cd web && npm test && npm run e2e`.
+
+## Architecture
+
+```
+WhatsApp ─┐                      ┌─ catalog ─ orders ─ payments ─ delivery
+Instagram ┼─ webhooks ─┐         │  books ─ shield ─ growth ─ future
+Messenger ┘   (200 at once)      │  (switched on per tenant by tier)
+Shop page chat ────────┼─ queue ─┤
+SMS forwarder ─────────┘ (Postgres│
+                     SKIP LOCKED) └─ ai/ (the only code that calls a model)
+                                      Baseten → Fireworks: Muse Spark Open
+                                      Modal: Muse Glimmer
+```
+
+One FastAPI service on Render's free tier runs the API, an in-process job worker and the
+built web app. Render's free tier has no background workers, so cron-job.org calls
+`/internal/cron` every few minutes; due periodic tasks become queued jobs.
+
+- **Tenancy.** One PostgreSQL database. Every business table has `tenant_id` and a
+  row-level security policy. Tenant work runs inside a transaction that does
+  `SET LOCAL ROLE chatfront_app` and `SET LOCAL app.tenant_id`, so a query can only see one
+  shop's rows. The app role cannot update or delete the audit log.
+- **Models read, code decides.** `api/src/chatfront/ai/` holds roles (chat, vision, audio,
+  video, watcher, simulator), the reasoning effort per role, failover, JSON-schema outputs
+  validated with Pydantic, one tool registry, prompt files under version control and the
+  cost meter. A tool proposes; its handler checks the tenant's rules before changing
+  anything.
+- **Channels.** One adapter interface for WhatsApp, Instagram, Messenger and the web chat.
+  Every webhook checks `X-Hub-Signature-256`, provider message ids make handling idempotent,
+  and a guard enforces the 24-hour window before any send.
+- **Money** is an integer number of paisa everywhere. **Time** is stored in UTC and shown in
+  the shop's zone. **Phone numbers** are stored as keyed hashes where the number is not needed;
+  channel ids are stored sealed.
+- **Business types** are JSON templates in `api/src/chatfront/templates/`, not code.
+- **One string catalog** in `i18n/` (English, Urdu, Roman Urdu) serves the API and the web app.
+
+```
+api/src/chatfront/
+  core/       settings, db + RLS sessions, money, time, i18n, ids, phone hashing, errors
+  ai/         provider layer, mock fixtures, prompts, tools, cost meter
+  channels/   adapters, webhooks, try-it chat API, reply job
+  jobs/       queue, worker, cron
+  media/      Supabase and local storage, signed URLs, blurred copies
+  audit/      hash-chained audit log
+  modules/    module registry and tiers
+  templates/  business-type JSON
+web/src/      React app: shop page, try-it chat, trust page, receipt check, dashboard
+```
+
+## Built during the hackathon
+
+Everything in this repository was written from 27 October 2026, during the Meta Global AI
+Developer Hackathon. The commit history shows the order.
+
+- **27 October, foundation:** database with row-level security and migrations; the model
+  provider layer with failover, mock fixtures and the cost meter; the WhatsApp adapter and
+  webhook; the try-it chat; the job queue, worker and cron; media storage with signed URLs;
+  the hash-chained audit log; six business templates and their demo shops; the web app
+  with the shop page, try-it chat and trust page in English, Urdu and Roman Urdu; CI.
+
+The table in [FEATURES.md](FEATURES.md) tracks all 116 features and what state each is in.
+
+## Model API upgrade path
+
+The Meta Model API (Muse Spark 1.3, Voice Transcribe, SAM 3.1, Muse Image) is not reachable
+from Pakistan, so Chatfront runs Meta's open-weight models: Muse Spark Open on Baseten with
+Fireworks as fallback, and Muse Glimmer on Modal. A Meta Model API provider sits behind the
+same interface, off by default. Setting `META_MODEL_API_ENABLED=true` with a key and base URL
+puts it first in every chain, with no code change. Features that need SAM masks, Muse Image
+or web search are built behind their interfaces with stand-ins (card templates, a season
+calendar, Safe Browsing), and are marked `model-api-only` in FEATURES.md.
+
+## Deploy
+
+`render.yaml` describes one free Docker web service. Before the first deploy:
+
+1. Neon: create a project and copy the direct connection string into `DATABASE_URL`.
+2. Supabase: create a private bucket `chatfront-media`; set `SUPABASE_URL` and
+   `SUPABASE_SERVICE_KEY`.
+3. Render: New > Blueprint > this repository. Fill the values marked "sync: false".
+4. cron-job.org: POST `https://<service>.onrender.com/internal/cron` every 5 minutes with the
+   header `X-Cron-Secret` set to the `CRON_SECRET` Render generated.
+5. Meta: set the WhatsApp webhook to `https://<service>.onrender.com/webhooks/whatsapp`, with
+   `META_VERIFY_TOKEN` as the verify token, subscribed to `messages`.
+
+## Roadmap
+
+Build features (41) work end to end by 2 November, Stretch features (34) follow, and Later
+features (41) stay on the roadmap. The demo shows only work built during the event.
+
+## Attribution
+
+Built with Muse Spark Open. Muse Spark Open and Muse Glimmer are Meta's models, used under
+their licenses.
