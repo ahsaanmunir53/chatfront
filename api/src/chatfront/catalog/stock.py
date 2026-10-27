@@ -3,8 +3,9 @@ again until stock is back above it.
 
 The limit is the product's own, else the shop's default, else three. Every stock change
 goes through catalog.service.move_stock, which calls crossed() after writing its movement;
-the alert itself is a job, so it follows the shop's autonomy level and reaches the owner on
-WhatsApp while their chat is open, and the console always.
+the alert itself is a job, so it follows the shop's autonomy level. It is a notice with
+Reorder and Snooze (feature 118): on WhatsApp while the owner's chat is open (or as the alert
+template), and in the console always.
 """
 
 from __future__ import annotations
@@ -17,18 +18,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.catalog.models import Product, Variant
 from chatfront.channels.handover import staff_language
-from chatfront.channels.notify import tell_owner
-from chatfront.channels.types import OutText
+from chatfront.channels.types import Button
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.core.provisioning import owner_of
 from chatfront.jobs.queue import JobContext, enqueue
 from chatfront.shield.autonomy import Action, Level, level
+from chatfront.stock import notices
 
 if TYPE_CHECKING:
     from chatfront.services import Services
 
 LOW_STOCK_JOB = "stock.low_alert"
+LOW_PREFIX = "ls"
+REORDER, SNOOZE = "reorder", "snooze"
 DEFAULT_LIMIT = 3
 SHOP_LIMIT = "low_stock_limit"  # profile key: the shop's default
 
@@ -64,6 +67,21 @@ async def crossed(session: AsyncSession, variant: Variant, delta: int) -> None:
         variant.low_alerted = False
 
 
+def low_button(variant_id: uuid.UUID, choice: str) -> str:
+    """A low-stock alert's buttons (feature 118): Reorder and Snooze."""
+    return f"{LOW_PREFIX}:{variant_id}:{choice}"
+
+
+def parse_low(value: str | None) -> tuple[uuid.UUID, str] | None:
+    parts = (value or "").split(":")
+    if len(parts) != 3 or parts[0] != LOW_PREFIX or parts[2] not in (REORDER, SNOOZE):
+        return None
+    try:
+        return uuid.UUID(parts[1]), parts[2]
+    except ValueError:
+        return None
+
+
 def label(product: Product, variant: Variant) -> str:
     options = " ".join(str(v) for v in variant.options.values())
     return f"{product.name} ({options})" if options else product.name
@@ -89,7 +107,11 @@ async def alert_job(ctx: JobContext) -> None:
             left=variant.stock or 0,
             limit=limit_for(tenant, product),
         )
-    await tell_owner(services, ctx.tenant_id, owner, OutText(text), lang)
+    buttons = [
+        Button(low_button(variant.id, REORDER), t("stock.reorder", lang)),
+        Button(low_button(variant.id, SNOOZE), t("stock.snooze", lang)),
+    ]
+    await notices.notify(services, ctx.tenant_id, "low_stock", text, buttons)
 
 
 async def low_now(session: AsyncSession, tenant: Tenant) -> list[dict[str, Any]]:

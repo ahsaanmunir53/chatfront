@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     meta_graph_version: str = "v23.0"
     meta_graph_base_url: str = "https://graph.facebook.com"
     whatsapp_access_token: SecretStr | None = None
+    # Owner alerts outside the 24-hour window go as this approved utility template (one body
+    # parameter); without it they wait in the console (feature 118).
+    whatsapp_alert_template: str | None = None
+    whatsapp_alert_template_lang: str = "en"
+    # The owner panel's WhatsApp Flow, once published in WhatsApp Manager (feature 118).
+    whatsapp_flow_product_id: str | None = None
     # Instagram API with Instagram Login signs webhooks with its own app secret.
     instagram_app_secret: SecretStr | None = None
     instagram_graph_base_url: str = "https://graph.instagram.com"
