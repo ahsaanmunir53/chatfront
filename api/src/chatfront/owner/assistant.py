@@ -1,6 +1,7 @@
-"""The owner's assistant: add a product from a photo and a voice note (features 1 and 4), and
-change prices and shop policies by voice or text (feature 86). Spark Open reads; the owner
-confirms; code applies.
+"""The owner's assistant: add a product from a photo and a voice note (features 1 and 4),
+change prices and shop policies by voice or text (feature 86), tell the books about bills,
+expenses and udhaar (48, 49) and ask how the shop is doing (75). Spark Open reads; the owner
+confirms; code applies. Each staff member gets only what their role allows (42).
 """
 
 from __future__ import annotations
@@ -9,30 +10,41 @@ import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from chatfront.ai.client import AiClient
 from chatfront.ai.types import Part
 from chatfront.audit.service import Actor, ActorType
+from chatfront.books import reports
+from chatfront.books.chat import (
+    KIND_MONEY,
+    BillReading,
+    apply_money,
+    bill_op,
+    is_bill,
+    money_card_text,
+    problem_text,
+    read_bill,
+    resolve_money,
+)
 from chatfront.catalog.drafts import (
     EMPTY_DRAFT,
-    Change,
+    MoneyLine,
     OwnerMessage,
     ProductDraft,
     complete_draft,
     fields_text,
-    name_from_words,
+    price_from_words,
     read_owner_message,
     read_product,
     to_input,
-    to_minor,
 )
 from chatfront.catalog.models import ProductStatus
 from chatfront.catalog.service import (
     CatalogItem,
     apply_changes,
     create_product,
-    find_products,
     load_items,
-    single_match,
 )
 from chatfront.channels.conversation import Turn
 from chatfront.channels.types import Kind, Outbound, OutText
@@ -41,16 +53,16 @@ from chatfront.core.db import Database
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
-from chatfront.core.numbers import find_numbers
 from chatfront.core.settings import Settings
 from chatfront.jobs.queue import enqueue
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
 from chatfront.media.storage import Storage
-from chatfront.orders.delivery import city_name, rates_for
 from chatfront.owner import actions
 from chatfront.owner.cards import change_list, confirm_card, product_summary
+from chatfront.owner.changes import resolve_changes, typed_price_change
 from chatfront.owner.models import ActionStatus, PendingAction
+from chatfront.owner.rights import Can, staff_rights
 from chatfront.templates import get_template
 
 # A tap on a button another module put in the owner's chat (giving a chat back to the agent,
@@ -59,8 +71,13 @@ ButtonHandler = Callable[[Turn], Awaitable[list[Outbound] | None]]
 
 KIND_PRODUCT = "product"
 KIND_UPDATE = "update"
+_RIGHT = {KIND_PRODUCT: Can.CATALOG, KIND_UPDATE: Can.CATALOG, KIND_MONEY: Can.BOOKS_WRITE}
 TRANSLATE_JOB = "catalog.translate"
 _POLICY_FIELDS = ("delivery", "hours", "payment", "returns", "policies")
+
+
+def refuse(turn: Turn) -> list[Outbound]:
+    return [OutText(t("owner.not_allowed", turn.lang))]
 
 
 def prompt_context(tenant: Tenant) -> dict[str, str]:
@@ -73,113 +90,6 @@ def prompt_context(tenant: Tenant) -> dict[str, str]:
         "currency": pack.currency,
         "fields": fields_text(template),
     }
-
-
-Problem = tuple[str, dict[str, Any]]
-
-
-def _delivery_op(change: Change, tenant: Tenant, digits: int) -> dict[str, Any] | Problem:
-    """A change to the delivery charge (feature 94), with what it was before."""
-    rates = rates_for(tenant)
-    amount = to_minor(change.value_number, digits) if change.value_number is not None else None
-    if change.kind == "free_delivery_over":
-        new = amount if change.value_number else None
-        return {"op": "free_delivery_over", "old": rates.free_over, "new": new}
-    if amount is None:
-        return ("owner.need_amount", {"name": t("owner.policy.delivery", "en")})
-    if change.city:
-        city = city_name(change.city, get_pack(tenant.country))
-        return {"op": "delivery_fee", "city": city, "old": rates.cities.get(city), "new": amount}
-    return {"op": "delivery_fee", "city": None, "old": rates.default, "new": amount}
-
-
-def resolve_changes(
-    changes: Sequence[Change],
-    items: Sequence[CatalogItem],
-    digits: int,
-    tenant: Tenant | None = None,
-) -> tuple[list[dict[str, Any]], list[Problem]]:
-    """Turn what the owner asked for into exact operations on exact products, or problems to
-    tell the owner (not found, which one, no amount)."""
-    ops: list[dict[str, Any]] = []
-    problems: list[Problem] = []
-    for change in changes:
-        if change.kind in ("delivery_fee", "free_delivery_over"):
-            if tenant is not None:
-                resolved = _delivery_op(change, tenant, digits)
-                if isinstance(resolved, dict):
-                    ops.append(resolved)
-                else:
-                    problems.append(resolved)
-            continue
-        if change.kind == "policy":
-            if change.policy_key and change.value_text and change.value_text.strip():
-                ops.append(
-                    {
-                        "op": "policy",
-                        "key": change.policy_key,
-                        "new": change.value_text.strip()[:300],
-                    }
-                )
-            continue
-        if not change.product:
-            continue
-        matches = find_products(items, change.product)
-        item = single_match(matches)
-        if item is None:
-            if matches:
-                options = ", ".join(
-                    f"{m.item.product.code} ({m.item.product.name})" for m in matches[:3]
-                )
-                problems.append(("owner.which", {"options": options}))
-            else:
-                problems.append(("owner.not_found", {"name": change.product}))
-            continue
-        product = item.product
-        if change.kind in ("price", "floor_price"):
-            new = to_minor(change.value_number, digits) if change.value_number is not None else None
-            if new is None:
-                problems.append(("owner.need_amount", {"name": product.name}))
-                continue
-            if change.kind == "floor_price" and new > product.price:
-                problems.append(("owner.floor_above_price", {"name": product.name}))
-                continue
-            old = product.price if change.kind == "price" else product.floor_price
-            ops.append(
-                {
-                    "op": change.kind,
-                    "product_id": str(product.id),
-                    "name": product.name,
-                    "old": old,
-                    "new": new,
-                }
-            )
-        else:
-            ops.append({"op": change.kind, "product_id": str(product.id), "name": product.name})
-    return ops, problems
-
-
-def typed_price_change(
-    words: str, items: Sequence[CatalogItem], lang: str, digits: int
-) -> list[dict[str, Any]]:
-    """Code's own reading of "lawn 3-piece 2500" as a price change, when the model gave none."""
-    numbers = [n for n in find_numbers(words, lang) if n >= 10]
-    if len(numbers) != 1:
-        return []
-    item = single_match(find_products(items, name_from_words(words, numbers[0], lang)))
-    new = to_minor(numbers[0], digits)
-    if item is None or new is None or new == item.product.price:
-        return []
-    product = item.product
-    return [
-        {
-            "op": "price",
-            "product_id": str(product.id),
-            "name": product.name,
-            "old": product.price,
-            "new": new,
-        }
-    ]
 
 
 class OwnerAssistant:
@@ -198,21 +108,34 @@ class OwnerAssistant:
         self.buttons = tuple(buttons)
 
     async def respond(self, turn: Turn) -> list[Outbound]:
-        if turn.staff_id is not None and (turn.message.payload or {}).get("button_id"):
+        button = (turn.message.payload or {}).get("button_id")
+        if turn.staff_id is not None and button:
             for handler in self.buttons:
                 replies = await handler(turn)
                 if replies is not None:
                     return replies
-        choice = actions.parse_button((turn.message.payload or {}).get("button_id"))
+        allowed = await staff_rights(self.db, turn.tenant.id, turn.staff_id)
+        choice = actions.parse_button(button)
         if choice is not None:
-            return await self._answer(turn, *choice)
+            return await self._answer(turn, allowed, *choice)
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
-        if turn.message.kind == Kind.IMAGE:
-            return await self._product(turn, None, None)
+        words, kind = turn.message.body or "", turn.message.kind
+        if kind == Kind.IMAGE and is_bill(words):
+            return await self._bill(turn, None) if Can.BOOKS_WRITE in allowed else refuse(turn)
+        if kind == Kind.IMAGE:
+            return await self._product(turn, None, None) if Can.CATALOG in allowed else refuse(turn)
         if action is not None and action.kind == KIND_PRODUCT:
             return await self._product(turn, action, None)
-        return await self._owner_message(turn)
+        waiting_bill = (
+            action is not None
+            and action.kind == KIND_MONEY
+            and action.status == ActionStatus.COLLECTING
+        )
+        if waiting_bill and price_from_words(words, turn.lang) is not None:
+            assert action is not None
+            return await self._bill(turn, action)
+        return await self._owner_message(turn, allowed)
 
     # -- a new product --------------------------------------------------------------------
 
@@ -298,13 +221,8 @@ class OwnerAssistant:
 
     # -- prices and policies --------------------------------------------------------------
 
-    async def _owner_message(self, turn: Turn) -> list[Outbound]:
-        tenant, lang, message = turn.tenant, turn.lang, turn.message
-        words = message.body or ""
-        async with self.db.tenant(tenant.id) as session:
-            items = await load_items(
-                session, statuses=(ProductStatus.ACTIVE, ProductStatus.ARCHIVED)
-            )
+    async def _read(self, turn: Turn, items: Sequence[CatalogItem]) -> OwnerMessage:
+        tenant, message = turn.tenant, turn.message
         context = prompt_context(tenant) | {
             "products": "; ".join(
                 f"{i.product.code} {i.product.name} {shop_money(tenant, i.product.price, 'en')}"
@@ -318,29 +236,44 @@ class OwnerAssistant:
         }
         media = [turn.media] if message.kind == Kind.AUDIO and turn.media is not None else []
         try:
-            read = await read_owner_message(
-                self.ai, tenant_id=tenant.id, context=context, media=media, words=words, lang=lang
+            return await read_owner_message(
+                self.ai,
+                tenant_id=tenant.id,
+                context=context,
+                media=media,
+                words=message.body or "",
+                lang=turn.lang,
             )
         except AppError:
-            read = OwnerMessage(intent="other", product=None, changes=[], note="")
+            return OwnerMessage(intent="other", product=None, changes=[], note="")
+
+    async def _owner_message(self, turn: Turn, allowed: frozenset[Can]) -> list[Outbound]:
+        tenant, lang, message = turn.tenant, turn.lang, turn.message
+        words = message.body or ""
+        async with self.db.tenant(tenant.id) as session:
+            items = await load_items(
+                session, statuses=(ProductStatus.ACTIVE, ProductStatus.ARCHIVED)
+            )
+        read = await self._read(turn, items)
+        if read.intent == "report" and read.report is not None:
+            return await self._report(turn, read.report, allowed)
+        if read.intent == "money" and read.money:
+            return await self._money(turn, read.money, allowed)
         if read.intent == "new_product" and read.product is not None:
-            return await self._product(turn, None, read.product)
+            return (
+                await self._product(turn, None, read.product)
+                if Can.CATALOG in allowed
+                else refuse(turn)
+            )
         digits = get_pack(tenant.country).minor_digits
         ops, problems = resolve_changes(read.changes, items, digits, tenant)
         if not ops and not problems:
             ops = typed_price_change(words, items, lang, digits)
+        if (ops or problems) and Can.CATALOG not in allowed:
+            return refuse(turn)
         problem_lines = [t(key, lang, **values) for key, values in problems]
         if ops:
-            async with self.db.tenant(tenant.id) as session:
-                action = await actions.open_action(
-                    session,
-                    tenant_id=tenant.id,
-                    conversation_id=turn.conversation.id,
-                    staff_id=turn.staff_id,
-                    kind=KIND_UPDATE,
-                    payload={"ops": ops},
-                    status=ActionStatus.PENDING,
-                )
+            action = await self._open(turn, KIND_UPDATE, {"ops": ops})
             text = "\n".join(
                 [
                     t("owner.changes_preview", lang, lines=change_list(tenant, ops, lang)),
@@ -354,50 +287,156 @@ class OwnerAssistant:
             return [OutText(t("owner.voice_unclear", lang))]
         return [OutText(t("owner.help", lang))]
 
-    # -- Confirm and Cancel ---------------------------------------------------------------
+    async def _open(self, turn: Turn, kind: str, payload: dict[str, Any]) -> PendingAction:
+        async with self.db.tenant(turn.tenant.id) as session:
+            return await actions.open_action(
+                session,
+                tenant_id=turn.tenant.id,
+                conversation_id=turn.conversation.id,
+                staff_id=turn.staff_id,
+                kind=kind,
+                payload=payload,
+                status=ActionStatus.PENDING,
+            )
 
-    async def _answer(self, turn: Turn, action_id: uuid.UUID, answer: str) -> list[Outbound]:
+    # -- the books: expenses, udhaar, bills and reports (features 48, 49, 75) ---------------
+
+    async def _report(self, turn: Turn, report: str, allowed: frozenset[Can]) -> list[Outbound]:
+        if reports.NEEDS[report] not in allowed:
+            return refuse(turn)
+        async with self.db.tenant(turn.tenant.id) as session:
+            text = await reports.report_text(session, turn.tenant, report, turn.lang)
+        return [OutText(text)]
+
+    async def _money(
+        self, turn: Turn, lines: Sequence[MoneyLine], allowed: frozenset[Can]
+    ) -> list[Outbound]:
+        if Can.BOOKS_WRITE not in allowed:
+            return refuse(turn)
         tenant, lang = turn.tenant, turn.lang
-        actor = Actor(ActorType.STAFF, str(turn.staff_id) if turn.staff_id else None)
+        digits = get_pack(tenant.country).minor_digits
         async with self.db.tenant(tenant.id) as session:
-            action = await actions.find_for_button(session, turn.conversation.id, action_id)
-            if action is None or not actions.is_live(action):
-                return [OutText(t("owner.expired", lang))]
-            if answer != "yes":
-                actions.close(action, ActionStatus.CANCELLED)
-                return [OutText(t("owner.cancelled", lang))]
-            if action.kind == KIND_PRODUCT:
-                product = to_input(
-                    ProductDraft.model_validate(action.payload["draft"]),
-                    get_template(tenant.template),
-                    get_pack(tenant.country).minor_digits,
-                    source="photo_voice" if action.payload.get("media_ids") else "chat",
-                    image_media_id=(
-                        uuid.UUID(action.payload["media_ids"][0])
-                        if action.payload.get("media_ids")
-                        else None
-                    ),
-                )
-                assert product is not None  # only complete drafts are ever pending
-                item = await create_product(session, tenant.id, product, actor)
-                await enqueue(
-                    session,
-                    TRANSLATE_JOB,
-                    {"product_id": str(item.product.id)},
+            ops, problems = await resolve_money(session, lines, digits)
+        problem_lines = [problem_text(tenant, problem, lang) for problem in problems]
+        if not ops:
+            return [OutText("\n".join(problem_lines))]
+        source = "voice" if turn.message.kind == Kind.AUDIO else "chat"
+        action = await self._open(turn, KIND_MONEY, {"ops": ops, "source": source})
+        text = "\n".join([money_card_text(tenant, ops, lang), *problem_lines])
+        return [confirm_card(action, text, "books.save", lang)]
+
+    async def _bill(self, turn: Turn, action: PendingAction | None) -> list[Outbound]:
+        """A bill photo, or the amount the owner typed for the bill before it."""
+        tenant, lang, message = turn.tenant, turn.lang, turn.message
+        words = message.body or ""
+        payload = dict(action.payload) if action else {}
+        reading = BillReading.model_validate(payload["reading"]) if payload.get("reading") else None
+        media_id = payload.get("media_id")
+        if action is None and message.media_id is not None:
+            media_id = str(message.media_id)
+            try:
+                reading = await read_bill(
+                    self.ai,
                     tenant_id=tenant.id,
-                    dedupe_key=f"translate:{item.product.id}",
+                    context=prompt_context(tenant),
+                    media=await self._photos(tenant.id, [media_id]),
+                    words=words,
+                    lang=lang,
                 )
-                reply = t(
-                    "owner.product_added",
-                    lang,
-                    name=item.product.name,
-                    code=item.product.code,
-                    link=f"{self.settings.web_url}/s/{tenant.slug}",
+            except AppError:  # no model: the owner types the amount
+                reading = None
+        op = bill_op(reading, words, get_pack(tenant.country).minor_digits, lang)
+        ready = isinstance(op, dict)
+        new_payload = {
+            "media_id": media_id,
+            "reading": reading.model_dump() if reading else None,
+            "source": "bill",
+            "ops": [op] if ready else [],
+        }
+        status = ActionStatus.PENDING if ready else ActionStatus.COLLECTING
+        async with self.db.tenant(tenant.id) as session:
+            if action is None:
+                saved = await actions.open_action(
+                    session,
+                    tenant_id=tenant.id,
+                    conversation_id=turn.conversation.id,
+                    staff_id=turn.staff_id,
+                    kind=KIND_MONEY,
+                    payload=new_payload,
+                    status=status,
                 )
             else:
-                stored = await session.get(Tenant, tenant.id)
-                assert stored is not None
-                count = await apply_changes(session, stored, action.payload["ops"], actor)
-                reply = t("owner.changes_applied", lang, count=count)
-            actions.close(action, ActionStatus.CONFIRMED)
+                found = await session.get(PendingAction, action.id)
+                assert found is not None
+                saved = found
+                actions.update(saved, new_payload, status)
+        if isinstance(op, dict):
+            return [confirm_card(saved, money_card_text(tenant, [op], lang), "books.save", lang)]
+        return [OutText(problem_text(tenant, op, lang))]
+
+    # -- Confirm and Cancel ---------------------------------------------------------------
+
+    async def _answer(
+        self, turn: Turn, allowed: frozenset[Can], action_id: uuid.UUID, answer: str
+    ) -> list[Outbound]:
+        tenant, lang = turn.tenant, turn.lang
+        actor = Actor(ActorType.STAFF, str(turn.staff_id) if turn.staff_id else None)
+        try:
+            async with self.db.tenant(tenant.id) as session:
+                action = await actions.find_for_button(session, turn.conversation.id, action_id)
+                if action is None or not actions.is_live(action):
+                    return [OutText(t("owner.expired", lang))]
+                if answer != "yes":
+                    actions.close(action, ActionStatus.CANCELLED)
+                    return [OutText(t("owner.cancelled", lang))]
+                if _RIGHT[action.kind] not in allowed:
+                    return refuse(turn)
+                reply = await self._apply(session, tenant, action, actor, lang)
+                actions.close(action, ActionStatus.CONFIRMED)
+        except AppError:  # something changed since the card: nothing was saved
+            return [OutText(t("owner.not_applied", lang))]
         return [OutText(reply)]
+
+    async def _apply(
+        self, session: AsyncSession, tenant: Tenant, action: PendingAction, actor: Actor, lang: str
+    ) -> str:
+        if action.kind == KIND_MONEY:
+            media_id = action.payload.get("media_id")
+            count = await apply_money(
+                session,
+                tenant,
+                action.payload["ops"],
+                actor,
+                source=action.payload["source"],
+                media_id=uuid.UUID(media_id) if media_id else None,
+            )
+            return t("books.saved", lang, count=count)
+        if action.kind == KIND_UPDATE:
+            stored = await session.get(Tenant, tenant.id)
+            assert stored is not None
+            count = await apply_changes(session, stored, action.payload["ops"], actor)
+            return t("owner.changes_applied", lang, count=count)
+        media_ids = action.payload.get("media_ids")
+        product = to_input(
+            ProductDraft.model_validate(action.payload["draft"]),
+            get_template(tenant.template),
+            get_pack(tenant.country).minor_digits,
+            source="photo_voice" if media_ids else "chat",
+            image_media_id=uuid.UUID(media_ids[0]) if media_ids else None,
+        )
+        assert product is not None  # only complete drafts are ever pending
+        item = await create_product(session, tenant.id, product, actor)
+        await enqueue(
+            session,
+            TRANSLATE_JOB,
+            {"product_id": str(item.product.id)},
+            tenant_id=tenant.id,
+            dedupe_key=f"translate:{item.product.id}",
+        )
+        return t(
+            "owner.product_added",
+            lang,
+            name=item.product.name,
+            code=item.product.code,
+            link=f"{self.settings.web_url}/s/{tenant.slug}",
+        )

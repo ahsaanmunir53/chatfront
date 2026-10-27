@@ -15,6 +15,9 @@ from chatfront.owner.actions import button_id
 from chatfront.owner.models import PendingAction
 from chatfront.templates import get_template
 
+# Something to tell the owner instead of a change: a string key and its values.
+Problem = tuple[str, dict[str, Any]]
+
 
 def _label(tenant: Tenant, key: str, lang: str) -> str:
     """A template field's label in the reader's language, along their fallback chain."""
@@ -67,6 +70,11 @@ def change_line(tenant: Tenant, op: dict[str, Any], lang: str) -> str:
         )
         key = "owner.change_price" if kind == "price" else "owner.change_floor"
         return t(key, lang, name=op["name"], old=old, new=shop_money(tenant, op["new"], lang))
+    if kind == "low_stock_limit":
+        old = op["old"] if op["old"] is not None else t("owner.none_set", lang)
+        if op["name"]:
+            return t("owner.change_low_stock", lang, name=op["name"], old=old, new=op["new"])
+        return t("owner.change_low_stock_shop", lang, old=old, new=op["new"])
     if kind in ("available", "unavailable"):
         return t(f"owner.change_{kind}", lang, name=op["name"])
     if kind in ("delivery_fee", "free_delivery_over"):

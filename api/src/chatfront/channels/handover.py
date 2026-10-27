@@ -38,6 +38,7 @@ from chatfront.core.i18n import t
 from chatfront.core.languages import load_registry
 from chatfront.core.models import Staff, Tenant
 from chatfront.core.provisioning import owner_of
+from chatfront.owner.rights import Can, staff_rights
 
 if TYPE_CHECKING:
     from chatfront.channels.conversation import Turn
@@ -278,6 +279,8 @@ async def resume_button(services: Services, turn: Turn) -> list[Outbound] | None
     handover_id = parse_handover_button((turn.message.payload or {}).get("button_id"))
     if handover_id is None or turn.staff_id is None:
         return None
+    if Can.CHATS not in await staff_rights(services.db, turn.tenant.id, turn.staff_id):
+        return [OutText(t("owner.not_allowed", turn.lang))]
     await resume(services, turn.tenant.id, handover_id, turn.staff_id)
     return [OutText(t("handover.resumed", turn.lang))]
 

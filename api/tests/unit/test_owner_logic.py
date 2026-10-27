@@ -26,8 +26,8 @@ from chatfront.catalog.service import CatalogItem, ProductInput, VariantInput
 from chatfront.core.models import Tenant
 from chatfront.core.money import Minor
 from chatfront.owner.actions import parse_button
-from chatfront.owner.assistant import resolve_changes, typed_price_change
 from chatfront.owner.cards import change_line, product_summary
+from chatfront.owner.changes import resolve_changes, typed_price_change
 from chatfront.owner.onboarding import merge, next_step, read_by_words
 from chatfront.owner.sessions import NotSignedIn, console_link, issue, verify
 from chatfront.templates import get_template

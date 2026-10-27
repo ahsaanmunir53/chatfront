@@ -12,6 +12,13 @@ from fastapi import Request
 from chatfront.ai.client import AiClient
 from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
+from chatfront.books.reminders import EVERY as REMINDERS_EVERY
+from chatfront.books.reminders import KIND as reminder_kind
+from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
+from chatfront.books.reports import CARD_JOB, CARDS_JOB, card_job, cards_job
+from chatfront.books.reports import EVERY as CARDS_EVERY
+from chatfront.catalog.stock import LOW_STOCK_JOB
+from chatfront.catalog.stock import alert_job as low_stock_alert
 from chatfront.catalog.translations import translate_product
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.conversation import Responder, handle_reply
@@ -29,12 +36,16 @@ from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.orders.agent import OrderAgent
+from chatfront.orders.discounts import DISCOUNT
+from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.tools import order_tools
 from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
 from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
+from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
+from chatfront.shield.approvals import tell_job as approval_tell_job
 
 REQUEUE_STALE_JOB = "jobs.requeue_stale"
 
@@ -47,6 +58,7 @@ class Registries:
     jobs: JobRegistry = field(default_factory=JobRegistry)
     cron: CronRegistry = field(default_factory=CronRegistry)
     tools: ToolRegistry = field(default_factory=ToolRegistry)
+    approvals: dict[str, ApprovalKind] = field(default_factory=dict)  # feature 104
 
 
 @dataclass
@@ -85,6 +97,15 @@ def build_registries() -> Registries:
     payments = registries.modules.modules["payments"]
     payments.jobs |= {REVIEW_JOB: review_job, WATCH_JOB: watch}
     payments.periodic.append(Periodic("payment-watch", EVERY, WATCH_JOB))
+    registries.jobs.register(APPROVAL_JOB)(approval_tell_job)
+    registries.approvals[DISCOUNT] = discount_kind
+    books = registries.modules.modules["books"]
+    books.jobs[REMINDERS_JOB] = reminders_job
+    books.periodic.append(Periodic("udhaar-reminders", REMINDERS_EVERY, REMINDERS_JOB))
+    registries.approvals[REMINDER] = reminder_kind
+    books.jobs |= {CARDS_JOB: cards_job, CARD_JOB: card_job}
+    books.periodic.append(Periodic("profit-cards", CARDS_EVERY, CARDS_JOB))
+    registries.modules.modules["growth"].jobs[LOW_STOCK_JOB] = low_stock_alert
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
@@ -152,7 +173,11 @@ def build_services(settings: Settings, registries: Registries) -> Services:
             ai,
             storage,
             settings,
-            buttons=(partial(resume_button, services), partial(payment_button, services)),
+            buttons=(
+                partial(resume_button, services),
+                partial(payment_button, services),
+                partial(approval_button, services),
+            ),
         ),
         Party.ONBOARDING: OnboardingAssistant(db, ai, storage, settings, registries.modules),
     }

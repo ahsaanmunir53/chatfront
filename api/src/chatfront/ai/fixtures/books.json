@@ -1,0 +1,117 @@
+[
+  {
+    "prompt": "read_bill",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "total": null,
+      "vendor": null,
+      "category": "other",
+      "note": "[mock reading] A bill; the amount comes from the owner."
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "aaj ki sale",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Today's sales.",
+      "report": "today"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "today's sale",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Today's sales.",
+      "report": "today"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "hafte ki sale",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "This week's sales.",
+      "report": "week"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "pending payment",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Orders waiting for payment.",
+      "report": "pending_payments"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "pending order",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Orders to pack and send.",
+      "report": "pending_orders"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "low stock",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "What is running low.",
+      "report": "low_stock"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "khata",
+    "json": {
+      "intent": "report",
+      "product": null,
+      "changes": [],
+      "note": "Who owes the shop.",
+      "report": "udhaar"
+    }
+  },
+  {
+    "prompt": "owner_message",
+    "role": "*",
+    "match": "kiraya 25",
+    "json": {
+      "intent": "money",
+      "product": null,
+      "changes": [],
+      "note": "Shop rent paid.",
+      "money": [
+        {
+          "kind": "expense",
+          "amount": 25000,
+          "category": "rent",
+          "person": null,
+          "note": "Shop rent"
+        }
+      ]
+    }
+  }
+]

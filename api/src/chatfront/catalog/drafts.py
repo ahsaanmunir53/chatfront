@@ -62,6 +62,7 @@ class Change(Strict):
         "policy",
         "delivery_fee",
         "free_delivery_over",
+        "low_stock_limit",
     ]
     product: str | None
     value_number: float | None
@@ -70,10 +71,28 @@ class Change(Strict):
     city: str | None = None  # for a delivery charge: the city it is for; None is everywhere else
 
 
+ExpenseCategory = Literal[
+    "stock", "rent", "salaries", "utilities", "delivery", "packaging", "marketing", "other"
+]
+
+
+class MoneyLine(Strict):
+    kind: Literal["expense", "udhaar_given", "udhaar_paid"]
+    amount: float | None
+    category: ExpenseCategory | None = None
+    person: str | None = None  # for udhaar: whose account
+    note: str | None = None
+
+
+Report = Literal["today", "week", "pending_payments", "pending_orders", "low_stock", "udhaar"]
+
+
 class OwnerMessage(Strict):
-    intent: Literal["new_product", "update", "question", "other"]
+    intent: Literal["new_product", "update", "money", "report", "question", "other"]
     product: ProductDraft | None
     changes: list[Change]
+    money: list[MoneyLine] = Field(default_factory=list)
+    report: Report | None = None
     note: str
 
 
