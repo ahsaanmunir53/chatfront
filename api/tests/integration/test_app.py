@@ -286,6 +286,7 @@ async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
         ("in", "salam"),
         ("out", "Wa alaikum assalam! Bataiye, main aap ki kya madad kar sakta hoon?"),
     ]
+    assert [m["client_id"] for m in listed] == [client_id, None]  # the page settles its copy
     newer = await client.get(
         f"/api/shops/{SHOP}/chat/messages",
         headers=mine,

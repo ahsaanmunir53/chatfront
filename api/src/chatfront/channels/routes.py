@@ -128,7 +128,18 @@ class ChatMessageOut(BaseModel):
     lang: str | None  # the language the message is in, so the page sets direction and font
     payload: dict[str, Any]
     media_url: str | None  # a short-lived link to the photo or voice note in the message
+    client_id: uuid.UUID | None  # for messages typed here: the id the page gave it when sending
     created_at: datetime
+
+
+def _client_id(message: Message) -> uuid.UUID | None:
+    """The page's own id for a message it sent, from the id it was stored under."""
+    if message.direction != "in" or not (message.external_id or "").startswith("web:"):
+        return None
+    try:
+        return uuid.UUID((message.external_id or "").rsplit(":", 1)[1])
+    except ValueError:
+        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -312,6 +323,7 @@ async def list_chat_messages(
                 if media is not None
                 else None
             ),
+            client_id=_client_id(message),
             created_at=message.created_at,
         )
         for message, media in rows

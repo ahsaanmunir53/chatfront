@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from chatfront.catalog.models import ProductStatus
 from chatfront.catalog.service import load_items
-from chatfront.catalog.translations import set_owner_text
+from chatfront.catalog.translations import set_owner_text, target_languages
 from chatfront.core.models import Staff, Tenant
 from chatfront.owner.sandbox import copy_demo_shop
 from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
@@ -51,6 +51,7 @@ class Me(BaseModel):
     country: str
     currency: str
     is_demo: bool
+    languages: list[str]  # the customer languages product texts are written in, beside English
 
 
 class OwnerVariant(BaseModel):
@@ -106,6 +107,7 @@ async def me(session: OwnerDep, services: ServicesDep) -> Me:
         country=tenant.country,
         currency=tenant.currency,
         is_demo=tenant.is_demo,
+        languages=target_languages(tenant),
     )
 
 

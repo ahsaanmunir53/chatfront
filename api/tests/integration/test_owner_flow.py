@@ -134,6 +134,7 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
     assert slug.startswith(f"{SHOP}-")
     me = (await client.get("/api/owner/me", headers=auth)).json()
     assert (me["shop_name"], me["is_demo"], me["currency"]) == ("Gulmohar Lawn House", True, "PKR")
+    assert me["languages"][:2] == ["ur-Latn", "ur"]  # Pakistan's customer languages
     assert len((await client.get("/api/owner/products", headers=auth)).json()) == 4
     assert (await client.get("/api/owner/me")).status_code == 401
     assert (
