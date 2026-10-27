@@ -1,8 +1,11 @@
-"""Carts and orders: lines priced from the catalog, stock held while an order is live."""
+"""Carts and orders: lines priced from the catalog (or a price bargained within the owner's
+floor), the delivery charge worked out from the address, stock held while an order is live."""
 
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,13 +14,19 @@ from chatfront.audit.service import Actor, record
 from chatfront.catalog.models import Product, ProductStatus, StockReason, Variant
 from chatfront.catalog.service import move_stock
 from chatfront.core.clock import utcnow
+from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
-from chatfront.orders.models import Order, OrderItem
+from chatfront.orders import bargain
+from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
+from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.orders.states import CLOSED, HOLDS_STOCK, OrderStatus, check_move
 
 MAX_QUANTITY = 99
+OFFER_TTL = timedelta(hours=48)  # an agreed price holds this long
+# A placed order can still be changed by the customer, before payment or packing (feature 93).
+CHANGEABLE = frozenset({OrderStatus.PLACED, OrderStatus.AWAITING_PAYMENT, OrderStatus.CONFIRMED})
 
 
 async def _new_code(session: AsyncSession, tenant_id: uuid.UUID) -> str:
@@ -64,9 +73,43 @@ async def lines(session: AsyncSession, order: Order) -> list[OrderItem]:
     )
 
 
+async def delivery_quote(session: AsyncSession, order: Order) -> Quote | None:
+    """The charge to the order's city for its weight, or None before a city is known."""
+    city = (order.address or {}).get("city")
+    if not city:
+        return None
+    tenant = await session.get(Tenant, order.tenant_id)
+    assert tenant is not None
+    weight = 0
+    for item in await lines(session, order):
+        product = await session.get(Product, item.product_id)
+        weight += item.quantity * weight_of(tenant, product.attributes if product else {})
+    return quote(rates_for(tenant), str(city), weight, order.subtotal)
+
+
 async def _recalculate(session: AsyncSession, order: Order) -> None:
     order.subtotal = sum(item.line_total for item in await lines(session, order))
+    charge = await delivery_quote(session, order)
+    order.delivery_fee = charge.fee or 0 if charge else 0
     order.total = max(order.subtotal + order.delivery_fee - order.discount, 0)
+
+
+async def set_address(
+    session: AsyncSession, order: Order, *, city: str, address: str, name: str, phone: str
+) -> Quote:
+    """Where the order goes. The city is matched to the pack's spelling; the charge follows."""
+    tenant = await session.get(Tenant, order.tenant_id)
+    assert tenant is not None
+    order.address = {
+        "city": city_name(city, get_pack(tenant.country)),
+        "address": " ".join(address.split())[:300],
+        "name": " ".join(name.split())[:80],
+        "phone": phone.strip()[:20],
+    }
+    await _recalculate(session, order)
+    charge = await delivery_quote(session, order)
+    assert charge is not None
+    return charge
 
 
 def _check_editable(order: Order) -> None:
@@ -75,9 +118,15 @@ def _check_editable(order: Order) -> None:
 
 
 async def set_quantity(
-    session: AsyncSession, order: Order, variant_id: uuid.UUID, quantity: int
+    session: AsyncSession,
+    order: Order,
+    variant_id: uuid.UUID,
+    quantity: int,
+    *,
+    agreed_price: int | None = None,
 ) -> OrderItem | None:
-    """Put a variant in the cart at this quantity (0 removes it). Prices come from the catalog."""
+    """Put a variant in the cart at this quantity (0 removes it). Prices come from the catalog;
+    a price agreed in bargaining applies only when it is lower."""
     _check_editable(order)
     if not 0 <= quantity <= MAX_QUANTITY:
         raise AppError("invalid_quantity", f"Quantity must be 0 to {MAX_QUANTITY}")
@@ -96,7 +145,10 @@ async def set_quantity(
             await session.flush()
         await _recalculate(session, order)
         return None
-    unit_price = variant.price if variant.price is not None else product.price
+    catalog_price = variant.price if variant.price is not None else product.price
+    bargained = agreed_price is not None and 0 < agreed_price < catalog_price
+    unit_price = agreed_price if bargained and agreed_price is not None else catalog_price
+    list_price = catalog_price if bargained else None
     if item is None:
         item = OrderItem(
             tenant_id=order.tenant_id,
@@ -106,12 +158,13 @@ async def set_quantity(
             name=product.name,
             options=variant.options,
             unit_price=unit_price,
+            list_price=list_price,
             quantity=quantity,
             line_total=unit_price * quantity,
         )
         session.add(item)
     else:
-        item.quantity, item.unit_price = quantity, unit_price
+        item.quantity, item.unit_price, item.list_price = quantity, unit_price, list_price
         item.line_total = unit_price * quantity
     await session.flush()
     await _recalculate(session, order)
@@ -168,3 +221,125 @@ async def _variant(session: AsyncSession, item: OrderItem) -> Variant:
     if variant is None:  # pragma: no cover - the foreign key forbids it
         raise NotFound("variant")
     return variant
+
+
+async def change_placed_line(
+    session: AsyncSession, order: Order, item: OrderItem, quantity: int, actor: Actor
+) -> None:
+    """Change how many of a line a placed order holds; the difference goes back to, or comes
+    out of, stock (feature 93). An order cannot be emptied this way: cancel it instead."""
+    if order.status not in CHANGEABLE:
+        raise AppError("order_locked", "This order can no longer be changed", status_code=409)
+    if not 0 <= quantity <= MAX_QUANTITY:
+        raise AppError("invalid_quantity", f"Quantity must be 0 to {MAX_QUANTITY}")
+    others = [other for other in await lines(session, order) if other.id != item.id]
+    if quantity == 0 and not others:
+        raise AppError("empty_order", "Cancel the order instead", status_code=409)
+    delta = quantity - item.quantity
+    if delta:
+        reason = StockReason.ORDER if delta > 0 else StockReason.CANCEL
+        await move_stock(
+            session,
+            await _variant(session, item),
+            -delta,
+            reason,
+            actor,
+            ref=("order", str(order.id)),
+        )
+    if quantity == 0:
+        await session.delete(item)
+    else:
+        item.quantity, item.line_total = quantity, item.unit_price * quantity
+    await session.flush()
+    await _recalculate(session, order)
+    await record(
+        session,
+        order.tenant_id,
+        actor,
+        "order.changed",
+        entity=("order", str(order.id)),
+        data={"item": item.name, "quantity": quantity, "total": order.total},
+    )
+
+
+# -- bargaining (feature 12) ----------------------------------------------------------------
+
+
+async def offer(
+    session: AsyncSession, tenant: Tenant, conversation_id: uuid.UUID, product: Product, amount: int
+) -> bargain.Decision:
+    """Answer a customer's price for a product, and record the round."""
+    rounds = list(
+        await session.scalars(
+            select(PriceOffer)
+            .where(
+                PriceOffer.conversation_id == conversation_id,
+                PriceOffer.product_id == product.id,
+                PriceOffer.created_at > utcnow() - OFFER_TTL,
+            )
+            .order_by(PriceOffer.created_at)
+        )
+    )
+    countered = [r.answer for r in rounds if r.outcome != bargain.Outcome.ACCEPTED]
+    decision = bargain.decide(
+        list_price=product.price,
+        floor=product.floor_price,
+        offer=amount,
+        rounds_so_far=len(rounds),
+        last_counter=min(countered) if countered else None,
+        digits=get_pack(tenant.country).minor_digits,
+    )
+    session.add(
+        PriceOffer(
+            tenant_id=tenant.id,
+            conversation_id=conversation_id,
+            product_id=product.id,
+            round=decision.round,
+            offered=amount,
+            answer=decision.price,
+            outcome=decision.outcome,
+        )
+    )
+    await session.flush()
+    return decision
+
+
+async def agreed_price(
+    session: AsyncSession, conversation_id: uuid.UUID, product_id: uuid.UUID
+) -> int | None:
+    """The price agreed for a product in this conversation, if one still holds."""
+    return await session.scalar(
+        select(PriceOffer.answer)
+        .where(
+            PriceOffer.conversation_id == conversation_id,
+            PriceOffer.product_id == product_id,
+            PriceOffer.outcome == bargain.Outcome.ACCEPTED,
+            PriceOffer.created_at > utcnow() - OFFER_TTL,
+        )
+        .order_by(PriceOffer.created_at.desc())
+        .limit(1)
+    )
+
+
+def summary(order: Order, items: list[OrderItem]) -> dict[str, Any]:
+    """An order as tools and cards read it: amounts in minor units."""
+    return {
+        "code": order.code,
+        "status": order.status,
+        "items": [
+            {
+                "name": item.name,
+                "options": item.options,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "list_price": item.list_price,
+                "line_total": item.line_total,
+            }
+            for item in items
+        ],
+        "subtotal": order.subtotal,
+        "delivery_fee": order.delivery_fee,
+        "total": order.total,
+        "address": order.address,
+        "payment_method": order.payment_method,
+    }

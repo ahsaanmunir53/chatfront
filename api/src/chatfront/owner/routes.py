@@ -1,18 +1,37 @@
 """The owner console's own endpoints. Its chat goes through the shared chat API with a Bearer
-session; these cover signing in to a demo copy and the owner's view of the shop."""
+session; these cover signing in to a demo copy, the owner's view of the shop, and the chats
+handed over to a person (feature 90)."""
 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
 from chatfront.catalog.models import ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.catalog.translations import set_owner_text, target_languages
-from chatfront.core.models import Staff, Tenant
+from chatfront.channels.handover import (
+    HANDOVER,
+    reply_as_staff,
+    resume,
+    show_to_staff,
+    staff_language,
+)
+from chatfront.channels.models import (
+    ChannelAccount,
+    Conversation,
+    Direction,
+    Handover,
+    HandoverStatus,
+    Message,
+)
+from chatfront.core.errors import AppError, NotFound
+from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.owner.sandbox import copy_demo_shop
 from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
 from chatfront.services import Services, get_services
@@ -141,3 +160,133 @@ async def set_translation(
     async with services.db.tenant(session.tenant_id) as db:
         await set_owner_text(db, product_id, lang, body.name, body.description)
     return {"saved": True}
+
+
+# -- chats handed over to the owner (feature 90) ------------------------------------------
+
+
+class HandoverOut(BaseModel):
+    id: uuid.UUID
+    conversation_id: uuid.UUID
+    customer: str | None
+    channel: str
+    reason: str
+    summary: str
+    requested_by: str
+    created_at: datetime
+
+
+class ConsoleMessage(BaseModel):
+    id: uuid.UUID
+    direction: str
+    kind: str
+    body: str | None  # in the owner's language when it was translated
+    original: str | None  # the words as written, when body is a translation
+    by: str  # customer, agent or staff
+    created_at: datetime
+
+
+class StaffReply(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+@router.get("/handovers")
+async def handovers(session: OwnerDep, services: ServicesDep) -> list[HandoverOut]:
+    async with services.db.tenant(session.tenant_id) as db:
+        rows = await db.execute(
+            select(Handover, Customer.display_name, ChannelAccount.channel)
+            .join(Conversation, Conversation.id == Handover.conversation_id)
+            .join(Customer, Customer.id == Conversation.customer_id)
+            .join(ChannelAccount, ChannelAccount.id == Conversation.channel_account_id)
+            .where(Handover.status == HandoverStatus.OPEN)
+            .order_by(Handover.created_at.desc())
+            .limit(50)
+        )
+        return [
+            HandoverOut(
+                id=handover.id,
+                conversation_id=handover.conversation_id,
+                customer=name,
+                channel=channel,
+                reason=handover.reason,
+                summary=handover.summary,
+                requested_by=handover.requested_by,
+                created_at=handover.created_at,
+            )
+            for handover, name, channel in rows.all()
+        ]
+
+
+async def _conversation(
+    services: Services, session: OwnerSession, conversation_id: uuid.UUID
+) -> Conversation:
+    async with services.db.tenant(session.tenant_id) as db:
+        conversation = await db.get(Conversation, conversation_id)
+    if conversation is None:
+        raise NotFound("conversation")
+    return conversation
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def conversation_messages(
+    conversation_id: uuid.UUID, session: OwnerDep, services: ServicesDep
+) -> list[ConsoleMessage]:
+    """The chat, newest last, with the customer's words in the owner's language."""
+    await _conversation(services, session, conversation_id)
+    async with services.db.tenant(session.tenant_id) as db:
+        staff = await db.get(Staff, session.staff_id)
+        tenant = await db.get(Tenant, session.tenant_id)
+        messages = list(
+            await db.scalars(
+                select(Message)
+                .where(Message.conversation_id == conversation_id)
+                .order_by(Message.created_at.desc())
+                .limit(50)
+            )
+        )[::-1]
+    if staff is None or tenant is None:
+        raise NotSignedIn
+    reader = staff_language(staff, tenant)
+    out = []
+    for message in messages:
+        payload = message.payload or {}
+        body, original = message.body, None
+        if message.direction == Direction.IN and message.body:
+            shown = await show_to_staff(services, session.tenant_id, message.id, reader)
+            if shown.translated:
+                body, original = shown.text, message.body
+        elif payload.get("original"):
+            original = payload["original"]
+        by = "customer" if message.direction == Direction.IN else payload.get("by", "agent")
+        out.append(
+            ConsoleMessage(
+                id=message.id,
+                direction=message.direction,
+                kind=message.kind,
+                body=body,
+                original=original,
+                by=by,
+                created_at=message.created_at,
+            )
+        )
+    return out
+
+
+@router.post("/conversations/{conversation_id}/reply")
+async def staff_reply(
+    conversation_id: uuid.UUID, body: StaffReply, session: OwnerDep, services: ServicesDep
+) -> dict[str, bool]:
+    """The owner's words to the customer, translated into the customer's language. Only in a
+    handed-over chat, so the owner and the agent never answer at once."""
+    conversation = await _conversation(services, session, conversation_id)
+    if conversation.status != HANDOVER:
+        raise AppError("not_handed_over", "The assistant has this chat", status_code=409)
+    await reply_as_staff(services, session.tenant_id, conversation_id, session.staff_id, body.text)
+    return {"sent": True}
+
+
+@router.post("/handovers/{handover_id}/resume")
+async def resume_handover(
+    handover_id: uuid.UUID, session: OwnerDep, services: ServicesDep
+) -> dict[str, bool]:
+    return {"resumed": await resume(services, session.tenant_id, handover_id, session.staff_id)}

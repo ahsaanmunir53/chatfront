@@ -54,11 +54,20 @@ class ProductDraft(Strict):
 
 
 class Change(Strict):
-    kind: Literal["price", "floor_price", "available", "unavailable", "policy"]
+    kind: Literal[
+        "price",
+        "floor_price",
+        "available",
+        "unavailable",
+        "policy",
+        "delivery_fee",
+        "free_delivery_over",
+    ]
     product: str | None
     value_number: float | None
     policy_key: Literal["delivery", "hours", "payment", "returns", "other"] | None
     value_text: str | None
+    city: str | None = None  # for a delivery charge: the city it is for; None is everywhere else
 
 
 class OwnerMessage(Strict):

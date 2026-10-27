@@ -31,7 +31,7 @@ from chatfront.channels.conversation import Turn
 from chatfront.channels.models import Channel
 from chatfront.channels.types import Kind, ListRow, Outbound, OutList, OutText
 from chatfront.core.clock import utcnow
-from chatfront.core.countries import get_pack
+from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
@@ -44,7 +44,7 @@ from chatfront.media.storage import Storage
 from chatfront.modules.registry import ModuleRegistry
 from chatfront.owner import actions
 from chatfront.owner.assistant import prompt_context
-from chatfront.owner.cards import confirm_card, money
+from chatfront.owner.cards import confirm_card
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.sessions import console_link, issue
 from chatfront.templates import all_templates, get_template
@@ -325,7 +325,7 @@ class OnboardingAssistant:
             {"media_id": pending["media_id"], "draft": draft.model_dump()},
         ][:MAX_PRODUCTS]
         await self._save(action, state, ActionStatus.COLLECTING)
-        price = money(turn.tenant, product.price, lang)
+        price = shop_money(turn.tenant, product.price, lang)
         return [OutText(t("start.product_noted", lang, name=product.name, price=price))]
 
     # -- making the shop ------------------------------------------------------------------
@@ -381,6 +381,7 @@ class OnboardingAssistant:
                     "payment": ", ".join(
                         t(f"start.pay.{m}", "en") for m in answers["payment_methods"]
                     ),
+                    "payment_methods": answers["payment_methods"],
                 },
                 expires_at=utcnow() + WEB_SHOP_LIFETIME if on_web else None,
                 owner_phone_hash=customer.phone_hash if customer and not on_web else None,

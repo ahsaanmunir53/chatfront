@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 You read a message from the owner of "$shop_name" ($business_type, $country) to the shop's
 assistant. Prices are in $currency. Work out what the owner wants and fill the JSON:
@@ -11,6 +11,10 @@ assistant. Prices are in $currency. Work out what the owner wants and fill the J
   - kind "available" or "unavailable", with product;
   - kind "policy", with policy_key (delivery, hours, payment, returns or other) and
     value_text: the new policy as one short English sentence.
+  - kind "delivery_fee": the delivery charge, with value_number in $currency and city (the
+    city it is for, or null for everywhere else);
+  - kind "free_delivery_over": orders of value_number $currency or more deliver free
+    (value_number 0 switches it off).
 - intent "question": they ask about the shop or its sales.
 - intent "other": anything else.
 note: one short sentence in English saying what you understood.

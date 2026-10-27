@@ -6,7 +6,7 @@ confirms; code applies.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any
 
 from chatfront.ai.client import AiClient
@@ -35,8 +35,9 @@ from chatfront.catalog.service import (
     single_match,
 )
 from chatfront.channels.conversation import Turn
+from chatfront.channels.handover import parse_handover_button
 from chatfront.channels.types import Kind, Outbound, OutText
-from chatfront.core.countries import get_pack
+from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
@@ -47,10 +48,14 @@ from chatfront.jobs.queue import enqueue
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
 from chatfront.media.storage import Storage
+from chatfront.orders.delivery import city_name, rates_for
 from chatfront.owner import actions
-from chatfront.owner.cards import change_list, confirm_card, money, product_summary
+from chatfront.owner.cards import change_list, confirm_card, product_summary
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.templates import get_template
+
+# Gives a handed-over chat back to the agent: (tenant, handover, staff) -> resumed?
+Resume = Callable[[uuid.UUID, uuid.UUID, uuid.UUID], Awaitable[bool]]
 
 KIND_PRODUCT = "product"
 KIND_UPDATE = "update"
@@ -73,14 +78,40 @@ def prompt_context(tenant: Tenant) -> dict[str, str]:
 Problem = tuple[str, dict[str, Any]]
 
 
+def _delivery_op(change: Change, tenant: Tenant, digits: int) -> dict[str, Any] | Problem:
+    """A change to the delivery charge (feature 94), with what it was before."""
+    rates = rates_for(tenant)
+    amount = to_minor(change.value_number, digits) if change.value_number is not None else None
+    if change.kind == "free_delivery_over":
+        new = amount if change.value_number else None
+        return {"op": "free_delivery_over", "old": rates.free_over, "new": new}
+    if amount is None:
+        return ("owner.need_amount", {"name": t("owner.policy.delivery", "en")})
+    if change.city:
+        city = city_name(change.city, get_pack(tenant.country))
+        return {"op": "delivery_fee", "city": city, "old": rates.cities.get(city), "new": amount}
+    return {"op": "delivery_fee", "city": None, "old": rates.default, "new": amount}
+
+
 def resolve_changes(
-    changes: Sequence[Change], items: Sequence[CatalogItem], digits: int
+    changes: Sequence[Change],
+    items: Sequence[CatalogItem],
+    digits: int,
+    tenant: Tenant | None = None,
 ) -> tuple[list[dict[str, Any]], list[Problem]]:
     """Turn what the owner asked for into exact operations on exact products, or problems to
     tell the owner (not found, which one, no amount)."""
     ops: list[dict[str, Any]] = []
     problems: list[Problem] = []
     for change in changes:
+        if change.kind in ("delivery_fee", "free_delivery_over"):
+            if tenant is not None:
+                resolved = _delivery_op(change, tenant, digits)
+                if isinstance(resolved, dict):
+                    ops.append(resolved)
+                else:
+                    problems.append(resolved)
+            continue
         if change.kind == "policy":
             if change.policy_key and change.value_text and change.value_text.strip():
                 ops.append(
@@ -152,13 +183,25 @@ def typed_price_change(
 
 
 class OwnerAssistant:
-    def __init__(self, db: Database, ai: AiClient, storage: Storage, settings: Settings) -> None:
+    def __init__(
+        self,
+        db: Database,
+        ai: AiClient,
+        storage: Storage,
+        settings: Settings,
+        resume: Resume | None = None,
+    ) -> None:
         self.db = db
         self.ai = ai
         self.storage = storage
         self.settings = settings
+        self.resume = resume
 
     async def respond(self, turn: Turn) -> list[Outbound]:
+        handover_id = parse_handover_button((turn.message.payload or {}).get("button_id"))
+        if handover_id is not None and self.resume is not None and turn.staff_id is not None:
+            await self.resume(turn.tenant.id, handover_id, turn.staff_id)
+            return [OutText(t("handover.resumed", turn.lang))]
         choice = actions.parse_button((turn.message.payload or {}).get("button_id"))
         if choice is not None:
             return await self._answer(turn, *choice)
@@ -263,7 +306,7 @@ class OwnerAssistant:
             )
         context = prompt_context(tenant) | {
             "products": "; ".join(
-                f"{i.product.code} {i.product.name} {money(tenant, i.product.price, 'en')}"
+                f"{i.product.code} {i.product.name} {shop_money(tenant, i.product.price, 'en')}"
                 for i in items[:60]
             )
             or "none yet",
@@ -282,7 +325,7 @@ class OwnerAssistant:
         if read.intent == "new_product" and read.product is not None:
             return await self._product(turn, None, read.product)
         digits = get_pack(tenant.country).minor_digits
-        ops, problems = resolve_changes(read.changes, items, digits)
+        ops, problems = resolve_changes(read.changes, items, digits, tenant)
         if not ops and not problems:
             ops = typed_price_change(words, items, lang, digits)
         problem_lines = [t(key, lang, **values) for key, values in problems]

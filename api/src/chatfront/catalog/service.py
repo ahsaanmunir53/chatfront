@@ -30,6 +30,7 @@ MAX_VARIANTS = 30
 class OutOfStock(AppError):
     def __init__(self, name: str, available: int) -> None:
         super().__init__("out_of_stock", f"Only {available} left of {name}", status_code=409)
+        self.name = name
         self.available = available
 
 
@@ -274,6 +275,20 @@ POLICY_FIELDS = {
 }
 
 
+DELIVERY_RATES = "delivery_rates"  # minor units; see orders.delivery
+
+
+def _delivery_rates(current: dict[str, Any], op: dict[str, Any]) -> dict[str, Any]:
+    rates = {**current, "cities": dict(current.get("cities") or {})}
+    if op["op"] == "free_delivery_over":
+        rates["free_over"] = check_price(op["new"]) if op["new"] is not None else None
+    elif op["city"]:
+        rates["cities"][op["city"]] = check_price(op["new"])
+    else:
+        rates["default"] = check_price(op["new"])
+    return rates
+
+
 async def apply_changes(
     session: AsyncSession, tenant: Tenant, ops: Sequence[dict[str, Any]], actor: Actor
 ) -> int:
@@ -283,6 +298,10 @@ async def apply_changes(
     for op in ops:
         if op["op"] == "policy":
             profile[POLICY_FIELDS[op["key"]]] = str(op["new"])
+            applied += 1
+            continue
+        if op["op"] in ("delivery_fee", "free_delivery_over"):
+            profile[DELIVERY_RATES] = _delivery_rates(profile.get(DELIVERY_RATES) or {}, op)
             applied += 1
             continue
         product = await session.get(Product, uuid.UUID(op["product_id"]))

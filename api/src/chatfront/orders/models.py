@@ -55,6 +55,29 @@ class OrderItem(Base):
     variant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("variants.id", ondelete="RESTRICT"))
     name: Mapped[str] = mapped_column(String(160))
     options: Mapped[dict[str, Any]] = mapped_column(default=dict)
-    unit_price: Mapped[int] = mapped_column(BigInteger)
+    unit_price: Mapped[int] = mapped_column(BigInteger)  # what the customer pays per piece
+    list_price: Mapped[int | None] = mapped_column(BigInteger)  # the catalog price, if bargained
     quantity: Mapped[int]
     line_total: Mapped[int] = mapped_column(BigInteger)
+
+
+class PriceOffer(Base):
+    """One round of bargaining: what the customer offered and what code answered (feature 12).
+    Append-only, so every agreed price can be traced to the rule that allowed it."""
+
+    __tablename__ = "price_offers"
+    __table_args__ = (Index("ix_price_offers_conversation", "conversation_id", "product_id"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE")
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
+    round: Mapped[int]
+    offered: Mapped[int] = mapped_column(BigInteger)
+    answer: Mapped[int] = mapped_column(BigInteger)  # the price code agreed to or countered with
+    outcome: Mapped[str] = mapped_column(String(12))  # see bargain.Outcome
+    created_at: Mapped[datetime] = created_at_column()

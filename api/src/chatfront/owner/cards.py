@@ -7,18 +7,13 @@ from typing import Any
 
 from chatfront.catalog.service import ProductInput
 from chatfront.channels.types import Button, OutButtons
-from chatfront.core.countries import format_money, get_pack
+from chatfront.core.countries import shop_money
 from chatfront.core.i18n import t
 from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
-from chatfront.core.money import Minor
 from chatfront.owner.actions import button_id
 from chatfront.owner.models import PendingAction
 from chatfront.templates import get_template
-
-
-def money(tenant: Tenant, amount: int, lang: str) -> str:
-    return format_money(Minor(amount), get_pack(tenant.country), load_registry().get(lang))
 
 
 def _label(tenant: Tenant, key: str, lang: str) -> str:
@@ -33,7 +28,7 @@ def _label(tenant: Tenant, key: str, lang: str) -> str:
 
 
 def product_summary(tenant: Tenant, product: ProductInput, lang: str) -> str:
-    lines = [f"{product.name}: {money(tenant, product.price, lang)}"]
+    lines = [f"{product.name}: {shop_money(tenant, product.price, lang)}"]
     for key, value in product.attributes.items():
         lines.append(f"{_label(tenant, key, lang)}: {value}")
     choices: dict[str, list[str]] = {}
@@ -65,11 +60,24 @@ def confirm_card(action: PendingAction, text: str, yes_key: str, lang: str) -> O
 def change_line(tenant: Tenant, op: dict[str, Any], lang: str) -> str:
     kind = op["op"]
     if kind in ("price", "floor_price"):
-        old = money(tenant, op["old"], lang) if op["old"] is not None else t("owner.none_set", lang)
+        old = (
+            shop_money(tenant, op["old"], lang)
+            if op["old"] is not None
+            else t("owner.none_set", lang)
+        )
         key = "owner.change_price" if kind == "price" else "owner.change_floor"
-        return t(key, lang, name=op["name"], old=old, new=money(tenant, op["new"], lang))
+        return t(key, lang, name=op["name"], old=old, new=shop_money(tenant, op["new"], lang))
     if kind in ("available", "unavailable"):
         return t(f"owner.change_{kind}", lang, name=op["name"])
+    if kind in ("delivery_fee", "free_delivery_over"):
+        none = t("owner.none_set", lang)
+        old = shop_money(tenant, op["old"], lang) if op["old"] is not None else none
+        new = shop_money(tenant, op["new"], lang) if op["new"] is not None else none
+        if kind == "free_delivery_over":
+            return t("owner.change_free_over", lang, old=old, new=new)
+        if op["city"]:
+            return t("owner.change_delivery_city", lang, city=op["city"], old=old, new=new)
+        return t("owner.change_delivery_default", lang, old=old, new=new)
     return t(
         "owner.change_policy", lang, policy=t(f"owner.policy.{op['key']}", lang), value=op["new"]
     )

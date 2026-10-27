@@ -125,3 +125,31 @@ class Message(Base):
     status: Mapped[str] = mapped_column(String(20), default="received")
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at_column()
+
+
+class HandoverStatus(StrEnum):
+    OPEN = "open"
+    RESOLVED = "resolved"
+
+
+class Handover(Base):
+    """The agent stepped back and a person took the chat (feature 90). While one is open the
+    conversation's status is "handover" and the agent does not answer."""
+
+    __tablename__ = "handovers"
+    __table_args__ = (Index("ix_handovers_tenant_status", "tenant_id", "status"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), index=True
+    )
+    reason: Mapped[str] = mapped_column(Text)
+    summary: Mapped[str] = mapped_column(Text)  # three lines, in the owner's language
+    requested_by: Mapped[str] = mapped_column(String(12))  # customer, agent or code
+    status: Mapped[str] = mapped_column(String(10), default=HandoverStatus.OPEN)
+    resolved_at: Mapped[datetime | None]
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("staff.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = created_at_column()
