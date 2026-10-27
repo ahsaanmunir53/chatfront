@@ -8,15 +8,24 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.errors import NotFound
-from chatfront.core.i18n import t
+from chatfront.core.i18n import Lang, t
 from chatfront.core.models import Tenant
 from chatfront.services import Services, get_services
 from chatfront.templates import get_template
 
 router = APIRouter()
 ServicesDep = Annotated[Services, Depends(get_services)]
+
+
+class ChannelLink(BaseModel):
+    """One official way to reach the shop; `url` opens it in the customer's own app."""
+
+    channel: str
+    display: str | None
+    url: str | None
 
 
 class PublicShop(BaseModel):
@@ -28,6 +37,7 @@ class PublicShop(BaseModel):
     default_lang: str
     is_demo: bool
     attribution: str
+    channels: list[ChannelLink]
 
 
 class ShopSummary(BaseModel):
@@ -37,15 +47,10 @@ class ShopSummary(BaseModel):
     tagline: dict[str, str]
 
 
-class OfficialChannel(BaseModel):
-    channel: str
-    display: str | None
-
-
 class TrustInfo(BaseModel):
     slug: str
     name: str
-    channels: list[OfficialChannel]
+    channels: list[ChannelLink]
 
 
 def _limit(services: Services, request: Request) -> None:
@@ -59,6 +64,34 @@ async def _tenant(services: Services, slug: str) -> Tenant:
     if tenant is None:
         raise NotFound("Shop")
     return tenant
+
+
+async def _channels(services: Services, tenant: Tenant) -> list[ChannelLink]:
+    async with services.db.tenant(tenant.id) as session:
+        accounts = list(
+            await session.scalars(
+                select(ChannelAccount)
+                .where(ChannelAccount.active.is_(True))
+                .order_by(ChannelAccount.channel)
+            )
+        )
+    lang = Lang(tenant.default_lang)
+    return [
+        ChannelLink(
+            channel=account.channel,
+            display=account.display,
+            url=chat_link(
+                account.channel,
+                account.public_handle,
+                shop_name=tenant.name,
+                slug=tenant.slug,
+                lang=lang,
+            )
+            if account.public_handle
+            else None,
+        )
+        for account in accounts
+    ]
 
 
 @router.get("/api/demo-shops")
@@ -85,14 +118,7 @@ async def trust(slug: str, request: Request, services: ServicesDep) -> TrustInfo
     """The shop's official channels, so nobody can run a fake shop in its name."""
     _limit(services, request)
     tenant = await _tenant(services, slug)
-    async with services.db.tenant(tenant.id) as session:
-        accounts = await session.scalars(
-            select(ChannelAccount)
-            .where(ChannelAccount.active.is_(True))
-            .order_by(ChannelAccount.channel)
-        )
-        channels = [OfficialChannel(channel=a.channel, display=a.display) for a in accounts]
-    return TrustInfo(slug=tenant.slug, name=tenant.name, channels=channels)
+    return TrustInfo(slug=tenant.slug, name=tenant.name, channels=await _channels(services, tenant))
 
 
 @router.get("/api/shops/{slug}")
@@ -110,4 +136,5 @@ async def get_shop(slug: str, request: Request, services: ServicesDep) -> Public
         default_lang=tenant.default_lang,
         is_demo=tenant.is_demo,
         attribution=t("app.attribution"),
+        channels=await _channels(services, tenant),
     )

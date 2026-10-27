@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     meta_graph_version: str = "v23.0"
     meta_graph_base_url: str = "https://graph.facebook.com"
     whatsapp_access_token: SecretStr | None = None
+    # Instagram API with Instagram Login signs webhooks with its own app secret.
+    instagram_app_secret: SecretStr | None = None
+    instagram_graph_base_url: str = "https://graph.instagram.com"
+    instagram_access_token: SecretStr | None = None
+    messenger_page_access_token: SecretStr | None = None
 
     # Models. "auto" calls a provider when its key is set and the mock otherwise.
     ai_mode: Literal["auto", "mock"] = "auto"
@@ -73,6 +78,15 @@ class Settings(BaseSettings):
     i18n_dir: Path = REPO_ROOT / "i18n"
     web_dist_dir: Path = REPO_ROOT / "web" / "dist"
     public_rate_limit_per_minute: int = 30
+    # Origins allowed to call the API from a browser, comma-separated: the static frontend
+    # when it is hosted apart from the API (for example on GitHub Pages).
+    cors_origins: str = ""
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [
+            origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()
+        ]
 
     @field_validator("database_url")
     @classmethod

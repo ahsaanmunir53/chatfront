@@ -53,26 +53,44 @@ async def verify_webhook(
     return challenge
 
 
-@router.post("/webhooks/whatsapp")
-async def whatsapp_webhook(
+# Which channel a webhook is for, from its "object" field.
+_WEBHOOK_OBJECTS = {
+    "whatsapp_business_account": Channel.WHATSAPP,
+    "instagram": Channel.INSTAGRAM,
+    "page": Channel.MESSENGER,
+}
+
+
+def _signed_by_us(services: Services, raw: bytes, signature: str | None) -> bool:
+    settings = services.settings
+    secrets_ = [s for s in (settings.meta_app_secret, settings.instagram_app_secret) if s]
+    return any(verify_meta_signature(raw, signature, s.get_secret_value()) for s in secrets_)
+
+
+@router.post("/webhooks/meta")
+@router.post("/webhooks/whatsapp")  # the URL first saved in WhatsApp's settings
+async def meta_webhook(
     request: Request,
     services: ServicesDep,
     signature: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
 ) -> dict[str, bool]:
+    """WhatsApp, Instagram and Messenger all post here; the body says which one it is."""
     raw = await request.body()
-    secret = services.settings.meta_app_secret
-    if secret is None or not verify_meta_signature(raw, signature, secret.get_secret_value()):
+    if not _signed_by_us(services, raw, signature):
         raise AppError("bad_signature", "Signature check failed", status_code=401)
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         raise AppError("bad_payload", "Body is not JSON") from exc
-    adapter = services.adapters[Channel.WHATSAPP]
-    inbound, statuses = adapter.parse(payload)
+    channel = _WEBHOOK_OBJECTS.get(payload.get("object", ""))
+    if channel is None:
+        log.info("ignoring a webhook for object %r", payload.get("object"))
+        return {"ok": True}
+    inbound, statuses = services.adapters[channel].parse(payload)
     for message in inbound:
-        account = await channels.route(services.db, Channel.WHATSAPP, message.account_external_id)
+        account = await channels.route(services.db, channel, message.account_external_id)
         if account is None:
-            log.warning("message for an unknown WhatsApp number; ignored")
+            log.warning("message for an unknown %s account; ignored", channel)
             continue
         await channels.accept(services.db, account, message, services.keys)
     await channels.apply_statuses(services.db, statuses)

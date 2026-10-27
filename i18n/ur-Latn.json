@@ -38,5 +38,6 @@
   "channel.messenger": "Facebook Messenger",
   "channel.webchat": "Isi website par chat",
   "error.network": "Chatfront tak pohanch nahi ho saki. Connection check kar ke dobara koshish karein.",
-  "error.not_found": "Yeh page mojood nahi."
+  "error.not_found": "Yeh page mojood nahi.",
+  "link.whatsapp_greeting": "Salam {shop}! Main ne aap ki dukaan Chatfront par dekhi."
 }

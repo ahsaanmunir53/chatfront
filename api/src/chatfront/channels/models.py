@@ -38,6 +38,9 @@ class ChannelAccount(Base):
     channel: Mapped[str] = mapped_column(String(20))
     external_id: Mapped[str] = mapped_column(String(80))
     display: Mapped[str | None] = mapped_column(String(80))
+    # What customers use to reach this account: the WhatsApp number, the Instagram username,
+    # or the Facebook Page username. Public by nature; it builds wa.me, ig.me and m.me links.
+    public_handle: Mapped[str | None] = mapped_column(String(80))
     branch: Mapped[str | None] = mapped_column(String(80))
     access_token_sealed: Mapped[str | None] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(default=True)

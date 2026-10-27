@@ -41,13 +41,30 @@ async def seeded(clean_db: Database) -> Database:
     async with clean_db.system() as session:
         tenant = await session.scalar(select(Tenant).where(Tenant.slug == SHOP))
         assert tenant is not None
-        session.add(
-            ChannelAccount(
-                tenant_id=tenant.id,
-                channel=Channel.WHATSAPP,
-                external_id="PN1",
-                display="+92 300 ***0000",
-            )
+        session.add_all(
+            [
+                ChannelAccount(
+                    tenant_id=tenant.id,
+                    channel=Channel.WHATSAPP,
+                    external_id="PN1",
+                    display="+92 300 ***0000",
+                    public_handle="923000000000",
+                ),
+                ChannelAccount(
+                    tenant_id=tenant.id,
+                    channel=Channel.INSTAGRAM,
+                    external_id="IG1",
+                    display="@gulmohar.lawn",
+                    public_handle="gulmohar.lawn",
+                ),
+                ChannelAccount(
+                    tenant_id=tenant.id,
+                    channel=Channel.MESSENGER,
+                    external_id="PAGE1",
+                    display="Gulmohar Lawn House",
+                    public_handle="gulmoharlawn",
+                ),
+            ]
         )
     return clean_db
 
@@ -65,15 +82,18 @@ async def app(seeded: Database) -> AsyncIterator[tuple[httpx.AsyncClient, Servic
             yield client, application.state.services
 
 
-def signed(payload: dict[str, object]) -> tuple[bytes, dict[str, str]]:
+def signed(
+    payload: dict[str, object], secret: bytes = b"test-app-secret"
+) -> tuple[bytes, dict[str, str]]:
     body = json.dumps(payload).encode()
-    signature = hmac.new(b"test-app-secret", body, hashlib.sha256).hexdigest()
+    signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
     return body, {"X-Hub-Signature-256": f"sha256={signature}", "Content-Type": "application/json"}
 
 
 def wa_message(message_id: str, kind: str = "text", **body: object) -> dict[str, object]:
     content = body or {"body": "salam, lawn suit hai?"}
     return {
+        "object": "whatsapp_business_account",
         "entry": [
             {
                 "changes": [
@@ -118,10 +138,17 @@ async def test_health_and_shop(app: tuple[httpx.AsyncClient, Services]) -> None:
     assert len(demos) == 6
     assert demos[0]["business_type"]["ur"]
     trust = (await client.get(f"/api/shops/{SHOP}/trust")).json()
-    assert trust["channels"] == [
-        {"channel": "webchat", "display": "Try-it chat"},
-        {"channel": "whatsapp", "display": "+92 300 ***0000"},
+    assert [(c["channel"], c["url"]) for c in trust["channels"]] == [
+        ("instagram", "https://ig.me/m/gulmohar.lawn?ref=shop_gulmohar-lawn"),
+        ("messenger", "https://m.me/gulmoharlawn?ref=shop_gulmohar-lawn"),
+        ("webchat", None),
+        (
+            "whatsapp",
+            "https://wa.me/923000000000?text=Salam+Gulmohar+Lawn+House%21+Main+ne+aap+ki"
+            "+dukaan+Chatfront+par+dekhi.",
+        ),
     ]
+    assert shop["channels"] == trust["channels"]
     assert (await client.get("/api/shops/nope/trust")).status_code == 404
 
 
@@ -179,6 +206,7 @@ async def test_whatsapp_message_to_reply(
 
     status_body, status_headers = signed(
         {
+            "object": "whatsapp_business_account",
             "entry": [
                 {
                     "changes": [
@@ -191,7 +219,7 @@ async def test_whatsapp_message_to_reply(
                         }
                     ]
                 }
-            ]
+            ],
         }
     )
     await client.post("/webhooks/whatsapp", content=status_body, headers=status_headers)
@@ -356,3 +384,106 @@ async def test_web_app_is_served(seeded: Database, tmp_path: Path) -> None:
             assert (await client.get("/manifest.webmanifest")).text == "{}"
             assert (await client.get("/api/nothing-here")).status_code == 404
             assert (await client.get("/../../etc/passwd")).status_code in (200, 404)
+
+
+def dm(obj: str, account: str, mid: str, text: str) -> dict[str, object]:
+    return {
+        "object": obj,
+        "entry": [
+            {
+                "id": account,
+                "time": 1,
+                "messaging": [
+                    {
+                        "sender": {"id": "USER7"},
+                        "recipient": {"id": account},
+                        "timestamp": int(utcnow().timestamp() * 1000),
+                        "message": {"mid": mid, "text": text},
+                    }
+                ],
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("obj", "account", "secret", "send_url", "token"),
+    [
+        (
+            "instagram",
+            "IG1",
+            b"test-ig-secret",
+            "https://graph.instagram.com/v23.0/IG1/messages",
+            "test-ig-token",
+        ),
+        ("page", "PAGE1", b"test-app-secret", f"{GRAPH}/PAGE1/messages", "test-fb-token"),
+    ],
+)
+async def test_instagram_and_messenger_dms_get_replies(
+    app: tuple[httpx.AsyncClient, Services],
+    seeded: Database,
+    obj: str,
+    account: str,
+    secret: bytes,
+    send_url: str,
+    token: str,
+) -> None:
+    client, services = app
+    body, headers = signed(dm(obj, account, f"{obj}-m1", "salam"), secret)
+    assert (await client.post("/webhooks/meta", content=body, headers=headers)).json() == {
+        "ok": True
+    }
+    with respx.mock:
+        send = respx.post(send_url).mock(
+            return_value=httpx.Response(200, json={"recipient_id": "USER7", "message_id": "out-1"})
+        )
+        assert services.worker is not None
+        await services.worker.run_once()
+    sent = json.loads(send.calls[0].request.content)
+    assert sent["recipient"] == {"id": "USER7"}
+    assert sent["message"]["text"].startswith("Wa alaikum assalam")
+    assert send.calls[0].request.headers["Authorization"] == f"Bearer {token}"
+    assert (await _messages(seeded))[-1].external_id == "out-1"
+
+
+async def test_webhooks_for_unknown_objects_or_accounts_are_ignored(
+    app: tuple[httpx.AsyncClient, Services], seeded: Database
+) -> None:
+    client, _ = app
+    for payload in (
+        {"object": "user", "entry": []},
+        dm("instagram", "SOMEONE-ELSE", "x1", "hi"),
+    ):
+        body, headers = signed(payload)
+        assert (
+            await client.post("/webhooks/meta", content=body, headers=headers)
+        ).status_code == 200
+    assert await _messages(seeded) == []
+    body, headers = signed({"object": "page"}, b"wrong-secret")
+    assert (await client.post("/webhooks/meta", content=body, headers=headers)).status_code == 401
+    bad_json, json_headers = b"{not json", signed({})[1]
+    json_headers["X-Hub-Signature-256"] = (
+        "sha256=" + hmac.new(b"test-app-secret", bad_json, hashlib.sha256).hexdigest()
+    )
+    assert (
+        await client.post("/webhooks/meta", content=bad_json, headers=json_headers)
+    ).status_code == 400
+
+
+async def test_cors_for_a_separately_hosted_frontend(seeded: Database) -> None:
+    origin = "https://ahsaanmunir53.github.io"
+    application = create_app(_app_settings(cors_origins=f"{origin}/, https://other.test"))
+    async with LifespanManager(application) as manager:
+        transport = httpx.ASGITransport(app=manager.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+            preflight = await client.options(
+                f"/api/shops/{SHOP}/chat/messages",
+                headers={
+                    "Origin": origin,
+                    "Access-Control-Request-Method": "GET",
+                    "Access-Control-Request-Headers": "x-chat-token",
+                },
+            )
+            stranger = await client.get("/health", headers={"Origin": "https://evil.test"})
+    assert preflight.headers["access-control-allow-origin"] == origin
+    assert "access-control-allow-origin" not in stranger.headers

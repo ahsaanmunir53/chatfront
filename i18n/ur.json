@@ -38,5 +38,6 @@
   "channel.messenger": "فیس بک میسنجر",
   "channel.webchat": "اسی ویب سائٹ پر چیٹ",
   "error.network": "Chatfront تک رسائی نہیں ہو سکی۔ کنکشن چیک کر کے دوبارہ کوشش کریں۔",
-  "error.not_found": "یہ صفحہ موجود نہیں۔"
+  "error.not_found": "یہ صفحہ موجود نہیں۔",
+  "link.whatsapp_greeting": "السلام علیکم {shop}! میں نے آپ کی دکان Chatfront پر دیکھی۔"
 }

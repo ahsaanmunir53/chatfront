@@ -38,5 +38,6 @@
   "channel.messenger": "Facebook Messenger",
   "channel.webchat": "Chat on this website",
   "error.network": "Could not reach Chatfront. Check the connection and try again.",
-  "error.not_found": "This page does not exist."
+  "error.not_found": "This page does not exist.",
+  "link.whatsapp_greeting": "Salam {shop}! I found your shop on Chatfront."
 }

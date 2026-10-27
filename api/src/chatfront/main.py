@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -53,6 +54,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/api/openapi.json",
     )
     install_error_handlers(app)
+    if settings.cors_origin_list:  # the frontend hosted apart from the API
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origin_list,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type", "X-Chat-Token"],
+            max_age=600,
+        )
     app.include_router(internal_router)
     app.include_router(channel_router)
     app.include_router(public_router)

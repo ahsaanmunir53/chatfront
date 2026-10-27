@@ -13,6 +13,7 @@ from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.conversation import Responder, ShopAssistant, handle_reply
+from chatfront.channels.messaging import instagram_adapter, messenger_adapter
 from chatfront.channels.models import Channel
 from chatfront.channels.service import REPLY_JOB, Keys
 from chatfront.channels.webchat import WebChatAdapter
@@ -54,8 +55,12 @@ class Services:
 
     def fallback_token(self, channel: str) -> str | None:
         """The platform token used when a channel account has no token of its own (demo)."""
-        token = self.settings.whatsapp_access_token
-        return token.get_secret_value() if channel == Channel.WHATSAPP and token else None
+        token = {
+            Channel.WHATSAPP: self.settings.whatsapp_access_token,
+            Channel.INSTAGRAM: self.settings.instagram_access_token,
+            Channel.MESSENGER: self.settings.messenger_page_access_token,
+        }.get(Channel(channel))
+        return token.get_secret_value() if token else None
 
     async def close(self) -> None:
         await self.http.aclose()
@@ -106,6 +111,12 @@ def build_services(settings: Settings, registries: Registries) -> Services:
         ai=ai,
         adapters={
             Channel.WHATSAPP: WhatsAppAdapter(
+                http, settings.meta_graph_base_url, settings.meta_graph_version
+            ),
+            Channel.INSTAGRAM: instagram_adapter(
+                http, settings.instagram_graph_base_url, settings.meta_graph_version
+            ),
+            Channel.MESSENGER: messenger_adapter(
                 http, settings.meta_graph_base_url, settings.meta_graph_version
             ),
             Channel.WEBCHAT: WebChatAdapter(),
