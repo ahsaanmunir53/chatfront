@@ -2,6 +2,7 @@
 
 cart -> placed -> awaiting_payment -> paid -------> packed -> dispatched -> delivered
                \\-> confirmed (cash on delivery) -/                    \\-> returned
+A cash-on-delivery order with an advance waits for the advance, then is confirmed.
 Before dispatch an order can be cancelled; its stock goes back (feature 93).
 """
 
@@ -30,7 +31,9 @@ _MOVES: dict[OrderStatus, frozenset[OrderStatus]] = {
     OrderStatus.PLACED: frozenset(
         {OrderStatus.AWAITING_PAYMENT, OrderStatus.CONFIRMED, OrderStatus.CANCELLED}
     ),
-    OrderStatus.AWAITING_PAYMENT: frozenset({OrderStatus.PAID, OrderStatus.CANCELLED}),
+    OrderStatus.AWAITING_PAYMENT: frozenset(
+        {OrderStatus.PAID, OrderStatus.CONFIRMED, OrderStatus.CANCELLED}
+    ),
     OrderStatus.PAID: frozenset({OrderStatus.PACKED, OrderStatus.CANCELLED}),
     OrderStatus.CONFIRMED: frozenset({OrderStatus.PACKED, OrderStatus.CANCELLED}),
     OrderStatus.PACKED: frozenset({OrderStatus.DISPATCHED, OrderStatus.CANCELLED}),

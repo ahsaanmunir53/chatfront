@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chatfront.core.db import Base, created_at_column, id_column
@@ -49,6 +49,11 @@ class Tenant(Base):
     is_platform: Mapped[bool] = mapped_column(default=False)
     # Copies of a demo shop made for one visitor are removed after this time.
     expires_at: Mapped[datetime | None]
+    # The owner's phone forwards credit SMS with this secret; only its hash is kept.
+    sms_secret_hash: Mapped[str | None] = mapped_column(String(64))
+    # The shop's Ed25519 receipt key: private part sealed, public part for anyone to check.
+    receipt_key_sealed: Mapped[str | None] = mapped_column(Text)
+    receipt_public_key: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = created_at_column()
 
 

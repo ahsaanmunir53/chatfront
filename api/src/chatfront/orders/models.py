@@ -35,6 +35,14 @@ class Order(Base):
     total: Mapped[int] = mapped_column(BigInteger, default=0)
     address: Mapped[dict[str, Any] | None]
     notes: Mapped[str] = mapped_column(Text, default="")
+    advance: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    paid: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # advance: paid before a cash-on-delivery order ships; paid: verified payments so far.
+    # due_now: the exact amount expected next, unique among the shop's open orders (97);
+    # unique_off: what the shop took off the total to make it unique.
+    due_now: Mapped[int | None] = mapped_column(BigInteger)
+    unique_off: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    reminded_at: Mapped[datetime | None]  # the watcher's one reminder (feature 30)
     placed_at: Mapped[datetime | None]
     closed_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()

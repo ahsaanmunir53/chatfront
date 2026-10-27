@@ -16,6 +16,7 @@ from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
 from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.owner.models import PendingAction
+from chatfront.payments.models import Payment, PaymentClaim, Receipt, WalletCredit
 
 __all__ = [
     "AiCall",
@@ -32,12 +33,16 @@ __all__ = [
     "Message",
     "Order",
     "OrderItem",
+    "Payment",
+    "PaymentClaim",
     "PendingAction",
     "PriceOffer",
     "Product",
+    "Receipt",
     "Staff",
     "StockMovement",
     "Tenant",
     "TenantModule",
     "Variant",
+    "WalletCredit",
 ]

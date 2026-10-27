@@ -16,6 +16,7 @@ dependencies = [
     "pillow>=11",
     "python-multipart>=0.0.17",
     "babel>=2.16",
+    "segno>=1.6",
 ]
 
 [dependency-groups]
