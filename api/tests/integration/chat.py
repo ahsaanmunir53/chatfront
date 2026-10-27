@@ -14,10 +14,13 @@ from typing import Any
 
 import httpx
 from PIL import Image
+from sqlalchemy import select
 
 from chatfront.ai.mock import Fixture, MockProvider
 from chatfront.core.clock import utcnow
 from chatfront.core.i18n import t
+from chatfront.core.models import Staff, StaffRole, Tenant
+from chatfront.owner.sessions import issue
 from chatfront.services import Services
 from tests.integration.conftest import SHOP
 
@@ -191,3 +194,20 @@ async def customer(client: Client, slug: str = SHOP) -> tuple[dict[str, str], st
 
 async def code_of(client: Client, name: str, slug: str = SHOP) -> str:
     return str((await products(client, slug))[name]["code"])
+
+
+async def shop_id(session: Any, slug: str = SHOP) -> uuid.UUID:
+    tenant_id = await session.scalar(select(Tenant.id).where(Tenant.slug == slug))
+    assert tenant_id is not None
+    return uuid.UUID(str(tenant_id))
+
+
+async def owner_auth(services: Services, slug: str = SHOP) -> dict[str, str]:
+    async with services.db.system() as session:
+        tenant_id = await shop_id(session, slug)
+        owner = await session.scalar(
+            select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == StaffRole.OWNER)
+        )
+    assert owner is not None
+    token = issue(owner.id, tenant_id, services.settings.secret_key.get_secret_value())
+    return {"Authorization": f"Bearer {token}"}

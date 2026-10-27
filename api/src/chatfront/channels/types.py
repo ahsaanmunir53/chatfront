@@ -59,6 +59,7 @@ class Capability(StrEnum):
     BUTTONS = "buttons"
     LIST = "list"
     TEMPLATE = "template"
+    LOCATION = "location"  # ask for a location pin with one tap
 
 
 @dataclass(frozen=True)
@@ -103,7 +104,15 @@ class OutTemplate:
     params: tuple[str, ...] = ()
 
 
-Outbound = OutText | OutButtons | OutList | OutTemplate
+@dataclass(frozen=True)
+class OutLocationRequest:
+    """Asks for the customer's location pin: WhatsApp's Send location button, or the web
+    chat's Share my location button."""
+
+    text: str
+
+
+Outbound = OutText | OutButtons | OutList | OutTemplate | OutLocationRequest
 
 
 def required_capability(message: Outbound) -> Capability:
@@ -116,6 +125,8 @@ def required_capability(message: Outbound) -> Capability:
             return Capability.LIST
         case OutTemplate():
             return Capability.TEMPLATE
+        case OutLocationRequest():
+            return Capability.LOCATION
     raise AssertionError(message)  # pragma: no cover
 
 
@@ -131,4 +142,6 @@ def to_record(message: Outbound) -> tuple[str, dict[str, Any]]:
             return text, {"list": {"button": label, "rows": items}}
         case OutTemplate(name=name, lang=lang, params=params):
             return " ".join(params), {"template": {"name": name, "lang": lang}}
+        case OutLocationRequest(text=text):
+            return text, {"location_request": True}
     raise AssertionError(message)  # pragma: no cover

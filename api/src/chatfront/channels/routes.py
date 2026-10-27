@@ -113,11 +113,19 @@ class ChatSession(BaseModel):
     token: str
 
 
+class SharedLocation(BaseModel):
+    """The browser's location, from the chat's Share my location button (feature 33)."""
+
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
 class ChatPost(BaseModel):
     token: str | None = Field(default=None, min_length=20, max_length=100)
     client_id: uuid.UUID
     text: str = Field(min_length=1, max_length=MAX_CHAT_TEXT)
     button_id: str | None = Field(default=None, max_length=200)
+    location: SharedLocation | None = None
 
 
 class ChatMessageOut(BaseModel):
@@ -189,7 +197,7 @@ async def _accept(
     *,
     kind: Kind,
     text: str | None,
-    button_id: str | None = None,
+    payload: dict[str, Any] | None = None,
     media_id: uuid.UUID | None = None,
 ) -> bool:
     tag = hashlib.sha256(identity.sender_id.encode()).hexdigest()[:12]
@@ -201,7 +209,7 @@ async def _accept(
         sent_at=utcnow(),
         kind=kind,
         text=text,
-        payload={"button_id": button_id} if button_id else {},
+        payload=payload or {},
         staff_id=identity.staff_id,
         media_id=media_id,
     )
@@ -226,20 +234,21 @@ async def post_chat_message(
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
     identity = _identity(services, account, body.token, authorization)
-    kind = Kind.BUTTON if body.button_id else Kind.TEXT
+    kind, payload = Kind.TEXT, dict[str, Any]()
+    if body.location is not None:
+        kind, payload = Kind.LOCATION, {"location": body.location.model_dump()}
+    elif body.button_id:
+        kind, payload = Kind.BUTTON, {"button_id": body.button_id}
     accepted = await _accept(
-        services,
-        account,
-        identity,
-        body.client_id,
-        kind=kind,
-        text=body.text,
-        button_id=body.button_id,
+        services, account, identity, body.client_id, kind=kind, text=body.text, payload=payload
     )
     return {"accepted": accepted}
 
 
 _MEDIA_KINDS = {MediaKind.IMAGE: Kind.IMAGE, MediaKind.AUDIO: Kind.AUDIO}
+# What the page may see of a message's details: its buttons, its list, a request for the
+# customer's pin and a pin they shared. Language tags and internal notes stay on the server.
+_SHOWN = frozenset({"buttons", "list", "location_request", "location"})
 
 
 @router.post("/api/shops/{slug}/chat/media", status_code=202)
@@ -317,7 +326,7 @@ async def list_chat_messages(
             kind=message.kind,
             body=message.body,
             lang=(message.payload or {}).get("lang"),
-            payload={k: v for k, v in (message.payload or {}).items() if k in ("buttons", "list")},
+            payload={k: v for k, v in (message.payload or {}).items() if k in _SHOWN},
             media_url=(
                 await media_service.signed_url(services.storage, media, ttl, blurred=False)
                 if media is not None

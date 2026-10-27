@@ -17,6 +17,7 @@ from chatfront.channels.types import (
     Outbound,
     OutButtons,
     OutList,
+    OutLocationRequest,
     OutTemplate,
     OutText,
     StatusUpdate,
@@ -144,13 +145,28 @@ def _body(message: Outbound) -> dict[str, Any]:
                     }
                 ]
             return {"type": "template", "template": template}
+        case OutLocationRequest(text=text):
+            return {
+                "type": "interactive",
+                "interactive": {
+                    "type": "location_request_message",
+                    "body": {"text": text},
+                    "action": {"name": "send_location"},
+                },
+            }
     raise AssertionError(message)  # pragma: no cover
 
 
 class WhatsAppAdapter:
     channel = Channel.WHATSAPP
     capabilities = frozenset(
-        {Capability.TEXT, Capability.BUTTONS, Capability.LIST, Capability.TEMPLATE}
+        {
+            Capability.TEXT,
+            Capability.BUTTONS,
+            Capability.LIST,
+            Capability.TEMPLATE,
+            Capability.LOCATION,
+        }
     )
     has_service_window = True
 

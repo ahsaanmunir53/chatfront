@@ -17,7 +17,9 @@ from chatfront.core.ids import new_id
 
 class WebChatAdapter:
     channel = Channel.WEBCHAT
-    capabilities = frozenset({Capability.TEXT, Capability.BUTTONS, Capability.LIST})
+    capabilities = frozenset(
+        {Capability.TEXT, Capability.BUTTONS, Capability.LIST, Capability.LOCATION}
+    )
     has_service_window = False
 
     def parse(self, payload: dict[str, Any]) -> tuple[list[Inbound], list[StatusUpdate]]:

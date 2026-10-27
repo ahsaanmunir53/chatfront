@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
 
 import httpx
 import pytest
@@ -23,7 +22,6 @@ from chatfront.core.i18n import t
 from chatfront.core.models import Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.orders.models import Order, OrderItem, PriceOffer
-from chatfront.owner.sessions import issue
 from chatfront.services import Services
 from tests.integration.chat import (
     GRAPH,
@@ -34,11 +32,13 @@ from tests.integration.chat import (
     customer,
     fixture,
     last,
+    owner_auth,
     photo,
     said,
     say,
     send_file,
     settle,
+    shop_id,
     sign_in,
     signed,
     use,
@@ -53,16 +53,10 @@ GROCERY = "barkat-kiryana"
 async def stock_of(services: Services, name: str, colour: str | None = None) -> int | None:
     async with services.db.system() as session:
         query = select(Variant.stock).join(Product, Product.id == Variant.product_id)
-        query = query.where(Product.name == name, Product.tenant_id == await _shop_id(session))
+        query = query.where(Product.name == name, Product.tenant_id == await shop_id(session))
         if colour:
             query = query.where(Variant.options["colour"].astext == colour)
         return await session.scalar(query)
-
-
-async def _shop_id(session: Any, slug: str = SHOP) -> uuid.UUID:
-    tenant_id = await session.scalar(select(Tenant.id).where(Tenant.slug == slug))
-    assert tenant_id is not None
-    return uuid.UUID(str(tenant_id))
 
 
 async def cart_lines(services: Services, slug: str = SHOP) -> dict[str, OrderItem]:
@@ -70,7 +64,7 @@ async def cart_lines(services: Services, slug: str = SHOP) -> dict[str, OrderIte
         items = await session.scalars(
             select(OrderItem)
             .join(Order, Order.id == OrderItem.order_id)
-            .where(Order.status == "cart", Order.tenant_id == await _shop_id(session, slug))
+            .where(Order.status == "cart", Order.tenant_id == await shop_id(session, slug))
         )
         return {item.name: item for item in items}
 
@@ -359,17 +353,6 @@ async def test_made_up_figures_are_rewritten_or_never_sent(app: tuple[Client, Se
     assert handover.requested_by == "code"
 
 
-async def owner_auth(services: Services, slug: str = SHOP) -> dict[str, str]:
-    async with services.db.system() as session:
-        tenant_id = await _shop_id(session, slug)
-        owner = await session.scalar(
-            select(Staff).where(Staff.tenant_id == tenant_id, Staff.role == StaffRole.OWNER)
-        )
-    assert owner is not None
-    token = issue(owner.id, tenant_id, services.settings.secret_key.get_secret_value())
-    return {"Authorization": f"Bearer {token}"}
-
-
 async def test_a_customer_asks_for_a_person_and_the_owner_takes_over(
     app: tuple[Client, Services],
 ) -> None:
@@ -522,7 +505,7 @@ async def test_delivery_charge_by_city_and_weight_and_the_owner_sets_it(
     reply = last(await say(client, services, SHOP, guest, "3 suit karachi bhejna hai", token=token))
     assert reply["body"] == "Karachi ki delivery Rs 310 hai."  # 250, and 60 for the second kg
     delivery = [m.text() for m in mock.requests[-1].messages if m.role == "tool"][-1]
-    assert '"address_is_vague": false' in delivery
+    assert "location_pin" not in delivery  # a flat number, a block and an area: enough
 
     slug, auth = await sign_in(client)
     use(
@@ -574,7 +557,7 @@ async def test_the_owner_hears_on_whatsapp_and_gives_the_chat_back_with_a_tap(
     async with services.db.system() as session:
         await session.execute(
             update(Staff)
-            .where(Staff.tenant_id == await _shop_id(session), Staff.role == StaffRole.OWNER)
+            .where(Staff.tenant_id == await shop_id(session), Staff.role == StaffRole.OWNER)
             .values(phone_hash=hash_phone(f"+{owner_number}", services.keys.phone_hash_key))
         )
     with respx.mock:

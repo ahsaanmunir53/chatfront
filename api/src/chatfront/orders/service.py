@@ -18,6 +18,8 @@ from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
+from chatfront.delivery.address import Address, local_phone
+from chatfront.delivery.pins import Pin
 from chatfront.orders import bargain
 from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
 from chatfront.orders.models import Order, OrderItem, PriceOffer
@@ -95,21 +97,39 @@ async def _recalculate(session: AsyncSession, order: Order) -> None:
 
 
 async def set_address(
-    session: AsyncSession, order: Order, *, city: str, address: str, name: str, phone: str
+    session: AsyncSession, order: Order, *, city: str, address: Address, name: str, phone: str
 ) -> Quote:
-    """Where the order goes. The city is matched to the pack's spelling; the charge follows."""
+    """Where the order goes: the city matched to the pack's spelling, the address tidied for a
+    rider (feature 33), the phone in E.164 when it reads as one; the charge follows. A pin
+    shared before stays."""
     tenant = await session.get(Tenant, order.tenant_id)
     assert tenant is not None
+    pack = get_pack(tenant.country)
+    number, valid = local_phone(phone, pack)
+    pin = (order.address or {}).get("pin")
     order.address = {
-        "city": city_name(city, get_pack(tenant.country)),
-        "address": " ".join(address.split())[:300],
+        "city": city_name(city, pack),
+        "address": address.clean(),
+        "vague": address.vague(),
         "name": " ".join(name.split())[:80],
-        "phone": phone.strip()[:20],
+        "phone": number,
+        "phone_valid": valid,
+        **({"pin": pin} if pin else {}),
     }
     await _recalculate(session, order)
     charge = await delivery_quote(session, order)
     assert charge is not None
     return charge
+
+
+def needs_pin(order: Order) -> bool:
+    """A vague address, and no pin yet: a rider could not find it."""
+    address = order.address or {}
+    return bool(address.get("vague")) and not address.get("pin")
+
+
+def set_pin(order: Order, pin: Pin) -> None:
+    order.address = {**(order.address or {}), "pin": pin.as_dict()}
 
 
 def _check_editable(order: Order) -> None:

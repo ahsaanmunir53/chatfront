@@ -29,6 +29,9 @@ from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError
 from chatfront.core.models import Tenant
+from chatfront.delivery.address import Address
+from chatfront.delivery.pins import pin_request
+from chatfront.delivery.risk import assess
 from chatfront.orders import service as orders
 from chatfront.orders.bargain import Outcome
 from chatfront.orders.cards import CardMaker
@@ -59,6 +62,7 @@ class AgentContext:
     lang: str
     facts: Facts
     modules: frozenset[str] = frozenset()  # the tenant's switched-on modules: their tools only
+    phone_hash_key: str = ""  # to know a buyer by their number (feature 34)
     cards: list[Outbound] = field(default_factory=list)
     handover: str | None = None  # the reason, when the agent asked for a person
 
@@ -220,6 +224,8 @@ def _missing(ctx: AgentContext, cart: Order, lines: Sequence[OrderItem]) -> list
         missing.append("address")
     if ctx.channel == Channel.WEBCHAT and not address.get("phone"):
         missing.append("phone")  # on WhatsApp the number is already known
+    if orders.needs_pin(cart):
+        missing.append("location_pin")
     return missing
 
 
@@ -328,29 +334,40 @@ async def add_items(ctx: AgentContext, params: ShoppingList) -> dict[str, Any]:
 
 class DeliveryDetails(BaseModel):
     city: str = Field(min_length=2, max_length=60)
-    address: str = Field(min_length=3, max_length=300)
+    address: str = Field(
+        min_length=3, max_length=300, description="The address as the customer wrote it"
+    )
+    house: str = Field(
+        default="", max_length=80, description="House, plot, flat or shop number, if given"
+    )
+    street: str = Field(default="", max_length=80, description="Street or gali, if given")
+    area: str = Field(
+        default="",
+        max_length=120,
+        description="Area, mohalla, colony, society, block or phase, if given",
+    )
+    landmark: str = Field(
+        default="", max_length=120, description="A well-known place nearby, if given"
+    )
     name: str = Field(default="", max_length=80)
     phone: str = Field(default="", max_length=20)
 
 
-_VAGUE_WORDS = 4  # fewer words than this is not an address a rider can find
-
-
 async def set_delivery_details(ctx: AgentContext, params: DeliveryDetails) -> dict[str, Any]:
+    """Code tidies the address and judges it; a vague one gets a pin request (feature 33)."""
+    address = Address(params.address, params.house, params.street, params.area, params.landmark)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
         )
         await orders.set_address(
-            session,
-            cart,
-            city=params.city,
-            address=params.address,
-            name=params.name,
-            phone=params.phone,
+            session, cart, city=params.city, address=address, name=params.name, phone=params.phone
         )
+        pin_needed = orders.needs_pin(cart)
     view = await _cart(ctx)
-    view["address_is_vague"] = len(params.address.split()) < _VAGUE_WORDS
+    if pin_needed:
+        ctx.cards.append(pin_request(ctx.channel, ctx.lang))
+        view["location_pin"] = "the address is too vague for a rider; a pin request was sent"
     return view
 
 
@@ -446,8 +463,14 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
             status=ActionStatus.PENDING,
         )
         charge = await orders.delivery_quote(session, cart)
+        risk = await assess(
+            session,
+            cart,
+            phone_proven=ctx.channel == Channel.WHATSAPP,
+            phone_hash_key=ctx.phone_hash_key,
+        )
         advance = (
-            cod_advance(ctx.tenant, cart.total, cart.delivery_fee)
+            cod_advance(ctx.tenant, cart.total, cart.delivery_fee, risky=risk.high)
             if params.payment_method == "cod"
             else 0
         )

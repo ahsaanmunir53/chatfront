@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.audit.service import Actor
 from chatfront.core.countries import get_pack
 from chatfront.core.models import Tenant
+from chatfront.delivery.risk import HIGH
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
@@ -24,6 +25,7 @@ from chatfront.payments.amounts import default_advance, unique_due
 from chatfront.templates import PaymentMethod, get_template
 
 COD_ADVANCE = "cod_advance"  # profile key: a fixed advance in minor units, 0 for none
+RISK_ADVANCE = "risk_advance"  # profile key: False lets high-risk orders go without an advance
 
 
 def shop_methods(tenant: Tenant) -> list[str]:
@@ -34,15 +36,24 @@ def shop_methods(tenant: Tenant) -> list[str]:
     return [str(method) for method in get_template(tenant.template).payment_methods]
 
 
-def cod_advance(tenant: Tenant, total: int, delivery_fee: int) -> int:
+def cod_advance(tenant: Tenant, total: int, delivery_fee: int, *, risky: bool = False) -> int:
     """The advance a cash-on-delivery order pays first: the owner's fixed amount, else the
-    delivery charge (or a tenth of the order); none when the shop takes plain cash on delivery."""
-    if PaymentMethod.COD_WITH_ADVANCE not in shop_methods(tenant) or total <= 0:
+    delivery charge (or a tenth of the order). None at a shop that takes plain cash on
+    delivery, unless the order is high risk (feature 34) and the shop also takes transfers."""
+    methods, profile = shop_methods(tenant), tenant.profile or {}
+    asks = PaymentMethod.COD_WITH_ADVANCE in methods or (
+        risky and PaymentMethod.TRANSFER in methods and profile.get(RISK_ADVANCE, True) is not False
+    )
+    if not asks or total <= 0:
         return 0
-    fixed = (tenant.profile or {}).get(COD_ADVANCE)
+    fixed = profile.get(COD_ADVANCE)
     if isinstance(fixed, int) and not isinstance(fixed, bool):
         return max(min(fixed, total), 0)
     return default_advance(total, delivery_fee, get_pack(tenant.country).minor_digits)
+
+
+def risky(order: Order) -> bool:
+    return order.risk_score >= HIGH
 
 
 def _lock_key(tenant_id: uuid.UUID) -> int:
@@ -74,7 +85,7 @@ async def ask_for(session: AsyncSession, tenant: Tenant, order: Order) -> None:
         order.due_now = max((order.advance if cod else order.total) - order.paid, 0) or None
         return
     full = max(order.subtotal + order.delivery_fee - order.discount, 0)
-    stage = cod_advance(tenant, full, order.delivery_fee) if cod else full
+    stage = cod_advance(tenant, full, order.delivery_fee, risky=risky(order)) if cod else full
     taken = await _taken(session, tenant.id, order.id)
     asked, off = unique_due(stage, taken, get_pack(tenant.country).minor_digits)
     order.unique_off = off
@@ -87,7 +98,8 @@ async def ask_for(session: AsyncSession, tenant: Tenant, order: Order) -> None:
 async def start_payment(session: AsyncSession, tenant: Tenant, order: Order, actor: Actor) -> None:
     """Right after placing: wait for a transfer or an advance, or confirm plain cash on
     delivery at once."""
-    if order.payment_method == "cod" and not cod_advance(tenant, order.total, order.delivery_fee):
+    advance = cod_advance(tenant, order.total, order.delivery_fee, risky=risky(order))
+    if order.payment_method == "cod" and not advance:
         await orders.move(session, order, OrderStatus.CONFIRMED, actor)
         return
     await orders.move(session, order, OrderStatus.AWAITING_PAYMENT, actor)
