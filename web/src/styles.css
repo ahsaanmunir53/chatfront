@@ -2389,3 +2389,142 @@ button {
     color: var(--ink);
   }
 }
+
+/* Customers waiting for the owner (handover) ------------------------------------------- */
+
+.waiting {
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-inline-start: 5px solid var(--chili);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.waiting-title {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 650;
+  font-stretch: 88%;
+}
+
+.waiting-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waiting-item + .waiting-item {
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.waiting-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.waiting-head strong {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.waiting-summary {
+  margin: 6px 0 0;
+  white-space: pre-line;
+}
+
+.waiting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.waiting-actions .action {
+  padding: 8px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.waiting-actions .action-primary {
+  background: var(--saffron);
+}
+
+.waiting-chat {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.waiting-thread {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  margin: 0;
+  padding: 10px;
+  overflow-y: auto;
+  list-style: none;
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.waiting-line {
+  display: grid;
+  gap: 2px;
+  max-width: 85%;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.waiting-line.by-staff {
+  justify-self: end;
+  background: color-mix(in srgb, var(--saffron) 20%, var(--card));
+}
+
+.waiting-who {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.waiting-original {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.waiting-reply {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+
+.waiting-reply textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.waiting-reply [role="alert"] {
+  flex-basis: 100%;
+  color: var(--chili);
+  font-size: 14px;
+}

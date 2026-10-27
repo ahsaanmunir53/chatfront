@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { OwnerMe, OwnerProduct } from "../api";
 import { ChatView } from "../components/ChatView";
+import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
 import { languageOf, scriptLang } from "../i18n";
 import type { Key } from "../i18n";
@@ -244,43 +245,28 @@ function Products({
   );
 }
 
-export function OwnerPage() {
+/** The signed-in console: the assistant, the products and the customers waiting. */
+function Console({
+  me,
+  token,
+  onSignOut,
+  onSessionEnded,
+}: {
+  me: OwnerMe;
+  token: string;
+  onSignOut: () => void;
+  onSessionEnded: () => void;
+}) {
   const { t } = useLang();
-  const { state } = useServer();
-  const [token, setToken] = useState<string | null>(takeToken);
-  const [expired, setExpired] = useState(false);
-  const [me, setMe] = useState<OwnerMe | null>(null);
   const [products, setProducts] = useState<OwnerProduct[] | null>(null);
   const [replies, setReplies] = useState(0);
   const [saves, setSaves] = useState(0);
   const [panel, setPanel] = useState<"chat" | "products">("chat");
-
-  const signOut = useCallback((ended: boolean) => {
-    clearOwnerToken();
-    setToken(null);
-    setMe(null);
-    setExpired(ended);
-  }, []);
-  const sessionEnded = useCallback(() => signOut(true), [signOut]);
+  const waiting = useHandovers(token);
   const saved = useCallback(() => setSaves((n) => n + 1), []);
-
-  useEffect(() => {
-    if (!token || state !== "online") return;
-    let current = true;
-    api.me(token).then(
-      (info) => current && setMe(info),
-      (error: unknown) => {
-        if (current && error instanceof ApiError && error.status === 401) sessionEnded();
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [token, state, sessionEnded]);
 
   // Each reply may have added or changed a product: read the list again.
   useEffect(() => {
-    if (!token || !me) return;
     let current = true;
     api.ownerProducts(token).then(
       (list) => current && setProducts(list),
@@ -291,16 +277,7 @@ export function OwnerPage() {
     return () => {
       current = false;
     };
-  }, [token, me, replies, saves]);
-
-  if (!token) return <SignedOut expired={expired} />;
-  if (!me) {
-    return (
-      <Page>
-        <div className="profile-skeleton console-skeleton" aria-busy="true" aria-label={t("console.title")} />
-      </Page>
-    );
-  }
+  }, [token, replies, saves]);
 
   return (
     <Page>
@@ -315,12 +292,13 @@ export function OwnerPage() {
           <Link to={`/s/${me.slug}`} className="action">
             {t("console.open_shop")}
           </Link>
-          <button type="button" className="action" onClick={() => signOut(false)}>
+          <button type="button" className="action" onClick={onSignOut}>
             {t("console.sign_out")}
           </button>
         </div>
       </header>
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
+      <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />
       <div className="console-switch" role="tablist" aria-label={t("console.title")}>
         {(["chat", "products"] as const).map((name) => (
           <button
@@ -345,11 +323,62 @@ export function OwnerPage() {
           empty={t("console.chat_empty")}
           suggestions={SUGGESTIONS.map((key) => t(key))}
           ownerToken={token}
-          onSignedOut={sessionEnded}
+          onSignedOut={onSessionEnded}
           onReplies={setReplies}
         />
         <Products me={me} token={token} products={products} onSaved={saved} />
       </div>
     </Page>
+  );
+}
+
+export function OwnerPage() {
+  const { t } = useLang();
+  const { state } = useServer();
+  const [token, setToken] = useState<string | null>(takeToken);
+  const [expired, setExpired] = useState(false);
+  const [me, setMe] = useState<OwnerMe | null>(null);
+
+  const signOut = useCallback((ended: boolean) => {
+    clearOwnerToken();
+    setToken(null);
+    setMe(null);
+    setExpired(ended);
+  }, []);
+  const sessionEnded = useCallback(() => signOut(true), [signOut]);
+
+  useEffect(() => {
+    if (!token || state !== "online") return;
+    let current = true;
+    api.me(token).then(
+      (info) => current && setMe(info),
+      (error: unknown) => {
+        if (current && error instanceof ApiError && error.status === 401) sessionEnded();
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [token, state, sessionEnded]);
+
+  if (!token) return <SignedOut expired={expired} />;
+  if (!me) {
+    return (
+      <Page>
+        <div
+          className="profile-skeleton console-skeleton"
+          aria-busy="true"
+          aria-label={t("console.title")}
+        />
+      </Page>
+    );
+  }
+  return (
+    <Console
+      me={me}
+      token={token}
+      onSignOut={() => signOut(false)}
+      onSessionEnded={sessionEnded}
+    />
   );
 }

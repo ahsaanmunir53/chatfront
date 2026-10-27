@@ -84,6 +84,26 @@ export type OwnerProduct = {
   variants: { id: string; options: Record<string, string>; price: number; stock: number | null }[];
 };
 
+export type Handover = {
+  id: string;
+  conversation_id: string;
+  customer: string | null;
+  channel: string;
+  reason: string;
+  summary: string;
+  requested_by: string;
+  created_at: string;
+};
+export type ConsoleMessage = {
+  id: string;
+  direction: "in" | "out";
+  kind: string;
+  body: string | null;
+  original: string | null;
+  by: "customer" | "agent" | "staff";
+  created_at: string;
+};
+
 /** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
 export type ChatAuth = { token: string; owner: boolean };
 
@@ -172,6 +192,23 @@ export const api = {
   me: (token: string) => call<OwnerMe>("/api/owner/me", { headers: bearer(token) }),
   ownerProducts: (token: string) =>
     call<OwnerProduct[]>("/api/owner/products", { headers: bearer(token) }),
+  handovers: (token: string) => call<Handover[]>("/api/owner/handovers", { headers: bearer(token) }),
+  handoverMessages: (token: string, conversationId: string) =>
+    call<ConsoleMessage[]>(
+      `/api/owner/conversations/${encodeURIComponent(conversationId)}/messages`,
+      { headers: bearer(token) },
+    ),
+  staffReply: (token: string, conversationId: string, text: string) =>
+    call<{ sent: boolean }>(`/api/owner/conversations/${encodeURIComponent(conversationId)}/reply`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ text }),
+    }),
+  resumeHandover: (token: string, handoverId: string) =>
+    call<{ resumed: boolean }>(`/api/owner/handovers/${encodeURIComponent(handoverId)}/resume`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
   saveWording: (
     token: string,
     productId: string,
