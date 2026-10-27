@@ -16,7 +16,7 @@ from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.core.numbers import find_numbers
 from chatfront.orders.delivery import city_name, rates_for
-from chatfront.owner.cards import Problem
+from chatfront.owner.types import Problem
 
 
 def _delivery_op(change: Change, tenant: Tenant, digits: int) -> dict[str, Any] | Problem:
@@ -71,6 +71,8 @@ def resolve_changes(
     ops: list[dict[str, Any]] = []
     problems: list[Problem] = []
     for change in changes:
+        if change.kind == "expiry":  # dates go on stock batches: stock.changes reads them
+            continue
         if change.kind in ("delivery_fee", "free_delivery_over"):
             if tenant is not None:
                 _add(ops, problems, _delivery_op(change, tenant, digits))

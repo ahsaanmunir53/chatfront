@@ -1,7 +1,8 @@
-version: 3
+version: 4
 
 You read a message from the owner of "$shop_name" ($business_type, $country) to the shop's
-assistant. Prices are in $currency. Work out what the owner wants and fill the JSON:
+assistant. Prices are in $currency and today is $today in the shop. Work out what the owner
+wants and fill the JSON:
 - intent "new_product": they describe a new product to add. Fill product as you would for a
   new product (name, price only if they said it, description in English, and so on).
 - intent "update": they change something they already sell or a shop policy. One entry in
@@ -16,7 +17,9 @@ assistant. Prices are in $currency. Work out what the owner wants and fill the J
   - kind "free_delivery_over": orders of value_number $currency or more deliver free
     (value_number 0 switches it off);
   - kind "low_stock_limit": warn the owner when stock falls to value_number pieces, with
-    product (or null for every product in the shop).
+    product (or null for every product in the shop);
+  - kind "expiry": the expiry date of the product's newest stock, with product and value_text
+    as YYYY-MM-DD.
 - intent "money": they tell the books about money. One entry in money per amount:
   - kind "expense": money the shop spent, with amount, category (stock, rent, salaries,
     utilities, delivery, packaging, marketing or other) and note (a few English words);
@@ -24,14 +27,21 @@ assistant. Prices are in $currency. Work out what the owner wants and fill the J
   - kind "udhaar_paid": credit paid back, with amount and person.
   The amount is the number the owner said, as a plain number in $currency; null if they gave
   none. Never estimate one.
-- intent "report": they ask how the shop is doing. report is one of today (today's sales and
-  spending), week (this week's), pending_payments (orders waiting for payment),
-  pending_orders (orders to pack and send), low_stock, or udhaar (who owes the shop).
+- intent "restock": stock came in. One entry in restock per product: item (the product as
+  named, with its colour or size if said), quantity (pieces, a whole number), unit_cost or
+  total_cost only if the owner said what it cost, and expiry as YYYY-MM-DD only if said.
+  supplier: who it came from, if said.
+- intent "report": they ask how the shop is doing or want to see something. report is one
+  of today (today's sales and spending), week (this week's), pending_payments (orders waiting
+  for payment), pending_orders (orders to pack and send), low_stock, udhaar (who owes the
+  shop), products (the product list), orders (the orders list), or batches (stock batches
+  with their cost and profit).
 - intent "question": any other question about the shop.
 - intent "other": anything else.
 note: one short sentence in English saying what you understood.
 Never add a change or an amount the owner did not ask for. Leave product null unless intent is
-new_product; leave money empty unless intent is money, and report null unless intent is report.
+new_product; leave money and restock empty unless the intent is theirs, and report null unless
+intent is report.
 
 The shop's products: $products
 The shop's policies: $policies

@@ -13,10 +13,8 @@ from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
 from chatfront.owner.actions import button_id
 from chatfront.owner.models import PendingAction
+from chatfront.stock import ops as stock_ops
 from chatfront.templates import get_template
-
-# Something to tell the owner instead of a change: a string key and its values.
-Problem = tuple[str, dict[str, Any]]
 
 
 def _label(tenant: Tenant, key: str, lang: str) -> str:
@@ -62,6 +60,8 @@ def confirm_card(action: PendingAction, text: str, yes_key: str, lang: str) -> O
 
 def change_line(tenant: Tenant, op: dict[str, Any], lang: str) -> str:
     kind = op["op"]
+    if kind in stock_ops.STOCK_OPS:
+        return stock_ops.line(tenant, op, lang)
     if kind in ("price", "floor_price"):
         old = (
             shop_money(tenant, op["old"], lang)

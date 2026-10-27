@@ -19,6 +19,7 @@ dependencies = [
     "segno>=1.6",
     "fpdf2>=2.8",
     "uharfbuzz>=0.45",
+    "openpyxl>=3.1",
 ]
 
 [dependency-groups]
@@ -30,6 +31,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "asgi-lifespan>=2.1.0",
+    "types-openpyxl>=3.1.5.20261017",
 ]
 
 [build-system]

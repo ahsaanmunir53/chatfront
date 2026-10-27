@@ -63,6 +63,7 @@ class Change(Strict):
         "delivery_fee",
         "free_delivery_over",
         "low_stock_limit",
+        "expiry",
     ]
     product: str | None
     value_number: float | None
@@ -84,14 +85,36 @@ class MoneyLine(Strict):
     note: str | None = None
 
 
-Report = Literal["today", "week", "pending_payments", "pending_orders", "low_stock", "udhaar"]
+class PurchaseLine(Strict):
+    """One line of stock that came in, as the owner said it or a bill shows it."""
+
+    item: str = Field(description="The product as named, with its colour or size if given")
+    quantity: int | None
+    unit_cost: float | None = None
+    total_cost: float | None = None
+    expiry: str | None = Field(default=None, description="YYYY-MM-DD, only if stated")
+
+
+Report = Literal[
+    "today",
+    "week",
+    "pending_payments",
+    "pending_orders",
+    "low_stock",
+    "udhaar",
+    "products",
+    "orders",
+    "batches",
+]
 
 
 class OwnerMessage(Strict):
-    intent: Literal["new_product", "update", "money", "report", "question", "other"]
+    intent: Literal["new_product", "update", "money", "restock", "report", "question", "other"]
     product: ProductDraft | None
     changes: list[Change]
     money: list[MoneyLine] = Field(default_factory=list)
+    restock: list[PurchaseLine] = Field(default_factory=list)
+    supplier: str | None = None
     report: Report | None = None
     note: str
 

@@ -25,7 +25,7 @@ from chatfront.core.countries import shop_money
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
-from chatfront.owner.cards import Problem
+from chatfront.owner.types import Problem
 
 KIND_MONEY = "money"
 OWNER_SOURCES = ("bill", "voice", "chat")
