@@ -114,6 +114,15 @@ async def test_health_and_shop(app: tuple[httpx.AsyncClient, Services]) -> None:
     assert shop["tagline"]["ur-Latn"].startswith("Lawn")
     assert shop["attribution"] == "Built with Muse Spark Open"
     assert (await client.get("/api/shops/nope")).status_code == 404
+    demos = (await client.get("/api/demo-shops")).json()
+    assert len(demos) == 6
+    assert demos[0]["business_type"]["ur"]
+    trust = (await client.get(f"/api/shops/{SHOP}/trust")).json()
+    assert trust["channels"] == [
+        {"channel": "webchat", "display": "Try-it chat"},
+        {"channel": "whatsapp", "display": "+92 300 ***0000"},
+    ]
+    assert (await client.get("/api/shops/nope/trust")).status_code == 404
 
 
 async def test_webhook_verification(app: tuple[httpx.AsyncClient, Services]) -> None:

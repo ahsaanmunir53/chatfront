@@ -21,5 +21,22 @@
   "dashboard.demo_owner": "Demo owner",
   "receipt.title": "Raseed check karein",
   "trust.title": "Trust page",
-  "agent.fallback": "Maazrat, abhi jawab nahi de saka. Dukaan ke maalik jald jawab denge."
+  "agent.fallback": "Maazrat, abhi jawab nahi de saka. Dukaan ke maalik jald jawab denge.",
+  "nav.language": "Zabaan",
+  "home.lede": "WhatsApp, Instagram aur Facebook ke andar poori dukaan, aur har payment us raqam se mila kar jo waqai aayi.",
+  "home.demo_shops": "Demo dukaan aazmaayein",
+  "home.demo_note": "Yeh dukaanein aur in ke gahak sirf demo ke liye banaye gaye hain.",
+  "chat.back": "Dukaan par wapas",
+  "chat.empty": "Shuru karne ke liye salam kahein. Dukaan ka assistant Urdu, Roman Urdu ya English mein jawab deta hai.",
+  "chat.you": "Aap",
+  "dashboard.lede": "Orders, approval ki muntazir payments, hisaab kitaab aur fraud alerts yahan dukaan ke maalik ke liye honge.",
+  "receipt.lede": "Har Chatfront raseed par QR code hota hai. Usay scan karne se yeh page khulta hai aur batata hai ke raseed asli hai ya nahi.",
+  "trust.lede": "Sirf yahan diye gaye zariye {shop} ke hain. Is ka naam istemal karne wala koi aur dukaan nahi hai.",
+  "trust.channels": "Dukaan se rabte ke official zariye",
+  "channel.whatsapp": "WhatsApp",
+  "channel.instagram": "Instagram",
+  "channel.messenger": "Facebook Messenger",
+  "channel.webchat": "Isi website par chat",
+  "error.network": "Chatfront tak pohanch nahi ho saki. Connection check kar ke dobara koshish karein.",
+  "error.not_found": "Yeh page mojood nahi."
 }

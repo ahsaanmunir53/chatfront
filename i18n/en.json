@@ -21,5 +21,22 @@
   "dashboard.demo_owner": "Demo owner",
   "receipt.title": "Check a receipt",
   "trust.title": "Trust page",
-  "agent.fallback": "Sorry, I could not answer right now. The shop owner will reply soon."
+  "agent.fallback": "Sorry, I could not answer right now. The shop owner will reply soon.",
+  "nav.language": "Language",
+  "home.lede": "A whole shop inside WhatsApp, Instagram and Facebook, with every payment checked against the money that actually arrived.",
+  "home.demo_shops": "Try a demo shop",
+  "home.demo_note": "These shops and their customers are made up for the demo.",
+  "chat.back": "Back to the shop",
+  "chat.empty": "Say salam to start. The shop's assistant answers in Urdu, Roman Urdu or English.",
+  "chat.you": "You",
+  "dashboard.lede": "Orders, payments waiting for approval, books and fraud alerts will be here for the shop owner.",
+  "receipt.lede": "Every Chatfront receipt carries a QR code. Scanning it opens this page and shows whether the receipt is genuine.",
+  "trust.lede": "Only the channels listed here belong to {shop}. Anyone else using its name is not the shop.",
+  "trust.channels": "Official ways to reach the shop",
+  "channel.whatsapp": "WhatsApp",
+  "channel.instagram": "Instagram",
+  "channel.messenger": "Facebook Messenger",
+  "channel.webchat": "Chat on this website",
+  "error.network": "Could not reach Chatfront. Check the connection and try again.",
+  "error.not_found": "This page does not exist."
 }
