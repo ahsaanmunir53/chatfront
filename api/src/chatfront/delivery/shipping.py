@@ -14,6 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType
+from chatfront.books import ledger
+from chatfront.books.models import Category, EntryKind
 from chatfront.channels.language import reply_language
 from chatfront.channels.models import Conversation
 from chatfront.channels.notify import send_to
@@ -28,6 +30,7 @@ from chatfront.delivery.models import Shipment
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus, can_move
+from chatfront.shield import buyers
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -103,10 +106,13 @@ async def move(
         tenant = await session.get(Tenant, tenant_id)
         assert tenant is not None
         order = await order_by_code(session, code)
-        await orders.move(
-            session, order, wanted, Actor(ActorType.STAFF, str(staff_id)), reason="owner"
-        )
+        actor = Actor(ActorType.STAFF, str(staff_id))
+        await orders.move(session, order, wanted, actor, reason="owner")
         shipment = await shipment_for(session, order)
+        if wanted == OrderStatus.DELIVERED and shipment.cod_amount:
+            await _cash_at_door(session, tenant, order, shipment.cod_amount, actor)
+        if wanted in (OrderStatus.DELIVERED, OrderStatus.RETURNED):
+            await buyers.review(session, tenant, order.customer_id, actor)
         _stamp(shipment, wanted, courier=courier, tracking=tracking)
         conversation = (
             await session.get(Conversation, order.conversation_id)
@@ -118,6 +124,24 @@ async def move(
     if tell and order.conversation_id:
         await send_to(services, tenant_id, order.conversation_id, OutText(tell), lang)
     return Moved(order, shipment)
+
+
+async def _cash_at_door(
+    session: AsyncSession, tenant: Tenant, order: Order, amount: int, actor: Actor
+) -> None:
+    """The rider handed over the cash: it is a sale in the books (feature 48)."""
+    await ledger.post(
+        session,
+        tenant,
+        EntryKind.SALE,
+        amount,
+        actor,
+        category=Category.SALES,
+        source="cod",
+        description=f"Order {order.code}",
+        order_id=order.id,
+    )
+    order.paid += amount
 
 
 def _stamp(shipment: Shipment, wanted: OrderStatus, *, courier: str, tracking: str) -> None:

@@ -15,6 +15,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import SYSTEM, Actor, ActorType, record
+from chatfront.books import ledger
+from chatfront.books.models import Category, EntryKind
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.ids import short_code
@@ -109,6 +111,18 @@ async def settle(
         claim.credit_id = credit.id if credit else claim.credit_id
     await session.flush()
     actor = Actor(ActorType.STAFF, str(staff_id)) if staff_id else SYSTEM
+    await ledger.post(
+        session,
+        tenant,
+        EntryKind.SALE,
+        amount,
+        actor,
+        category=Category.SALES,
+        source="payment",
+        description=f"Order {order.code}",
+        order_id=order.id,
+        payment_id=payment.id,
+    )
     order.paid += amount
     if order.status == OrderStatus.AWAITING_PAYMENT:
         if _paid_in_full(order):
