@@ -35,7 +35,6 @@ from chatfront.catalog.service import (
     single_match,
 )
 from chatfront.channels.conversation import Turn
-from chatfront.channels.handover import parse_handover_button
 from chatfront.channels.types import Kind, Outbound, OutText
 from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
@@ -54,8 +53,9 @@ from chatfront.owner.cards import change_list, confirm_card, product_summary
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.templates import get_template
 
-# Gives a handed-over chat back to the agent: (tenant, handover, staff) -> resumed?
-Resume = Callable[[uuid.UUID, uuid.UUID, uuid.UUID], Awaitable[bool]]
+# A tap on a button another module put in the owner's chat (giving a chat back to the agent,
+# approving a payment): the replies, or None when the button is not that module's.
+ButtonHandler = Callable[[Turn], Awaitable[list[Outbound] | None]]
 
 KIND_PRODUCT = "product"
 KIND_UPDATE = "update"
@@ -189,19 +189,20 @@ class OwnerAssistant:
         ai: AiClient,
         storage: Storage,
         settings: Settings,
-        resume: Resume | None = None,
+        buttons: Sequence[ButtonHandler] = (),
     ) -> None:
         self.db = db
         self.ai = ai
         self.storage = storage
         self.settings = settings
-        self.resume = resume
+        self.buttons = tuple(buttons)
 
     async def respond(self, turn: Turn) -> list[Outbound]:
-        handover_id = parse_handover_button((turn.message.payload or {}).get("button_id"))
-        if handover_id is not None and self.resume is not None and turn.staff_id is not None:
-            await self.resume(turn.tenant.id, handover_id, turn.staff_id)
-            return [OutText(t("handover.resumed", turn.lang))]
+        if turn.staff_id is not None and (turn.message.payload or {}).get("button_id"):
+            for handler in self.buttons:
+                replies = await handler(turn)
+                if replies is not None:
+                    return replies
         choice = actions.parse_button((turn.message.payload or {}).get("button_id"))
         if choice is not None:
             return await self._answer(turn, *choice)

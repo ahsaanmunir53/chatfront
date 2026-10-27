@@ -16,6 +16,7 @@ from chatfront.orders.delivery import Quote
 from chatfront.orders.models import Order, OrderItem
 from chatfront.owner.actions import button_id
 from chatfront.owner.models import PendingAction
+from chatfront.payments.messages import pay_details
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,7 @@ class CardMaker:
         items: Sequence[OrderItem],
         method: str,
         charge: Quote | None,
+        advance: int = 0,
     ) -> OutButtons:
         address = order.address or {}
         text = "\n".join(
@@ -69,7 +71,9 @@ class CardMaker:
                     self.lang,
                     address=f"{address.get('address', '')}, {address.get('city', '')}",
                 ),
-                t(f"order.pay_{method}", self.lang),
+                t("order.pay_cod_advance", self.lang, advance=self.money(advance))
+                if advance
+                else t(f"order.pay_{method}", self.lang),
             ]
         )
         return OutButtons(
@@ -108,5 +112,20 @@ class CardMaker:
         )
 
     def placed(self, order: Order) -> str:
-        key = "order.placed_cod" if order.payment_method == "cod" else "order.placed_transfer"
-        return t(key, self.lang, code=order.code, total=self.money(order.total))
+        """The order is placed: what to pay now, where, and how to make it easy to match."""
+        if order.due_now is None:
+            return t("order.placed_cod", self.lang, code=order.code, total=self.money(order.total))
+        values = {
+            "code": order.code,
+            "total": self.money(order.total),
+            "due": self.money(order.due_now),
+            "account": pay_details(self.tenant, self.lang),
+        }
+        if order.payment_method == "cod":
+            rest = self.money(order.total - order.due_now)
+            text = t("order.placed_advance", self.lang, rest=rest, **values)
+        else:
+            text = t("order.placed_transfer", self.lang, **values)
+        if order.unique_off:
+            text += "\n" + t("order.unique_note", self.lang, off=self.money(order.unique_off))
+        return text

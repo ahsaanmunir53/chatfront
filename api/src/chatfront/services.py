@@ -15,7 +15,7 @@ from chatfront.ai.tools import ToolRegistry
 from chatfront.catalog.translations import translate_product
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.conversation import Responder, handle_reply
-from chatfront.channels.handover import resume
+from chatfront.channels.handover import resume_button
 from chatfront.channels.messaging import instagram_adapter, messenger_adapter
 from chatfront.channels.models import Channel, Party
 from chatfront.channels.service import REPLY_JOB, Keys
@@ -33,6 +33,8 @@ from chatfront.orders.tools import order_tools
 from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
+from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
+from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
 
 REQUEUE_STALE_JOB = "jobs.requeue_stale"
 
@@ -80,6 +82,9 @@ def build_registries() -> Registries:
     catalog_tools, orders_tools = order_tools()
     registries.modules.modules["catalog"].tools.extend(catalog_tools)
     registries.modules.modules["orders"].tools.extend(orders_tools)
+    payments = registries.modules.modules["payments"]
+    payments.jobs |= {REVIEW_JOB: review_job, WATCH_JOB: watch}
+    payments.periodic.append(Periodic("payment-watch", EVERY, WATCH_JOB))
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
@@ -142,7 +147,13 @@ def build_services(settings: Settings, registries: Registries) -> Services:
     storage = services.storage
     services.responders = {
         Party.CUSTOMER: OrderAgent(services),
-        Party.STAFF: OwnerAssistant(db, ai, storage, settings, partial(resume, services)),
+        Party.STAFF: OwnerAssistant(
+            db,
+            ai,
+            storage,
+            settings,
+            buttons=(partial(resume_button, services), partial(payment_button, services)),
+        ),
         Party.ONBOARDING: OnboardingAssistant(db, ai, storage, settings, registries.modules),
     }
     services.worker = Worker(

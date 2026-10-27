@@ -18,6 +18,7 @@ from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
 from chatfront.core.settings import Settings, get_settings
 from chatfront.owner.routes import router as owner_router
+from chatfront.payments.routes import router as payments_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
@@ -67,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(channel_router)
     app.include_router(public_router)
     app.include_router(owner_router)
+    app.include_router(payments_router)
     registries.modules.install(app, registries.jobs, registries.cron, registries.tools)
     _serve_web(app, settings.web_dist_dir)
     return app

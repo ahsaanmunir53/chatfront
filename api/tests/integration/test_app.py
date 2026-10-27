@@ -279,12 +279,14 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
     client, services = app
     assert (await client.post("/internal/cron")).status_code == 403
     response = await client.post("/internal/cron", headers={"X-Cron-Secret": "test-cron-secret"})
-    assert response.json() == {"enqueued": ["requeue-stale", "remove-expired-shops"]}
+    assert response.json() == {
+        "enqueued": ["requeue-stale", "remove-expired-shops", "payment-watch"]
+    }
     assert services.worker is not None
-    assert await services.worker.run_once() == 2
+    assert await services.worker.run_once() == 3
     async with seeded.system() as session:
         statuses = list(await session.scalars(select(Job.status)))
-    assert statuses == ["done", "done"]
+    assert statuses == ["done", "done", "done"]
 
 
 async def test_web_app_is_served(seeded: Database, tmp_path: Path) -> None:

@@ -17,6 +17,7 @@ from PIL import Image
 
 from chatfront.ai.mock import Fixture, MockProvider
 from chatfront.core.clock import utcnow
+from chatfront.core.i18n import t
 from chatfront.services import Services
 from tests.integration.conftest import SHOP
 
@@ -163,3 +164,30 @@ def wa_message(
             }
         ],
     }
+
+
+def said(key: str) -> set[str]:
+    """A code-written message as an English or Roman Urdu reader gets it."""
+    return {t(key, "en"), t(key, "ur-Latn")}
+
+
+def agent(match: str, *, step: int | None = None, role: str = "*", **answer: Any) -> Fixture:
+    """A recorded order-agent answer: text (content) or tool calls ({name: arguments})."""
+    calls = answer.pop("calls", {})
+    return Fixture(
+        prompt="order_agent",
+        role=role,
+        match=match,
+        step=step,
+        tool_calls=[{"name": name, "arguments": args} for name, args in calls.items()],
+        **answer,
+    )
+
+
+async def customer(client: Client, slug: str = SHOP) -> tuple[dict[str, str], str]:
+    token = (await client.post(f"/api/shops/{slug}/chat/session")).json()["token"]
+    return {"X-Chat-Token": token}, token
+
+
+async def code_of(client: Client, name: str, slug: str = SHOP) -> str:
+    return str((await products(client, slug))[name]["code"])

@@ -53,6 +53,8 @@ from chatfront.orders.tools import (
 )
 from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus, PendingAction
+from chatfront.payments.claims import handle_screenshot
+from chatfront.payments.due import ask_for, start_payment
 from chatfront.shield.answer_check import Facts, describe, unsupported
 from chatfront.shield.injection import injection_attempt, wants_a_person
 from chatfront.templates import get_template
@@ -83,6 +85,10 @@ class OrderAgent:
             return await self._tap(turn, *button)
         if wants_a_person(turn.message.body):
             return await self._hand_over(turn, "the customer asked for a person", "customer")
+        if turn.media is not None:
+            payment = await handle_screenshot(self.services, turn)
+            if payment is not None:
+                return payment
         ctx, request = await self._prepare(turn)
         try:
             text = await self._converse(ctx, request)
@@ -291,12 +297,7 @@ class OrderAgent:
                 return [OutText(t("order.cart_changed", lang))]
             order.payment_method = action.payload["method"]
             await orders.move(session, order, OrderStatus.PLACED, actor)
-            then = (
-                OrderStatus.CONFIRMED
-                if order.payment_method == "cod"
-                else OrderStatus.AWAITING_PAYMENT
-            )
-            await orders.move(session, order, then, actor)
+            await start_payment(session, tenant, order, actor)
             actions.close(action, ActionStatus.CONFIRMED)
             return [OutText(_maker(turn).placed(order))]
 
@@ -331,6 +332,7 @@ class OrderAgent:
                 await orders.change_placed_line(
                     session, order, item, action.payload["quantity"], _customer(turn.conversation)
                 )
+                await ask_for(session, tenant, order)
             except AppError as exc:
                 if isinstance(exc, OutOfStock):
                     raise

@@ -1,0 +1,27 @@
+[
+  {
+    "prompt": "payment_screenshot",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "is_payment": true,
+      "provider": "JazzCash",
+      "status": "successful",
+      "amount": null,
+      "transaction_id": null,
+      "paid_at": null,
+      "payer_name": null,
+      "payer_account": null,
+      "payee_name": null,
+      "payee_account": null,
+      "remarks": null,
+      "edits_seen": []
+    }
+  },
+  {
+    "prompt": "payment_evidence",
+    "role": "*",
+    "match": "*",
+    "content": "[mock note] Open your wallet app and look for this transfer before you approve."
+  }
+]

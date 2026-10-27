@@ -37,8 +37,8 @@ from chatfront.orders.models import Order, OrderItem
 from chatfront.orders.states import OrderStatus
 from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus
+from chatfront.payments.due import cod_advance, shop_methods
 from chatfront.shield.answer_check import Facts
-from chatfront.templates import get_template
 
 MAX_RESULTS = 5
 MAX_LIST_LINES = 40
@@ -407,12 +407,9 @@ async def _reprice_cart_line(
 
 def accepted_methods(tenant: Tenant) -> list[str]:
     """Cash on delivery and/or transfer, from what the shop said it takes."""
-    named = (tenant.profile or {}).get("payment_methods") or [
-        str(method) for method in get_template(tenant.template).payment_methods
-    ]
     methods = []
-    for method in named:
-        kind = "cod" if str(method).startswith("cod") else "transfer"
+    for method in shop_methods(tenant):
+        kind = "cod" if method.startswith("cod") else "transfer"
         if method in ("credit", "deposit") or kind in methods:
             continue
         methods.append(kind)
@@ -449,7 +446,14 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
             status=ActionStatus.PENDING,
         )
         charge = await orders.delivery_quote(session, cart)
-        ctx.cards.append(ctx.maker.checkout(action, cart, lines, params.payment_method, charge))
+        advance = (
+            cod_advance(ctx.tenant, cart.total, cart.delivery_fee)
+            if params.payment_method == "cod"
+            else 0
+        )
+        ctx.cards.append(
+            ctx.maker.checkout(action, cart, lines, params.payment_method, charge, advance)
+        )
     return {"ok": True, "summary_card": "sent; the customer taps Place order on it"}
 
 

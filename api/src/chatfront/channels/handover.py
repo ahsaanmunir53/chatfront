@@ -20,7 +20,6 @@ from chatfront.ai.translate import Translation, translate
 from chatfront.ai.types import ChatMessage, ChatRequest, Role
 from chatfront.audit.service import AGENT, Actor, ActorType, record
 from chatfront.channels import service as channels
-from chatfront.channels.base import WindowClosed
 from chatfront.channels.language import reply_language
 from chatfront.channels.models import (
     Channel,
@@ -31,15 +30,17 @@ from chatfront.channels.models import (
     HandoverStatus,
     Message,
 )
-from chatfront.channels.types import Button, OutButtons, OutText
+from chatfront.channels.notify import send_to, tell_owner
+from chatfront.channels.types import Button, Outbound, OutButtons, OutText
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.i18n import t
 from chatfront.core.languages import load_registry
-from chatfront.core.models import Customer, Staff, Tenant
+from chatfront.core.models import Staff, Tenant
 from chatfront.core.provisioning import owner_of
 
 if TYPE_CHECKING:
+    from chatfront.channels.conversation import Turn
     from chatfront.services import Services
 
 log = logging.getLogger(__name__)
@@ -264,35 +265,21 @@ async def start_handover(
 async def _tell_owner(services: Services, tenant: Tenant, owner: Staff, handover: Handover) -> None:
     """On WhatsApp (or another channel) when the owner has an open chat with the shop; the
     console's inbox shows every handover either way."""
-    async with services.db.tenant(tenant.id) as session:
-        chat = await session.scalar(
-            select(Conversation)
-            .join(Customer, Customer.id == Conversation.customer_id)
-            .where(Customer.staff_id == owner.id, Conversation.last_inbound_at.is_not(None))
-            .order_by(Conversation.last_inbound_at.desc())
-            .limit(1)
-        )
-        account = await session.get(ChannelAccount, chat.channel_account_id) if chat else None
-    if chat is None or account is None or account.channel == Channel.WEBCHAT:
-        return
     lang = staff_language(owner, tenant)
     card = OutButtons(
         t("handover.notice", lang, summary=handover.summary),
         (Button(handover_button(handover), t("handover.resume", lang)),),
     )
-    try:
-        await channels.send(
-            services.db,
-            services.adapters[Channel(account.channel)],
-            tenant.id,
-            chat.id,
-            card,
-            services.keys,
-            services.fallback_token(account.channel),
-            extra={"lang": lang},
-        )
-    except (WindowClosed, AppError) as exc:  # outside 24 hours: the console still has it
-        log.info("handover notice not sent on %s: %s", account.channel, exc)
+    await tell_owner(services, tenant.id, owner, card, lang)
+
+
+async def resume_button(services: Services, turn: Turn) -> list[Outbound] | None:
+    """The owner tapped "Let the assistant continue" in their own chat."""
+    handover_id = parse_handover_button((turn.message.payload or {}).get("button_id"))
+    if handover_id is None or turn.staff_id is None:
+        return None
+    await resume(services, turn.tenant.id, handover_id, turn.staff_id)
+    return [OutText(t("handover.resumed", turn.lang))]
 
 
 async def resume(
@@ -310,8 +297,6 @@ async def resume(
         assert conversation is not None
         assert tenant is not None
         conversation.status = OPEN
-        account = await session.get(ChannelAccount, conversation.channel_account_id)
-        assert account is not None
         await record(
             session,
             tenant_id,
@@ -320,17 +305,5 @@ async def resume(
             entity=("conversation", str(conversation.id)),
         )
         lang = reply_language(conversation, tenant)
-    try:
-        await channels.send(
-            services.db,
-            services.adapters[Channel(account.channel)],
-            tenant_id,
-            conversation.id,
-            OutText(t("handover.back", lang)),
-            services.keys,
-            services.fallback_token(account.channel),
-            extra={"lang": lang},
-        )
-    except WindowClosed:
-        log.info("the customer's window has closed; resumed without a message")
+    await send_to(services, tenant_id, conversation.id, OutText(t("handover.back", lang)), lang)
     return True

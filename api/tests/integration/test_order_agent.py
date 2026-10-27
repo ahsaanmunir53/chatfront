@@ -15,7 +15,6 @@ import respx
 from sqlalchemy import select, update
 
 from chatfront.ai.client import ModelUnavailable
-from chatfront.ai.mock import Fixture
 from chatfront.ai.types import AudioPart, ChatRequest, ChatResult
 from chatfront.audit.models import AuditEntry
 from chatfront.catalog.models import Product, StockMovement, Variant
@@ -29,11 +28,14 @@ from chatfront.services import Services
 from tests.integration.chat import (
     GRAPH,
     Client,
+    agent,
     button,
+    code_of,
+    customer,
     fixture,
     last,
     photo,
-    products,
+    said,
     say,
     send_file,
     settle,
@@ -46,33 +48,6 @@ from tests.integration.chat import (
 from tests.integration.conftest import SHOP
 
 GROCERY = "barkat-kiryana"
-
-
-def said(key: str) -> set[str]:
-    """A code-written message as an English or Roman Urdu reader gets it."""
-    return {t(key, "en"), t(key, "ur-Latn")}
-
-
-def agent(match: str, *, step: int | None = None, role: str = "*", **answer: Any) -> Fixture:
-    """A recorded order-agent answer: text (content) or tool calls ({name: arguments})."""
-    calls = answer.pop("calls", {})
-    return Fixture(
-        prompt="order_agent",
-        role=role,
-        match=match,
-        step=step,
-        tool_calls=[{"name": name, "arguments": args} for name, args in calls.items()],
-        **answer,
-    )
-
-
-async def customer(client: Client, slug: str = SHOP) -> tuple[dict[str, str], str]:
-    token = (await client.post(f"/api/shops/{slug}/chat/session")).json()["token"]
-    return {"X-Chat-Token": token}, token
-
-
-async def code_of(client: Client, name: str, slug: str = SHOP) -> str:
-    return str((await products(client, slug))[name]["code"])
 
 
 async def stock_of(services: Services, name: str, colour: str | None = None) -> int | None:
@@ -144,12 +119,23 @@ async def place_lawn_order(client: Client, services: Services) -> tuple[dict[str
     local = t("order.delivery", "ur-Latn", city="Lahore", amount="Rs 150")
     assert local in card["body"]  # local delivery, 1 kg included
     assert "Rs 9,850" in card["body"]
+    # The shop takes cash on delivery with an advance: the delivery charge, roughly.
+    assert t("order.pay_cod_advance", "ur-Latn", advance="Rs 150") in card["body"]
     placed = last(await say(client, services, SHOP, guest, token=token, **button(card)))
     async with services.db.system() as session:
         order = await session.scalar(select(Order).where(Order.status != "cart"))
     assert order is not None
-    assert order.code in placed["body"]
-    assert "Rs 9,850" in placed["body"]
+    # Exactly Rs 149 now (Rs 1 off, so the advance is unique), the other Rs 9,700 at the door.
+    advance = t(
+        "order.placed_advance",
+        "ur-Latn",
+        code=order.code,
+        total="Rs 9,849",
+        due="Rs 149",
+        rest="Rs 9,700",
+        account=t("order.account_later", "ur-Latn"),
+    )
+    assert placed["body"] == f"{advance}\n{t('order.unique_note', 'ur-Latn', off='Rs 1')}"
     return guest, token
 
 
@@ -162,7 +148,13 @@ async def test_an_order_goes_from_chat_to_placed_only_on_the_customers_tap(
     async with services.db.system() as session:
         order = await session.scalar(select(Order).where(Order.status != "cart"))
         assert order is not None
-        assert (order.status, order.payment_method, order.total) == ("confirmed", "cod", 985_000)
+        assert (order.status, order.payment_method) == ("awaiting_payment", "cod")
+        assert (order.total, order.advance, order.due_now, order.unique_off) == (
+            984_900,
+            14_900,
+            14_900,
+            100,
+        )
         assert order.address is not None
         assert order.address["city"] == "Lahore"  # "lhr", read by code
     assert await stock_of(services, "Printed lawn 3-piece", "Rust") == 2
@@ -465,7 +457,7 @@ async def test_an_order_is_changed_then_cancelled_before_dispatch(
     )
     changed = last(await say(client, services, SHOP, guest, token=token, **button(changed_card)))
     assert order.code in changed["body"]
-    assert "Rs 5,000" in changed["body"]  # 4,850 and 150 delivery
+    assert "Rs 4,999" in changed["body"]  # 4,850 and 150 delivery, Rs 1 off the advance
     assert await stock_of(services, "Printed lawn 3-piece", "Rust") == 3
     cancel_card = last(await say(client, services, SHOP, guest, "order cancel kar do", token=token))
     cancelled = last(await say(client, services, SHOP, guest, token=token, **button(cancel_card)))

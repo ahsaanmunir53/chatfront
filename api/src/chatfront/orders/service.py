@@ -91,7 +91,7 @@ async def _recalculate(session: AsyncSession, order: Order) -> None:
     order.subtotal = sum(item.line_total for item in await lines(session, order))
     charge = await delivery_quote(session, order)
     order.delivery_fee = charge.fee or 0 if charge else 0
-    order.total = max(order.subtotal + order.delivery_fee - order.discount, 0)
+    order.total = max(order.subtotal + order.delivery_fee - order.discount - order.unique_off, 0)
 
 
 async def set_address(
@@ -342,4 +342,7 @@ def summary(order: Order, items: list[OrderItem]) -> dict[str, Any]:
         "total": order.total,
         "address": order.address,
         "payment_method": order.payment_method,
+        "advance": order.advance,
+        "paid": order.paid,
+        "to_pay_now": order.due_now,
     }
