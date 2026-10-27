@@ -100,10 +100,11 @@ api/src/chatfront/
   modules/    module registry and tiers
   templates/  business-type JSON
   payments/   screenshot checks, SMS parsers and webhook, matching, receipts, watcher
+  delivery/   addresses and pins, COD risk, parcels, shipping labels and their fonts
   eval/       evaluation sets (the language set runs in CI on the mock)
 i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page and catalog, try-it chat, start page, owner console, trust page,
-              receipt check, dashboard
+              receipt check, parcel tracking, dashboard
 ```
 
 ## Built during the hackathon
@@ -111,6 +112,11 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, delivery:** addresses tidied for a rider, with a location pin asked for when
+  they are too vague (WhatsApp's Send location button, Share my location in the web chat, or a
+  maps link); a cash-on-delivery risk score with its reasons that asks risky buyers for an
+  advance; the owner packing, dispatching and closing orders from the console while the
+  customer is told; A6 shipping labels with the COD amount and a QR code to the parcel's page.
 - **27 October, payments:** a customer's payment screenshot read by Spark Open and checked by
   code (wrong amount, other receiver, edits, reused picture by perceptual hash, here or at
   another shop); wallet and bank SMS forwarded from the owner's phone and matched to it, or to

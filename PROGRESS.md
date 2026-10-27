@@ -188,6 +188,35 @@ Not verified yet: the screenshot reading against the real model (no keys yet); t
 against real SMS (samples not here yet, so every SMS match goes to the owner for now); a real
 SMS forwarder app posting to the webhook.
 
+## Done on 27 October: the delivery group (33, 34, 101)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 621 passed, 95.1% line coverage |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 28 passed |
+| Browser tests, desktop and phone | 48 passed |
+
+What it delivered:
+
+- Addresses: the agent splits them, code tidies them and decides whether a rider can find
+  them; a vague one gets a pin request in the way the channel allows, and checkout waits for
+  the pin. Pins come from WhatsApp locations, the web chat's Share my location, or a maps link.
+- Risk: a score with reasons on every order, from the buyer's history in the shop (by
+  customer and by phone number) and a few other signs; high-risk cash on delivery asks for an
+  advance at shops that also take transfers.
+- Shipping: the console's orders panel moves orders through packed, dispatched (courier and
+  tracking number), delivered, returned or cancelled, checked against the order states; the
+  customer hears when it leaves and arrives. Labels are A6 PDFs with a QR code to `/t/<code>`.
+- Migration 0007: shipments, and each order's risk score and reasons.
+- New dependencies: fpdf2 (LGPL-3.0) and uharfbuzz (Apache-2.0) for the labels; Noto fonts
+  (OFL-1.1) are bundled in `api/src/chatfront/delivery/fonts/`.
+
+Not verified yet: the address split by the real model (no keys yet); WhatsApp's location
+request on a real phone; a label printed on a real label printer.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -209,7 +238,7 @@ In the timeline's order:
 2. 29 Oct: order agent and guards: 9, 10, 11, 12, 89, 90, 93, 94, 105, 106, 109 (demo login).
    Done on 27 October.
 3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99. Done on 27 October.
-4. 31 Oct: delivery and COD: 33, 34, 101.
+4. 31 Oct: delivery and COD: 33, 34, 101. Done on 27 October.
 5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107.
 6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120.
 7. 2 Nov: dashboard, eval set, cost meter, reasoning routing, deploy: 74, 80, 111, 112, 113.
@@ -352,6 +381,13 @@ stays the same.
   state, so a second tap or a console decision cannot settle twice.
 - Test screenshots are plain coloured pictures with recorded readings; no image that looks
   like a bank or wallet receipt is ever generated.
+- An address is too vague for a rider when it has no area, or neither a house or street
+  number nor a landmark. Then checkout waits for a location pin.
+- A high COD risk (60 or more) never blocks a buyer. It asks for an advance only where the shop
+  also takes transfers, and the owner can switch that off (`risk_advance: false`).
+- The parcel page shows the shop, the order code, its steps and what to pay at the door, never
+  the address or the phone number.
+- The owner moves orders in the console for now; WhatsApp owner commands come with feature 75.
 
 ## Working notes for the next session
 
