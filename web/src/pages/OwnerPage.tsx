@@ -11,6 +11,7 @@ import { ChatView } from "../components/ChatView";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
+import { Alerts, StockPanel, useNotices } from "../components/Stock";
 import { ActivityPanel, TeamPanel } from "../components/Team";
 import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
@@ -254,7 +255,7 @@ function Products({
 }
 
 /** The signed-in console: what waits for an answer, the assistant and products, orders,
- * payments and the books, then customers, the team, settings and the activity log; each
+ * stock, payments and the books, then customers, the team, settings and the activity log; each
  * person sees the parts their role allows (feature 42). */
 function Console({
   me,
@@ -278,7 +279,13 @@ function Console({
   const orders = useOrders(token, can("orders"));
   const books = useBooks(token, can("books"));
   const approvals = useApprovals(token);
+  const notices = useNotices(token);
   const saved = useCallback(() => setSaves((n) => n + 1), []);
+  const refreshBooks = books.refresh;
+  const stockChanged = useCallback(() => {
+    saved();
+    refreshBooks();
+  }, [saved, refreshBooks]);
 
   // Each reply may have added or changed a product: read the list again.
   useEffect(() => {
@@ -314,6 +321,7 @@ function Console({
       </header>
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
       <Approvals token={token} list={approvals.list} onChange={approvals.refresh} />
+      <Alerts me={me} token={token} list={notices.list} onChange={notices.refresh} />
       {can("chats") && <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />}
       {can("payments") && (
         <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
@@ -349,6 +357,9 @@ function Console({
       </div>
       {can("orders") && (
         <OrdersPanel me={me} token={token} orders={orders.orders} onChange={orders.refresh} />
+      )}
+      {can("stock") && (
+        <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
       {can("payments") && (
         <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />

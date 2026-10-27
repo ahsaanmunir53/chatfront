@@ -9,7 +9,7 @@ import { useLang } from "../lang";
 import { useServer } from "../server";
 import { usePolled } from "../usePolled";
 
-const ROLES = ["sales", "packing", "accounts", "auditor"] as const;
+const ROLES = ["sales", "packing", "stock", "accounts", "auditor"] as const;
 const ACTIVITY_POLL_MS = 10_000;
 
 function LinkCard({ invite }: { invite: Invite }) {

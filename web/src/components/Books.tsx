@@ -1,6 +1,7 @@
-// The books in the console (features 48, 49, 50, 52): a day book of today, this week and this
-// month, the latest entries with Undo, an expense form, the udhaar khata with its own form, and
-// what is running low. Every figure comes from the API; nothing is added up here.
+// The books in the console (features 48, 49, 50, 52, 119): a day book of today, this week and
+// this month with cash profit and goods profit, the latest entries with Undo, an expense form,
+// the udhaar khata with its own form, and what is running low. Every figure comes from the
+// API; nothing is added up here.
 import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
@@ -19,6 +20,7 @@ const ROWS: { key: Key; pick: (sums: Sums) => number }[] = [
   { key: "console.books_udhaar_paid", pick: (s) => s.udhaar_paid },
   { key: "console.books_expenses", pick: (s) => s.expenses },
   { key: "console.books_udhaar_given", pick: (s) => s.udhaar_given },
+  { key: "console.books_write_offs", pick: (s) => s.write_offs },
 ];
 const IN_KINDS = new Set(["sale", "udhaar_paid"]);
 
@@ -70,8 +72,27 @@ function DayBook({ me, books }: { me: OwnerMe; books: Books }) {
             </td>
           ))}
         </tr>
+        <tr className="is-goods">
+          <th scope="row">{t("console.books_goods_profit")}</th>
+          {PERIODS.map((period) => (
+            <td key={period} className={books[period].goods_profit < 0 ? "is-loss" : undefined}>
+              {money(books[period].goods_profit)}
+            </td>
+          ))}
+        </tr>
       </tfoot>
     </table>
+  );
+}
+
+function GoodsNote({ books }: { books: Books }) {
+  const { t } = useLang();
+  const unknown = books.month.cost_unknown;
+  return (
+    <p className="pay-note daybook-note">
+      {t("console.books_goods_note")}
+      {unknown > 0 && ` ${t("console.profit_unknown", { count: unknown })}.`}
+    </p>
   );
 }
 
@@ -94,7 +115,11 @@ function Entry({
       ? entry.account
       : t(`books.category.${entry.category}` as Key);
   const undoable =
-    canUndo && !entry.reversed && entry.reverses === null && !entry.kind.startsWith("udhaar");
+    canUndo &&
+    !entry.reversed &&
+    entry.reverses === null &&
+    !entry.kind.startsWith("udhaar") &&
+    entry.kind !== "write_off";
   return (
     <li className={`entry-line${entry.reversed || entry.reverses ? " is-undone" : ""}`}>
       <time dateTime={entry.occurred_on}>
@@ -393,6 +418,7 @@ export function BooksPanel({
       </h2>
       <p className="aside">{t("console.books_lede")}</p>
       <DayBook me={me} books={books} />
+      <GoodsNote books={books} />
       <div className="pay-columns books-columns">
         <div className="pay-block">
           <h3 className="pay-block-title">{t("console.books_entries")}</h3>

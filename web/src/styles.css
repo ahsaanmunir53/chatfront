@@ -3558,3 +3558,404 @@ button {
     border-top-color: var(--on-ink-muted);
   }
 }
+
+/* Stock (features 117 to 120). Alerts sit with the other things waiting, edged in saffron.
+   Batches are challan stubs on the khata page: each has a pencil gauge of what is left,
+   which turns chili once the batch is past its date. ---------------------------------- */
+
+.alerts {
+  border-inline-start-color: var(--saffron);
+}
+
+.alert-route {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.alert-replies {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.alert-replies p {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.alert-replies a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.alert-done {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.alert-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.alert-price label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.alert-price input {
+  max-width: 10em;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.alert-price .action {
+  padding: 8px 16px;
+  background: var(--saffron);
+  color: var(--on-saffron);
+  cursor: pointer;
+}
+
+.stock-panel {
+  margin-top: 36px;
+}
+
+.stock-columns {
+  margin-bottom: 20px;
+}
+
+@media (min-width: 960px) {
+  .stock-columns {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+.restock-line {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5em, 1fr));
+  gap: 8px 10px;
+  margin: 0;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.restock-line label,
+.restock-form label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.restock-item {
+  grid-column: 1 / -1;
+}
+
+.restock-line input,
+.restock-line select,
+.sheet-rows input,
+.sheet-rows select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.restock-remove {
+  grid-column: 1 / -1;
+}
+
+.sheet-choose {
+  justify-self: start;
+  padding: 8px 16px;
+  background: var(--card);
+  cursor: pointer;
+}
+
+.sheet-choose:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sheet-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5em;
+  gap: 4px 8px;
+  padding: 8px 10px;
+  border-inline-start: 3px solid var(--stamp);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.sheet-rows li.is-unready {
+  border-inline-start-color: var(--chili);
+}
+
+.sheet-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  grid-column: 1 / -1;
+  font-weight: 600;
+}
+
+.sheet-detail {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stock-subtitle {
+  margin: 24px 0 8px;
+}
+
+.batches {
+  position: relative;
+  display: grid;
+  margin: 0;
+  padding: 0 0 0 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  list-style: none;
+  overflow: hidden;
+}
+
+.batches:empty {
+  display: none;
+}
+
+.batch {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px 12px 22px;
+  border-top: 1px dashed var(--line);
+  border-inline-start: 4px double var(--margin-red);
+}
+
+.batch:first-child {
+  border-top: 0;
+}
+
+.batch.is-discarded {
+  opacity: 0.6;
+}
+
+.batch-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  align-items: baseline;
+}
+
+.batch-name {
+  font-weight: 650;
+}
+
+.batch-left {
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.batch-meter {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.batch-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ink);
+}
+
+.batch-meter.is-stale span {
+  background: var(--chili);
+}
+
+.batch-facts,
+.batch-money {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.batch-money {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.batch-tag {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--saffron) 24%, var(--card));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.batch.is-expired .batch-tag {
+  background: color-mix(in srgb, var(--chili) 18%, var(--card));
+}
+
+.batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.batch-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.batch-edit label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.batch-edit input,
+.batch-edit select {
+  width: auto;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.batch-edit .action {
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.batch-edit .action-primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.action-danger {
+  padding: 7px 14px;
+  border-color: color-mix(in srgb, var(--chili) 60%, var(--line));
+  background: color-mix(in srgb, var(--chili) 10%, var(--card));
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.batches-more {
+  margin-top: 8px;
+}
+
+.profit-table td,
+.profit-table th {
+  white-space: nowrap;
+}
+
+.profit-table tbody th {
+  white-space: normal;
+}
+
+.profit-unknown {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.daybook tfoot .is-goods th,
+.daybook tfoot .is-goods td {
+  border-top: 1px solid var(--rule);
+  font-weight: 650;
+}
+
+.daybook-note {
+  margin: -8px 0 16px;
+}
+
+@media (max-width: 559px) {
+  .profit-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .batch-edit .action-primary {
+    border-color: var(--on-ink);
+    background: var(--on-ink);
+    color: var(--ink);
+  }
+
+  .batch-meter span {
+    background: var(--on-ink);
+  }
+
+  .batch-meter.is-stale span {
+    background: var(--chili);
+  }
+}

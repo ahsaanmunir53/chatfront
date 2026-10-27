@@ -195,10 +195,13 @@ export type Sums = {
   expenses: number;
   orders: number;
   cash_profit: number;
+  goods_profit: number;
+  write_offs: number;
+  cost_unknown: number;
 };
 export type LedgerEntry = {
   id: string;
-  kind: "sale" | "expense" | "udhaar_given" | "udhaar_paid";
+  kind: "sale" | "expense" | "udhaar_given" | "udhaar_paid" | "write_off";
   category: string;
   amount: number;
   description: string;
@@ -234,6 +237,69 @@ export type UdhaarMove = {
   name?: string;
 };
 export type LowStock = { name: string; left: number; limit: number };
+export type NoticeButton = { id: string; title: string };
+export type OwnerNotice = {
+  id: string;
+  kind: string;
+  text: string;
+  buttons: NoticeButton[];
+  sent: boolean;
+  created_at: string;
+};
+export type RestockLine = {
+  variant_id: string;
+  quantity: number;
+  total_cost?: number | null;
+  expires_on?: string | null;
+};
+export type Restock = {
+  lines: RestockLine[];
+  supplier?: string;
+  supplier_phone?: string;
+  source?: "console" | "sheet";
+};
+export type SheetRow = {
+  row: number;
+  item: string;
+  quantity: number | null;
+  total_cost: number | null;
+  expires_on: string | null;
+  variant_id: string | null;
+  name: string | null;
+  problem: string | null;
+};
+export type SheetReading = {
+  columns: Record<string, string | null>;
+  supplier: string | null;
+  rows: SheetRow[];
+};
+export type Batch = {
+  id: string;
+  product_id: string;
+  name: string;
+  quantity: number;
+  units_left: number;
+  unit_cost: number | null;
+  supplier: string | null;
+  received_on: string;
+  expires_on: string | null;
+  status: "open" | "expired" | "discarded";
+  price_question: string | null;
+  sold: number;
+  revenue: number | null;
+  cost_sold: number | null;
+  profit: number | null;
+};
+export type DiscardReason = "expired" | "damaged" | "lost";
+export type ProductProfit = {
+  product_id: string;
+  name: string;
+  sold: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  cost_unknown: number;
+};
 export type Approval = { id: string; kind: string; text: string; created_at: string };
 export type OwnerCustomer = {
   id: string;
@@ -488,6 +554,55 @@ export const api = {
   activity: (token: string) => call<ActivityLog>("/api/owner/activity", { headers: bearer(token) }),
   why: (token: string, code: string) =>
     call<Why>(`/api/owner/orders/${encodeURIComponent(code)}/why`, { headers: bearer(token) }),
+  notices: (token: string) => call<OwnerNotice[]>("/api/owner/notices", { headers: bearer(token) }),
+  noticeSeen: (token: string, noticeId: string) =>
+    call<{ seen: boolean }>(`/api/owner/notices/${encodeURIComponent(noticeId)}/seen`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  tapNotice: (token: string, noticeId: string, buttonId: string) =>
+    call<{ replies: string[] }>(`/api/owner/notices/${encodeURIComponent(noticeId)}/tap`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ button_id: buttonId }),
+    }),
+  answerPrice: (token: string, batchId: string, choice: "keep" | "now" | "later", price?: number) =>
+    call<{ name: string; old: number; new: number | null }>(
+      `/api/owner/price-questions/${encodeURIComponent(batchId)}`,
+      {
+        method: "POST",
+        headers: bearer(token),
+        body: JSON.stringify({ choice, price: price ?? null }),
+      },
+    ),
+  restock: (token: string, restock: Restock) =>
+    call<{ batches: number }>("/api/owner/restock", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(restock),
+    }),
+  readSheet: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<SheetReading>("/api/owner/restock/sheet", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  batches: (token: string) => call<Batch[]>("/api/owner/batches", { headers: bearer(token) }),
+  setExpiry: (token: string, batchId: string, expiresOn: string) =>
+    call<{ expires_on: string }>(`/api/owner/batches/${encodeURIComponent(batchId)}/expiry`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ expires_on: expiresOn }),
+    }),
+  discardBatch: (token: string, batchId: string, reason: DiscardReason) =>
+    call<{ name: string; units: number; cost: number }>(
+      `/api/owner/batches/${encodeURIComponent(batchId)}/discard`,
+      { method: "POST", headers: bearer(token), body: JSON.stringify({ reason }) },
+    ),
+  profit: (token: string) => call<ProductProfit[]>("/api/owner/profit", { headers: bearer(token) }),
   saveWording: (
     token: string,
     productId: string,
