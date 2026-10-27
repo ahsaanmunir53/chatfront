@@ -1,29 +1,96 @@
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { LANGS } from "../i18n";
-import type { Lang } from "../i18n";
+import { languageOf, statusOf, UI_LANGS } from "../i18n";
 import { useLang } from "../lang";
+import { CheckIcon, ChevronIcon, GlobeIcon } from "./Icons";
 
-export function LangSwitch({ tone = "light" }: { tone?: "light" | "dark" }) {
+/** The language picker: every interface language by its own name, beta ones marked. */
+export function LangMenu({ tone = "light" }: { tone?: "light" | "dark" }) {
   const { lang, setLang, t } = useLang();
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const wrapper = useRef<HTMLDivElement>(null);
+  const current = languageOf(lang);
+
+  useEffect(() => {
+    if (!open) return;
+    wrapper.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    const close = (event: MouseEvent) => {
+      if (!wrapper.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      wrapper.current?.querySelector<HTMLElement>(".lang-trigger")?.focus();
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = [...(wrapper.current?.querySelectorAll<HTMLElement>("[role=menuitemradio]") ?? [])];
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    items[(at + step + items.length) % items.length]?.focus();
+  }
+
   return (
-    <div className={`lang-switch lang-switch-${tone}`} role="group" aria-label={t("nav.language")}>
-      {LANGS.map((option) => (
-        <button
-          key={option}
-          type="button"
-          lang={option}
-          aria-pressed={option === lang}
-          onClick={() => setLang(option)}
-        >
-          {t(`lang.${option}` as const)}
-        </button>
-      ))}
+    <div className={`lang-menu lang-menu-${tone}`} ref={wrapper} onKeyDown={onKeyDown}>
+      <button
+        type="button"
+        className="lang-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={`${t("nav.language")}: ${current.native}`}
+        onClick={() => setOpen((was) => !was)}
+      >
+        <GlobeIcon size={18} />
+        <span lang={current.tag} dir={current.dir}>
+          {current.native}
+        </span>
+        <ChevronIcon size={16} />
+      </button>
+      {open && (
+        <div className="lang-panel" id={panelId} role="menu" aria-label={t("nav.language")}>
+          {UI_LANGS.map((tag) => {
+            const option = languageOf(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                role="menuitemradio"
+                aria-checked={tag === lang}
+                className="lang-option"
+                onClick={() => {
+                  setLang(tag);
+                  setOpen(false);
+                }}
+              >
+                <span className="lang-native" lang={tag} dir={option.dir}>
+                  {option.native}
+                </span>
+                {option.name !== option.native && (
+                  <span className="lang-english" lang="en">
+                    {option.name}
+                  </span>
+                )}
+                {statusOf(tag) === "beta" && <span className="lang-beta">{t("lang.beta")}</span>}
+                {tag === lang && <CheckIcon size={16} className="lang-check" />}
+              </button>
+            );
+          })}
+          <p className="lang-note">{t("lang.note")}</p>
+        </div>
+      )}
     </div>
   );
 }
 
-/** The same choice as LangSwitch, as a compact select for tight headers. */
+/** The same choice as a compact native select, for tight headers like the chat's. */
 export function LangSelect() {
   const { lang, setLang, t } = useLang();
   return (
@@ -31,11 +98,11 @@ export function LangSelect() {
       className="lang-select"
       aria-label={t("nav.language")}
       value={lang}
-      onChange={(e) => setLang(e.target.value as Lang)}
+      onChange={(e) => setLang(e.target.value)}
     >
-      {LANGS.map((option) => (
-        <option key={option} value={option} lang={option}>
-          {t(`lang.${option}` as const)}
+      {UI_LANGS.map((tag) => (
+        <option key={tag} value={tag} lang={tag}>
+          {languageOf(tag).native}
         </option>
       ))}
     </select>
@@ -57,7 +124,7 @@ export function TopBar({ tone = "light" }: { tone?: "light" | "dark" }) {
   return (
     <header className={`topbar topbar-${tone}`}>
       <Wordmark />
-      <LangSwitch tone={tone} />
+      <LangMenu tone={tone} />
     </header>
   );
 }

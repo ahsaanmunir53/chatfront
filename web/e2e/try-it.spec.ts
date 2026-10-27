@@ -37,7 +37,8 @@ test("the page opens while the server sleeps, and messages wait for it", async (
 
 test("Urdu turns the page right to left and is remembered", async ({ page }) => {
   await page.goto("/s/saffron-kitchen");
-  await page.getByRole("button", { name: "اردو" }).click();
+  await page.getByRole("button", { name: /Language/ }).click();
+  await page.getByRole("menuitemradio", { name: /اردو/ }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("link", { name: "یہاں چیٹ کریں" }).first()).toBeVisible();
   await page.reload();

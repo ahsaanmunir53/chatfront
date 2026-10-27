@@ -33,6 +33,7 @@ export type ServerMessage = {
   direction: "in" | "out";
   kind: string;
   body: string | null;
+  lang?: string | null;
   payload: { buttons?: ChatButton[] };
   created_at: string;
 };

@@ -85,7 +85,7 @@ export function ShopPage() {
         <div className="profile-cover" aria-hidden="true" />
         <div className="profile-body">
           <Avatar name={profile.name} template={profile.template} size="lg" />
-          <h1 className="profile-name" lang={scriptLang(profile.name)}>
+          <h1 className="profile-name" lang={scriptLang(profile.name)} dir="auto">
             {profile.name}
           </h1>
           <p className="profile-kind">

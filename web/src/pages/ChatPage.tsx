@@ -9,7 +9,7 @@ import { Avatar } from "../components/Avatar";
 import { BackIcon, CheckIcon, ClockIcon, SendIcon } from "../components/Icons";
 import { LangSelect } from "../components/Shell";
 import { WakeBar } from "../components/WakeBar";
-import { scriptLang } from "../i18n";
+import { dirOf, scriptLang } from "../i18n";
 import { useLang } from "../lang";
 import { useServer } from "../server";
 import { useShop } from "./ShopPage";
@@ -140,7 +140,7 @@ export function ChatPage() {
           </Link>
           {name && <Avatar name={name} template={profile?.template} size="sm" />}
           <span className="phone-who">
-            <span className="phone-title" lang={scriptLang(name)}>
+            <span className="phone-title" lang={scriptLang(name)} dir="auto">
               {name}
             </span>
             <span className={`phone-status ${online ? "is-online" : ""}`}>
@@ -155,7 +155,12 @@ export function ChatPage() {
           {messages.map((message) => (
             <li key={message.id} className={`bubble bubble-${message.direction}`}>
               {message.direction === "in" && <span className="sr-only">{t("chat.you")}: </span>}
-              <span dir="auto">{message.body}</span>
+              <span
+                lang={message.lang ?? undefined}
+                dir={message.lang ? dirOf(message.lang) : "auto"}
+              >
+                {message.body}
+              </span>
               {message.payload.buttons && (
                 <span className="bubble-buttons">
                   {message.payload.buttons.map((b) => (

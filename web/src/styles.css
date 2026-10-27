@@ -35,6 +35,10 @@
   --font: "Anek Latin", "Segoe UI", system-ui, sans-serif;
   --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Anek Latin", system-ui,
     sans-serif;
+  --font-arabic: "Noto Sans Arabic", "Noto Naskh Arabic", "Segoe UI", Tahoma, "Anek Latin",
+    system-ui, sans-serif;
+  --font-devanagari: "Noto Sans Devanagari", "Anek Latin", system-ui, sans-serif;
+  --font-bengali: "Noto Sans Bengali", "Anek Latin", system-ui, sans-serif;
   --gutter: 20px;
   --width: 1120px;
   color-scheme: light;
@@ -87,13 +91,36 @@ body {
   line-height: 1.55;
 }
 
-:lang(ur) {
+/* One face per script. :lang(ur) would also match Roman Urdu (ur-Latn), hence the :not(). */
+:lang(ur):not(:lang(ur-Latn)) {
   font-family: var(--font-urdu);
   line-height: 2.1;
 }
 
-/* Latin names inside an Urdu page keep the Latin face; their own classes set the spacing. */
-:lang(ur) [lang="en"] {
+:is(:lang(pa-Arab), :lang(ps), :lang(sd), :lang(skr), :lang(afb), :lang(arz)),
+:lang(ar):not(:lang(ar-Latn)) {
+  font-family: var(--font-arabic);
+  line-height: 1.8;
+}
+
+:lang(hi):not(:lang(hi-Latn)) {
+  font-family: var(--font-devanagari);
+  line-height: 1.75;
+}
+
+:lang(bn):not(:lang(bn-Latn)) {
+  font-family: var(--font-bengali);
+  line-height: 1.75;
+}
+
+/* Naskh and Sindhi letters sit taller than Latin: headlines need more room between lines. */
+:is(:lang(pa-Arab), :lang(ps), :lang(sd), :lang(skr), :lang(afb), :lang(arz)) :is(.hero-title, .title),
+:lang(ar):not(:lang(ar-Latn)) :is(.hero-title, .title) {
+  line-height: 1.55;
+}
+
+/* Latin names inside another script keep the Latin face; their own classes set the spacing. */
+[lang="en"] {
   font-family: var(--font);
 }
 
@@ -180,40 +207,111 @@ button {
   font-stretch: 100%;
 }
 
-.lang-switch {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 8%, transparent);
+.lang-menu {
+  position: relative;
 }
 
-.lang-switch button {
-  border: 0;
-  background: none;
-  padding: 6px 11px;
+.lang-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 4px 12px;
+  border: 1.5px solid color-mix(in srgb, currentColor 18%, transparent);
   border-radius: 999px;
-  font-size: 14px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-size: 15px;
   line-height: 1.2;
   cursor: pointer;
-  opacity: 0.75;
 }
 
-.lang-switch button:lang(ur) {
-  padding-block: 1px 4px;
-  font-size: 13px;
-  line-height: 1.7;
+.lang-trigger :is(:lang(ur), :lang(ar), :lang(ps), :lang(sd), :lang(pa)) {
+  line-height: 1.5;
 }
 
-.lang-switch button[aria-pressed="true"] {
+.lang-trigger[aria-expanded="true"] {
+  border-color: var(--saffron);
+}
+
+.lang-panel {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  width: min(300px, calc(100vw - 2 * var(--gutter)));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
   background: var(--card);
   color: var(--text);
-  opacity: 1;
+  box-shadow: 0 18px 40px -18px rgb(15 30 74 / 0.45);
 }
 
-.lang-switch-dark button[aria-pressed="true"] {
-  background: var(--saffron);
-  color: var(--on-saffron);
+.lang-option {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: "native beta check" "english beta check";
+  align-items: center;
+  column-gap: 10px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.lang-option:hover,
+.lang-option:focus-visible {
+  background: color-mix(in srgb, var(--saffron) 16%, var(--card));
+}
+
+.lang-option[aria-checked="true"] {
+  background: color-mix(in srgb, var(--ink) 7%, var(--card));
+}
+
+.lang-native {
+  grid-area: native;
+  justify-self: start; /* a right-to-left name still lines up with the names around it */
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.lang-native:lang(ur):not(:lang(ur-Latn)) {
+  line-height: 2;
+}
+
+.lang-english {
+  grid-area: english;
+  justify-self: start;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.lang-beta {
+  grid-area: beta;
+  padding: 1px 8px;
+  border: 1px dashed var(--muted);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.lang-check {
+  grid-area: check;
+  color: var(--stamp);
+}
+
+.lang-note {
+  margin: 6px 10px 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
 }
 
 .footer {
@@ -253,8 +351,8 @@ button {
   text-wrap: balance;
 }
 
-.title:lang(ur),
-:lang(ur) .title {
+.title:lang(ur):not(:lang(ur-Latn)),
+:lang(ur):not(:lang(ur-Latn)) .title {
   font-size: clamp(26px, 3.6vw, 38px);
   line-height: 1.9;
   font-weight: 600;
@@ -391,8 +489,8 @@ button {
   text-wrap: balance;
 }
 
-.hero-title:lang(ur),
-:lang(ur) .hero-title {
+.hero-title:lang(ur):not(:lang(ur-Latn)),
+:lang(ur):not(:lang(ur-Latn)) .hero-title {
   font-size: clamp(32px, 4.6vw, 52px);
   line-height: 1.85;
   font-weight: 600;
@@ -489,8 +587,8 @@ button {
   animation-delay: var(--d, 0s);
 }
 
-.hero-msg:lang(ur),
-:lang(ur) .hero-msg {
+.hero-msg:lang(ur):not(:lang(ur-Latn)),
+:lang(ur):not(:lang(ur-Latn)) .hero-msg {
   line-height: 2;
 }
 
@@ -1248,7 +1346,7 @@ button {
   overflow-wrap: anywhere;
 }
 
-.bubble :lang(ur),
+.bubble :lang(ur):not(:lang(ur-Latn)),
 .bubble [dir="rtl"] {
   line-height: 2;
 }
