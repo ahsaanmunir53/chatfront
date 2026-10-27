@@ -21,7 +21,7 @@ class Lang(StrEnum):
         return self is Lang.UR
 
 
-_ARABIC_SCRIPT = re.compile("[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]")
+_ARABIC_SCRIPT = re.compile(r"[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufeff]")
 _ROMAN_URDU_WORDS = frozenset(
     [
         "hai",
