@@ -1,0 +1,748 @@
+{
+  "_about": "Every language Chatfront knows. Tier 1 is built and tested for the demo; tier 2 is Stretch. ui means the interface has its own catalog; other languages fall back along 'fallback', then to 'source'. cldr is the locale for plural rules and number formats, digits the numbering system shown to readers. aliases map other tags (browser languages, regions) to a language here. A tier 1 language is 'supported' only after a live evaluation reaches 'pass_mark' (eval-results.json); until then it is shown as beta.",
+  "source": "en",
+  "pass_mark": 0.9,
+  "fonts": {
+    "latin": "Anek Latin",
+    "nastaliq": "Noto Nastaliq Urdu",
+    "arabic": "Noto Sans Arabic",
+    "devanagari": "Noto Sans Devanagari",
+    "bengali": "Noto Sans Bengali",
+    "gurmukhi": "Noto Sans Gurmukhi",
+    "tamil": "Noto Sans Tamil",
+    "telugu": "Noto Sans Telugu",
+    "gujarati": "Noto Sans Gujarati",
+    "kannada": "Noto Sans Kannada",
+    "malayalam": "Noto Sans Malayalam",
+    "sinhala": "Noto Sans Sinhala",
+    "ethiopic": "Noto Sans Ethiopic",
+    "thai": "Noto Sans Thai"
+  },
+  "aliases": {
+    "ur-PK": "ur",
+    "ur-IN": "ur",
+    "ur-Arab": "ur",
+    "pa-PK": "pa-Arab",
+    "pa": "pa-Guru",
+    "pa-IN": "pa-Guru",
+    "sd-Arab": "sd",
+    "sd-PK": "sd",
+    "ps-PK": "ps",
+    "ps-AF": "ps",
+    "hi-IN": "hi",
+    "bn-BD": "bn",
+    "bn-IN": "bn",
+    "ar-EG": "arz",
+    "ar-SA": "afb",
+    "ar-AE": "afb",
+    "ar-KW": "afb",
+    "ar-QA": "afb",
+    "ar-BH": "afb",
+    "ar-OM": "afb",
+    "en-PK": "en",
+    "en-IN": "en",
+    "en-GB": "en",
+    "en-US": "en",
+    "en-NG": "en",
+    "tl": "fil",
+    "fil-PH": "fil",
+    "es": "es-419",
+    "es-MX": "es-419",
+    "es-AR": "es-419",
+    "es-CO": "es-419",
+    "es-PE": "es-419",
+    "es-CL": "es-419",
+    "pt": "pt-BR",
+    "in": "id",
+    "id-ID": "id",
+    "ms-MY": "ms",
+    "sw-KE": "sw",
+    "sw-TZ": "sw",
+    "tr-TR": "tr",
+    "ne-NP": "ne",
+    "si-LK": "si",
+    "ta-IN": "ta",
+    "ta-LK": "ta",
+    "fr-FR": "fr",
+    "vi-VN": "vi",
+    "th-TH": "th"
+  },
+  "languages": [
+    {
+      "tag": "en",
+      "name": "English",
+      "native": "English",
+      "script": "Latn",
+      "dir": "ltr",
+      "ui": true,
+      "cldr": "en",
+      "font": "latin",
+      "prompt": "English",
+      "fallback": [],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "ur",
+      "name": "Urdu",
+      "native": "اردو",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": true,
+      "cldr": "ur",
+      "font": "nastaliq",
+      "prompt": "Urdu, written in Urdu script",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "ur-Latn",
+      "name": "Roman Urdu",
+      "native": "Roman Urdu",
+      "script": "Latn",
+      "dir": "ltr",
+      "ui": true,
+      "cldr": "ur",
+      "font": "latin",
+      "prompt": "Roman Urdu: Urdu written in Latin letters the way people in Pakistan type on WhatsApp, for example \"Ji, yeh available hai\"",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "pa-Arab",
+      "name": "Punjabi (Shahmukhi)",
+      "native": "پنجابی",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": true,
+      "cldr": "pa_Arab",
+      "font": "arabic",
+      "prompt": "Punjabi in Shahmukhi (Perso-Arabic) script, as written in Pakistani Punjab",
+      "fallback": [
+        "ur",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "ps",
+      "name": "Pashto",
+      "native": "پښتو",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": true,
+      "cldr": "ps",
+      "font": "arabic",
+      "prompt": "Pashto, written in Pashto script",
+      "fallback": [
+        "ur",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "sd",
+      "name": "Sindhi",
+      "native": "سنڌي",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": true,
+      "cldr": "sd",
+      "font": "arabic",
+      "prompt": "Sindhi, written in Sindhi (Perso-Arabic) script",
+      "fallback": [
+        "ur",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "hi",
+      "name": "Hindi",
+      "native": "हिन्दी",
+      "script": "Deva",
+      "dir": "ltr",
+      "ui": true,
+      "cldr": "hi",
+      "font": "devanagari",
+      "prompt": "Hindi, written in Devanagari",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "hi-Latn",
+      "name": "Hinglish",
+      "native": "Hinglish",
+      "script": "Latn",
+      "dir": "ltr",
+      "ui": false,
+      "cldr": "hi",
+      "font": "latin",
+      "prompt": "Hinglish: Hindi mixed with English, written in Latin letters, for example \"Haan, yeh available hai, kal tak deliver ho jayega\"",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "bn",
+      "name": "Bengali",
+      "native": "বাংলা",
+      "script": "Beng",
+      "dir": "ltr",
+      "ui": true,
+      "cldr": "bn",
+      "font": "bengali",
+      "prompt": "Bengali, written in Bengali script",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "beng"
+    },
+    {
+      "tag": "bn-Latn",
+      "name": "Banglish",
+      "native": "Banglish",
+      "script": "Latn",
+      "dir": "ltr",
+      "ui": false,
+      "cldr": "bn",
+      "font": "latin",
+      "prompt": "Banglish: Bengali written in Latin letters and mixed with English the way people type, for example \"Ji, eta ache, dam 500 taka\"",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "ar",
+      "name": "Arabic",
+      "native": "العربية",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": true,
+      "cldr": "ar",
+      "font": "arabic",
+      "prompt": "Modern Standard Arabic, written in Arabic script",
+      "fallback": [
+        "en"
+      ],
+      "tier": 1,
+      "digits": "arab"
+    },
+    {
+      "tag": "afb",
+      "name": "Gulf Arabic",
+      "native": "خليجي",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": false,
+      "cldr": "ar",
+      "font": "arabic",
+      "prompt": "Gulf Arabic, the dialect of the customer, in Arabic script",
+      "fallback": [
+        "ar",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "arab"
+    },
+    {
+      "tag": "arz",
+      "name": "Egyptian Arabic",
+      "native": "مصري",
+      "script": "Arab",
+      "dir": "rtl",
+      "ui": false,
+      "cldr": "ar",
+      "font": "arabic",
+      "prompt": "Egyptian Arabic, the dialect of the customer, in Arabic script",
+      "fallback": [
+        "ar",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "arab"
+    },
+    {
+      "tag": "ar-Latn",
+      "name": "Arabizi",
+      "native": "Arabizi",
+      "script": "Latn",
+      "dir": "ltr",
+      "ui": false,
+      "cldr": "ar",
+      "font": "latin",
+      "prompt": "Arabizi: Arabic written in Latin letters and digits (3 for ع, 7 for ح, 2 for ء) in the customer's dialect, for example \"Aywa, mawjood, el se3r 200\"",
+      "fallback": [
+        "ar",
+        "en"
+      ],
+      "tier": 1,
+      "digits": "latn"
+    },
+    {
+      "tag": "pa-Guru",
+      "name": "Punjabi (Gurmukhi)",
+      "native": "ਪੰਜਾਬੀ",
+      "script": "Guru",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "pa",
+      "font": "gurmukhi",
+      "prompt": "Punjabi (Gurmukhi), written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "skr",
+      "name": "Saraiki",
+      "native": "سرائیکی",
+      "script": "Arab",
+      "dir": "rtl",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ur",
+      "font": "arabic",
+      "prompt": "Saraiki, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ta",
+      "name": "Tamil",
+      "native": "தமிழ்",
+      "script": "Taml",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ta",
+      "font": "tamil",
+      "prompt": "Tamil, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "te",
+      "name": "Telugu",
+      "native": "తెలుగు",
+      "script": "Telu",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "te",
+      "font": "telugu",
+      "prompt": "Telugu, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "mr",
+      "name": "Marathi",
+      "native": "मराठी",
+      "script": "Deva",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "mr",
+      "font": "devanagari",
+      "prompt": "Marathi, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "deva"
+    },
+    {
+      "tag": "gu",
+      "name": "Gujarati",
+      "native": "ગુજરાતી",
+      "script": "Gujr",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "gu",
+      "font": "gujarati",
+      "prompt": "Gujarati, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "kn",
+      "name": "Kannada",
+      "native": "ಕನ್ನಡ",
+      "script": "Knda",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "kn",
+      "font": "kannada",
+      "prompt": "Kannada, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ml",
+      "name": "Malayalam",
+      "native": "മലയാളം",
+      "script": "Mlym",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ml",
+      "font": "malayalam",
+      "prompt": "Malayalam, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ne",
+      "name": "Nepali",
+      "native": "नेपाली",
+      "script": "Deva",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ne",
+      "font": "devanagari",
+      "prompt": "Nepali, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "deva"
+    },
+    {
+      "tag": "si",
+      "name": "Sinhala",
+      "native": "සිංහල",
+      "script": "Sinh",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "si",
+      "font": "sinhala",
+      "prompt": "Sinhala, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "tr",
+      "name": "Turkish",
+      "native": "Türkçe",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "tr",
+      "font": "latin",
+      "prompt": "Turkish, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "sw",
+      "name": "Swahili",
+      "native": "Kiswahili",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "sw",
+      "font": "latin",
+      "prompt": "Swahili, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ha",
+      "name": "Hausa",
+      "native": "Hausa",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ha",
+      "font": "latin",
+      "prompt": "Hausa, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "yo",
+      "name": "Yoruba",
+      "native": "Yorùbá",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "yo",
+      "font": "latin",
+      "prompt": "Yoruba, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ig",
+      "name": "Igbo",
+      "native": "Igbo",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ig",
+      "font": "latin",
+      "prompt": "Igbo, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "am",
+      "name": "Amharic",
+      "native": "አማርኛ",
+      "script": "Ethi",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "am",
+      "font": "ethiopic",
+      "prompt": "Amharic, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "so",
+      "name": "Somali",
+      "native": "Soomaali",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "so",
+      "font": "latin",
+      "prompt": "Somali, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "zu",
+      "name": "Zulu",
+      "native": "isiZulu",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "zu",
+      "font": "latin",
+      "prompt": "Zulu, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "pcm",
+      "name": "Nigerian Pidgin",
+      "native": "Naijá",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "en",
+      "font": "latin",
+      "prompt": "Nigerian Pidgin, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "fr",
+      "name": "French",
+      "native": "Français",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "fr",
+      "font": "latin",
+      "prompt": "French, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "id",
+      "name": "Indonesian",
+      "native": "Bahasa Indonesia",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "id",
+      "font": "latin",
+      "prompt": "Indonesian, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "ms",
+      "name": "Malay",
+      "native": "Bahasa Melayu",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "ms",
+      "font": "latin",
+      "prompt": "Malay, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "fil",
+      "name": "Filipino",
+      "native": "Filipino",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "fil",
+      "font": "latin",
+      "prompt": "Filipino, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "fil-x-taglish",
+      "name": "Taglish",
+      "native": "Taglish",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "fil",
+      "font": "latin",
+      "prompt": "Taglish, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "vi",
+      "name": "Vietnamese",
+      "native": "Tiếng Việt",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "vi",
+      "font": "latin",
+      "prompt": "Vietnamese, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "th",
+      "name": "Thai",
+      "native": "ไทย",
+      "script": "Thai",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "th",
+      "font": "thai",
+      "prompt": "Thai, written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "es-419",
+      "name": "Spanish (Latin America)",
+      "native": "Español",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "es",
+      "font": "latin",
+      "prompt": "Spanish (Latin America), written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    },
+    {
+      "tag": "pt-BR",
+      "name": "Portuguese (Brazil)",
+      "native": "Português",
+      "script": "Latn",
+      "dir": "ltr",
+      "tier": 2,
+      "ui": false,
+      "cldr": "pt",
+      "font": "latin",
+      "prompt": "Portuguese (Brazil), written the way the customer writes it",
+      "fallback": [
+        "en"
+      ],
+      "digits": "latn"
+    }
+  ]
+}

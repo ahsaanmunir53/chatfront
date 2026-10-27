@@ -15,6 +15,7 @@ dependencies = [
     "cryptography>=43",
     "pillow>=11",
     "python-multipart>=0.0.17",
+    "babel>=2.16",
 ]
 
 [dependency-groups]
@@ -43,9 +44,11 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "ASYNC", "PT", "RET", "ARG"]
 ignore = ["S101"]
+# Quotes and Arabic separators that customers really type; the code reads them on purpose.
+allowed-confusables = ["‘", "’", "٫", "٬", "٠", "۰"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106", "ARG001", "ARG002", "ARG004"]
+"tests/**" = ["S105", "S106", "ARG001", "ARG002", "ARG004", "RUF001"]  # multilingual test text
 "migrations/**" = ["E501", "S608"]
 
 [tool.mypy]

@@ -1,104 +1,37 @@
-"""One string catalog for the API and the web app: i18n/{en,ur,ur-Latn}.json at the repo root."""
+"""One string catalog for the API and the web app: i18n/<tag>.json at the repo root.
+
+Every language with "ui": true in languages.json has a catalog with the same keys as the source
+(English). Messages are ICU MessageFormat. A language without its own catalog, or a key a
+catalog lacks, falls back along the language's chain and finally to English.
+"""
 
 from __future__ import annotations
 
 import json
-import re
-from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
+from chatfront.core.icu import format_message
+from chatfront.core.languages import load_registry
 from chatfront.core.settings import get_settings
 
 
-class Lang(StrEnum):
-    EN = "en"
-    UR = "ur"
-    ROMAN_UR = "ur-Latn"
-
-    @property
-    def is_rtl(self) -> bool:
-        return self is Lang.UR
-
-
-_ARABIC_SCRIPT = re.compile(r"[\u0600-\u06ff\u0750-\u077f\ufb50-\ufdff\ufe70-\ufeff]")
-_ROMAN_URDU_WORDS = frozenset(
-    [
-        "hai",
-        "hain",
-        "nahi",
-        "nahin",
-        "kya",
-        "kia",
-        "kitne",
-        "kitna",
-        "kitni",
-        "chahiye",
-        "chahye",
-        "bhai",
-        "bhi",
-        "aap",
-        "ap",
-        "mujhe",
-        "mera",
-        "meri",
-        "yeh",
-        "ye",
-        "woh",
-        "wo",
-        "kar",
-        "karo",
-        "karein",
-        "kab",
-        "kaise",
-        "kahan",
-        "acha",
-        "achha",
-        "theek",
-        "thik",
-        "bhej",
-        "bhejo",
-        "bhejein",
-        "paise",
-        "rupay",
-        "rupees",
-        "wala",
-        "wali",
-        "waly",
-        "hoga",
-        "hogi",
-        "ho",
-        "sakta",
-        "dena",
-    ]
-)
-
-
 @lru_cache
-def load_catalog(directory: Path | None = None) -> dict[Lang, dict[str, str]]:
+def load_catalogs(directory: Path | None = None) -> dict[str, dict[str, str]]:
     base = directory or get_settings().i18n_dir
-    catalog: dict[Lang, dict[str, str]] = {}
-    for lang in Lang:
-        path = base / f"{lang.value}.json"
-        catalog[lang] = json.loads(path.read_text(encoding="utf-8"))
-    return catalog
+    registry = load_registry(directory)
+    return {
+        language.tag: json.loads((base / f"{language.tag}.json").read_text(encoding="utf-8"))
+        for language in registry.languages.values()
+        if language.ui
+    }
 
 
-def t(key: str, lang: Lang | str = Lang.EN, **values: object) -> str:
-    """Translate a key; English is the fallback when a language lacks it."""
-    catalog = load_catalog()
-    lang = Lang(lang)
-    template = catalog[lang].get(key) or catalog[Lang.EN].get(key)
-    if template is None:
-        raise KeyError(f"missing i18n key: {key}")
-    return template.format(**values) if values else template
-
-
-def detect_lang(text: str) -> Lang:
-    """Urdu script, Roman Urdu or English, from the text of one message."""
-    if _ARABIC_SCRIPT.search(text):
-        return Lang.UR
-    words = set(re.findall(r"[a-z]+", text.lower()))
-    if len(words & _ROMAN_URDU_WORDS) >= 1:
-        return Lang.ROMAN_UR
-    return Lang.EN
+def t(key: str, lang: str | None = None, /, **values: object) -> str:
+    """The message for key in the reader's language, formatted with that language's rules."""
+    catalogs = load_catalogs()
+    for language in load_registry().chain(lang):
+        template = catalogs.get(language.tag, {}).get(key)
+        if template is not None:
+            return format_message(template, language, values)
+    raise KeyError(f"missing i18n key: {key}")

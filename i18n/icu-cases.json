@@ -1,0 +1,243 @@
+{
+ "_about": "ICU MessageFormat cases the API (core/icu.py) and the web app (intl-messageformat) must format identically. Tests on both sides read this file.",
+ "cases": [
+  {
+   "lang": "en",
+   "message": "{s, plural, one {about # second} other {about # seconds}}",
+   "values": {
+    "s": 1
+   },
+   "expected": "about 1 second"
+  },
+  {
+   "lang": "en",
+   "message": "{s, plural, one {about # second} other {about # seconds}}",
+   "values": {
+    "s": 5
+   },
+   "expected": "about 5 seconds"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 0
+   },
+   "expected": "الآن"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 1
+   },
+   "expected": "نحو ثانية واحدة"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 2
+   },
+   "expected": "نحو ثانيتين"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 3
+   },
+   "expected": "نحو ٣ ثوانٍ"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 11
+   },
+   "expected": "نحو ١١ ثانية"
+  },
+  {
+   "lang": "ar",
+   "message": "{s, plural, zero {الآن} one {نحو ثانية واحدة} two {نحو ثانيتين} few {نحو # ثوانٍ} many {نحو # ثانية} other {نحو # ثانية}}",
+   "values": {
+    "s": 100
+   },
+   "expected": "نحو ١٠٠ ثانية"
+  },
+  {
+   "lang": "ur",
+   "message": "{s, plural, one {تقریباً # سیکنڈ} other {تقریباً # سیکنڈ}}",
+   "values": {
+    "s": 1
+   },
+   "expected": "تقریباً 1 سیکنڈ"
+  },
+  {
+   "lang": "ur",
+   "message": "{s, plural, one {تقریباً # سیکنڈ} other {تقریباً # سیکنڈ}}",
+   "values": {
+    "s": 7
+   },
+   "expected": "تقریباً 7 سیکنڈ"
+  },
+  {
+   "lang": "ps",
+   "message": "{s, plural, one {شاوخوا # ثانیه} other {شاوخوا # ثانیې}}",
+   "values": {
+    "s": 1
+   },
+   "expected": "شاوخوا 1 ثانیه"
+  },
+  {
+   "lang": "ps",
+   "message": "{s, plural, one {شاوخوا # ثانیه} other {شاوخوا # ثانیې}}",
+   "values": {
+    "s": 5
+   },
+   "expected": "شاوخوا 5 ثانیې"
+  },
+  {
+   "lang": "bn",
+   "message": "{s, plural, one {প্রায় # সেকেন্ড} other {প্রায় # সেকেন্ড}}",
+   "values": {
+    "s": 25
+   },
+   "expected": "প্রায় ২৫ সেকেন্ড"
+  },
+  {
+   "lang": "bn",
+   "message": "{n, plural, other {# টি}}",
+   "values": {
+    "n": 1234567
+   },
+   "expected": "১২,৩৪,৫৬৭ টি"
+  },
+  {
+   "lang": "hi",
+   "message": "{n, number} रुपये",
+   "values": {
+    "n": 1234567
+   },
+   "expected": "12,34,567 रुपये"
+  },
+  {
+   "lang": "ur",
+   "message": "{n, number} روپے",
+   "values": {
+    "n": 4850
+   },
+   "expected": "4,850 روپے"
+  },
+  {
+   "lang": "ar",
+   "message": "{n, number} روبية",
+   "values": {
+    "n": 1234567
+   },
+   "expected": "١٬٢٣٤٬٥٦٧ روبية"
+  },
+  {
+   "lang": "en",
+   "message": "The shop's {name}",
+   "values": {
+    "name": "Saffron"
+   },
+   "expected": "The shop's Saffron"
+  },
+  {
+   "lang": "en",
+   "message": "'{name}' stays as written",
+   "values": {},
+   "expected": "{name} stays as written"
+  },
+  {
+   "lang": "en",
+   "message": "It''s {x}",
+   "values": {
+    "x": "ok"
+   },
+   "expected": "It's ok"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, =0 {no items} one {# item} other {# items}}",
+   "values": {
+    "n": 0
+   },
+   "expected": "no items"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, =0 {no items} one {# item} other {# items}}",
+   "values": {
+    "n": 1
+   },
+   "expected": "1 item"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, =0 {no items} one {# item} other {# items}}",
+   "values": {
+    "n": 1000
+   },
+   "expected": "1,000 items"
+  },
+  {
+   "lang": "en",
+   "message": "{g, select, female {She} male {He} other {They}} replied",
+   "values": {
+    "g": "female"
+   },
+   "expected": "She replied"
+  },
+  {
+   "lang": "en",
+   "message": "{g, select, female {She} male {He} other {They}} replied",
+   "values": {
+    "g": "x"
+   },
+   "expected": "They replied"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, offset:1 =0 {nobody} =1 {only you} one {you and # other} other {you and # others}}",
+   "values": {
+    "n": 1
+   },
+   "expected": "only you"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, offset:1 =0 {nobody} =1 {only you} one {you and # other} other {you and # others}}",
+   "values": {
+    "n": 2
+   },
+   "expected": "you and 1 other"
+  },
+  {
+   "lang": "en",
+   "message": "{n, plural, offset:1 =0 {nobody} =1 {only you} one {you and # other} other {you and # others}}",
+   "values": {
+    "n": 3
+   },
+   "expected": "you and 2 others"
+  },
+  {
+   "lang": "en",
+   "message": "Try it: chat with {shop}",
+   "values": {
+    "shop": "Noor Salon"
+   },
+   "expected": "Try it: chat with Noor Salon"
+  },
+  {
+   "lang": "sd",
+   "message": "رڳو هتي ڏنل چينل {shop} جا آهن. ان جو نالو استعمال ڪندڙ ٻيو ڪو به دڪان ناهي.",
+   "values": {
+    "shop": "نور سيلون"
+   },
+   "expected": "رڳو هتي ڏنل چينل نور سيلون جا آهن. ان جو نالو استعمال ڪندڙ ٻيو ڪو به دڪان ناهي."
+  }
+ ]
+}

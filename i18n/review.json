@@ -1,0 +1,32 @@
+{
+  "_about": "Who has checked each interface catalog. Catalogs drafted by a model stay 'needs-native-review' until a native speaker reads every string and changes the entry to 'reviewed' with their name and the date.",
+  "catalogs": {
+    "en": {
+      "status": "source"
+    },
+    "ur": {
+      "status": "needs-native-review"
+    },
+    "ur-Latn": {
+      "status": "needs-native-review"
+    },
+    "pa-Arab": {
+      "status": "needs-native-review"
+    },
+    "ps": {
+      "status": "needs-native-review"
+    },
+    "sd": {
+      "status": "needs-native-review"
+    },
+    "hi": {
+      "status": "needs-native-review"
+    },
+    "bn": {
+      "status": "needs-native-review"
+    },
+    "ar": {
+      "status": "needs-native-review"
+    }
+  }
+}
