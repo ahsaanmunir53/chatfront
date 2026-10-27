@@ -132,6 +132,14 @@ def data_url(mime: str, data: bytes) -> str:
     return f"data:{mime};base64,{base64.b64encode(data).decode()}"
 
 
+def from_data_url(url: str) -> bytes | None:
+    """The bytes of a base64 data URL; None for any other link."""
+    head, sep, body = url.partition(",")
+    if not sep or not head.startswith("data:") or not head.endswith(";base64"):
+        return None
+    return base64.b64decode(body)
+
+
 def shrink_image(data: bytes) -> bytes:
     """A JPEG no larger than MODEL_IMAGE_SIDE on its longest side."""
     with Image.open(io.BytesIO(data)) as image:
