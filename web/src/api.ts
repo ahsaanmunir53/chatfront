@@ -1,3 +1,4 @@
+import { API_BASE } from "./config";
 import type { Text3 } from "./i18n";
 
 export class ApiError extends Error {
@@ -10,6 +11,8 @@ export class ApiError extends Error {
   }
 }
 
+export type ChannelLink = { channel: string; display: string | null; url: string | null };
+
 export type Shop = {
   slug: string;
   name: string;
@@ -19,12 +22,10 @@ export type Shop = {
   default_lang: string;
   is_demo: boolean;
   attribution: string;
+  channels: ChannelLink[];
 };
 
-export type ShopSummary = Pick<Shop, "slug" | "name" | "business_type" | "tagline">;
-
-export type OfficialChannel = { channel: string; display: string | null };
-export type TrustInfo = { slug: string; name: string; channels: OfficialChannel[] };
+export type TrustInfo = { slug: string; name: string; channels: ChannelLink[] };
 
 export type ChatButton = { id: string; title: string };
 export type ServerMessage = {
@@ -37,7 +38,7 @@ export type ServerMessage = {
 };
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(API_BASE + path, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
@@ -59,8 +60,19 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 const shopPath = (slug: string) => `/api/shops/${encodeURIComponent(slug)}`;
 
+export async function ping(timeoutMs: number): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/health`, {
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: "no-store",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const api = {
-  demoShops: () => call<ShopSummary[]>("/api/demo-shops"),
   shop: (slug: string) => call<Shop>(shopPath(slug)),
   trust: (slug: string) => call<TrustInfo>(`${shopPath(slug)}/trust`),
   startChat: (slug: string) =>

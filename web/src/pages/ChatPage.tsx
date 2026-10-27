@@ -5,12 +5,17 @@ import { api } from "../api";
 import type { ServerMessage } from "../api";
 import { awaitingReply, lastSeen, merge, settle } from "../chat";
 import type { Pending } from "../chat";
-import { LangSwitch } from "../components/Shell";
+import { Avatar } from "../components/Avatar";
+import { BackIcon, CheckIcon, ClockIcon, SendIcon } from "../components/Icons";
+import { LangSelect } from "../components/Shell";
+import { WakeBar } from "../components/WakeBar";
 import { scriptLang } from "../i18n";
 import { useLang } from "../lang";
-import { useLoad } from "../useLoad";
+import { useServer } from "../server";
+import { useShop } from "./ShopPage";
 
 const POLL_MS = 1500;
+const SUGGESTIONS = ["chat.suggest_1", "chat.suggest_2", "chat.suggest_3", "chat.suggest_4"] as const;
 
 function storedToken(slug: string): string | null {
   try {
@@ -28,13 +33,20 @@ function storeToken(slug: string, token: string): void {
   }
 }
 
+function timeOf(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export function ChatPage() {
   const { slug = "" } = useParams();
   const { t } = useLang();
-  const shop = useLoad(() => api.shop(slug), slug);
+  const { state } = useServer();
+  const online = state === "online";
+  const { profile } = useShop(slug);
   const [token, setToken] = useState<string | null>(() => storedToken(slug));
   const [messages, setMessages] = useState<ServerMessage[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
+  const [sent, setSent] = useState<Set<string>>(() => new Set());
   const [draft, setDraft] = useState("");
   const [failed, setFailed] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -47,8 +59,9 @@ export function ChatPage() {
     return fresh;
   }, [slug, token]);
 
+  // Poll for new messages once the server is awake.
   useEffect(() => {
-    if (!token) return;
+    if (!token || !online) return;
     let live = true;
     let after: string | undefined;
     const poll = async () => {
@@ -68,54 +81,77 @@ export function ChatPage() {
       live = false;
       window.clearInterval(timer);
     };
-  }, [slug, token]);
+  }, [slug, token, online]);
 
   useEffect(() => {
     setPending((typed) => settle(typed, messages));
   }, [messages]);
 
+  // Send whatever was typed while the server was asleep, in order, once it wakes.
+  useEffect(() => {
+    if (!online) return;
+    const unsent = pending.filter((p) => !sent.has(p.clientId));
+    if (unsent.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const current = await ensureToken();
+        for (const typed of unsent) {
+          if (cancelled) return;
+          await api.postChat(slug, { token: current, client_id: typed.clientId, text: typed.body });
+          setSent((done) => new Set(done).add(typed.clientId));
+        }
+      } catch {
+        setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [online, pending, sent, slug, ensureToken]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages, pending]);
 
-  async function send(event: FormEvent) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-    const typed = { clientId: crypto.randomUUID(), body: text };
-    setDraft("");
+  function say(text: string) {
+    const body = text.trim();
+    if (!body) return;
     setFailed(false);
-    setPending((current) => [...current, typed]);
-    try {
-      const current = await ensureToken();
-      await api.postChat(slug, { token: current, client_id: typed.clientId, text });
-    } catch {
-      setPending((current) => current.filter((p) => p.clientId !== typed.clientId));
-      setDraft(text);
-      setFailed(true);
-    }
+    setPending((current) => [...current, { clientId: crypto.randomUUID(), body }]);
   }
 
-  const name = shop.state === "ready" ? shop.data.name : "";
-  const waiting = awaitingReply(messages, pending);
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    say(draft);
+    setDraft("");
+  }
+
+  const name = profile?.name ?? "";
+  const waiting = online && awaitingReply(messages, pending);
+  const empty = messages.length === 0 && pending.length === 0;
 
   return (
     <div className="chat-stage">
       <section className="phone" aria-label={t("chat.title", { shop: name })}>
         <header className="phone-bar">
-          <Link to={`/s/${slug}`} className="phone-back">
-            {t("chat.back")}
+          <Link to={`/s/${slug}`} className="phone-back" aria-label={t("chat.back")}>
+            <BackIcon className="flip-rtl" />
           </Link>
-          <h1 className="phone-title" lang={scriptLang(name)}>
-            {name}
-          </h1>
-          <LangSwitch />
+          {name && <Avatar name={name} template={profile?.template} size="sm" />}
+          <span className="phone-who">
+            <span className="phone-title" lang={scriptLang(name)}>
+              {name}
+            </span>
+            <span className={`phone-status ${online ? "is-online" : ""}`}>
+              {online ? t("chat.online") : t("chat.waking")}
+            </span>
+          </span>
+          <LangSelect />
         </header>
-        <p className="phone-note">{t("chat.demo_note")}</p>
         <ol className="thread" aria-live="polite">
-          {messages.length === 0 && pending.length === 0 && (
-            <li className="thread-empty">{t("chat.empty")}</li>
-          )}
+          <li className="thread-note">{t("chat.demo_note")}</li>
+          {empty && <li className="thread-empty">{t("chat.empty")}</li>}
           {messages.map((message) => (
             <li key={message.id} className={`bubble bubble-${message.direction}`}>
               {message.direction === "in" && <span className="sr-only">{t("chat.you")}: </span>}
@@ -123,17 +159,25 @@ export function ChatPage() {
               {message.payload.buttons && (
                 <span className="bubble-buttons">
                   {message.payload.buttons.map((b) => (
-                    <span key={b.id} className="bubble-button">
+                    <button key={b.id} type="button" onClick={() => say(b.title)}>
                       {b.title}
-                    </span>
+                    </button>
                   ))}
                 </span>
               )}
+              <span className="bubble-meta">
+                {timeOf(message.created_at)}
+                {message.direction === "in" && <CheckIcon size={14} />}
+              </span>
             </li>
           ))}
           {pending.map((typed) => (
-            <li key={typed.clientId} className="bubble bubble-in bubble-sending">
+            <li key={typed.clientId} className="bubble bubble-in bubble-pending">
               <span dir="auto">{typed.body}</span>
+              <span className="bubble-meta">
+                {!online && <span>{t("chat.queued")}</span>}
+                <ClockIcon size={14} />
+              </span>
             </li>
           ))}
           {waiting && (
@@ -150,7 +194,17 @@ export function ChatPage() {
             {t("chat.error")}
           </p>
         )}
-        <form className="composer" onSubmit={send}>
+        <WakeBar placement="inline" />
+        {empty && (
+          <div className="suggestions">
+            {SUGGESTIONS.map((key) => (
+              <button key={key} type="button" onClick={() => say(t(key))}>
+                {t(key)}
+              </button>
+            ))}
+          </div>
+        )}
+        <form className="composer" onSubmit={submit}>
           <label className="sr-only" htmlFor="chat-input">
             {t("chat.placeholder")}
           </label>
@@ -163,8 +217,8 @@ export function ChatPage() {
             placeholder={t("chat.placeholder")}
             onChange={(e) => setDraft(e.target.value)}
           />
-          <button type="submit" disabled={!draft.trim()}>
-            {t("chat.send")}
+          <button type="submit" disabled={!draft.trim()} aria-label={t("chat.send")}>
+            <SendIcon className="flip-rtl" />
           </button>
         </form>
         <p className="phone-credit">{t("app.attribution")}</p>
