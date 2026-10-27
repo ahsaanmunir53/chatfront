@@ -111,6 +111,11 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, the order agent:** Spark Open with the shop's tools in every customer chat:
+  orders from text, voice notes, photos and handwritten lists, bargaining above the owner's
+  lowest price, delivery by city and weight, changes and cancellations before dispatch, all
+  confirmed by the customer's tap on cards code writes; an answer check on every number;
+  handover to the owner with a three-line summary.
 - **27 October, catalog and the owner's assistant:** products, variants, stock movements and
   order states; products added from a photo and a voice note and prices and policies changed
   by chat, always after the owner confirms; shops made by chat on the start page; Try as the

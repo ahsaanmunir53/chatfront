@@ -124,6 +124,36 @@ Not verified yet: real model reading of photos and voice notes (no keys yet), Wh
 onboarding on a real number, voice recording on iPhone Safari (it records MP4, which the
 chat does not offer yet; Android and desktop browsers record WebM).
 
+## Done on 27 October: the order agent group (9, 10, 11, 12, 89, 90, 93, 94, 105, 106)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 550 passed, 94.7% line coverage |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 26 passed |
+| Browser tests, desktop and phone | 44 passed |
+
+What it delivered:
+
+- The order agent answers customers on every channel (the shop assistant without tools
+  now only serves the language evaluation). Spark Open calls the shop's tools for up to five
+  rounds: find products, cart, shopping list, delivery details, offer, checkout, order status,
+  change, cancel, hand over. Photos and voice notes reach it with the tools.
+- Orders are placed, changed and cancelled only when the customer taps a card that code
+  wrote from the database; buttons carry the action id.
+- Bargaining, delivery charges, product search and list matching are code (see FEATURES).
+- Answer check and injection guard on every reply.
+- Handover: three-line summary to the owner on WhatsApp (when their chat is open) and in the
+  owner console, where they read and reply in their own language and give the chat back.
+- Migration 0005: price_offers (append-only), handovers, the catalog price on bargained lines.
+- The mock model answers each round of a tool loop (`step`), so tool conversations are
+  testable without keys.
+
+Not verified yet: any of it against the real model (no keys yet); the WhatsApp handover
+notice on a real number.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -143,6 +173,7 @@ In the timeline's order:
 
 1. 28 Oct: catalog and order states: 1, 4, 83, 86. Done on 27 October.
 2. 29 Oct: order agent and guards: 9, 10, 11, 12, 89, 90, 93, 94, 105, 106, 109 (demo login).
+   Done on 27 October.
 3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99.
 4. 31 Oct: delivery and COD: 33, 34, 101.
 5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107.
@@ -267,6 +298,14 @@ stays the same.
 - The catalog lists newest first; demo products are seeded last first, so each template's
   first product leads. A demo shop seeded before it had products gets them on the next seed.
 - Web-made shops are kept 7 days and demo copies 3 days; WhatsApp-made shops are kept.
+- Customers get the order agent; with no model available (production without keys) their
+  chat goes to the owner rather than a dead reply.
+- The language evaluation still runs the tool-less shop assistant; it moves onto the order
+  agent with the evaluation set (111), which will need a database in the live workflow.
+- Demo products' lowest prices live in the template files, which are public like the repo;
+  real shops' lowest prices are only in the database and never reach a customer.
+- An owner's language is their own setting, else the shop's (Roman Urdu in Pakistan): the
+  handover summary and notices use it.
 
 ## Working notes for the next session
 
