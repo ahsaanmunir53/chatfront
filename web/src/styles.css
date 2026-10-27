@@ -1,0 +1,561 @@
+/*
+  Chatfront's look comes from the khata: the ruled ledger book every Pakistani shop keeps
+  for udhaar. Blue ruling across a pale page, a red margin line down the reading edge (it
+  moves to the right in Urdu), blue-black ink, and a rubber-stamp green for money that is
+  verified. The ruling and margin are the one bold thing; everything else stays quiet.
+*/
+
+:root {
+  --paper: #f3f6f1;
+  --paper-raised: #fbfcfa;
+  --rule: #cdd8ea;
+  --margin: #c62a3f;
+  --ink: #17203a;
+  --ink-soft: #4b5672;
+  --ink-blue: #1d3a94;
+  --ink-blue-text: #ffffff;
+  --stamp: #0d7656;
+  --focus: #1d3a94;
+
+  --rule-gap: 28px;
+  --margin-inset: 20px;
+  --content-inset: 36px;
+
+  --font-latin: "Anek Latin", "Segoe UI", system-ui, sans-serif;
+  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Anek Latin", "Segoe UI", system-ui,
+    sans-serif;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121827;
+    --paper-raised: #1a2236;
+    --rule: #233150;
+    --margin: #e0566a;
+    --ink: #e6ebf5;
+    --ink-soft: #a8b3cc;
+    --ink-blue: #8fa8ff;
+    --ink-blue-text: #0c1222;
+    --stamp: #3cc79a;
+    --focus: #8fa8ff;
+    color-scheme: dark;
+  }
+}
+
+@media (min-width: 720px) {
+  :root {
+    --margin-inset: 64px;
+    --content-inset: 96px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: var(--font-latin);
+  font-size: 17px;
+  line-height: var(--rule-gap);
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(var(--rule-gap) - 1px),
+    var(--rule) calc(var(--rule-gap) - 1px) var(--rule-gap)
+  );
+  background-attachment: local;
+}
+
+/* The double red margin line of a ledger page, on the side where reading starts. */
+body::before {
+  content: "";
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: var(--margin-inset);
+  width: 5px;
+  border-inline: 1.5px solid var(--margin);
+  pointer-events: none;
+  z-index: 0;
+}
+
+:lang(ur) {
+  font-family: var(--font-urdu);
+  line-height: 2.15;
+}
+
+/* A Latin shop name inside an Urdu page keeps the Latin face and spacing. */
+:lang(ur) [lang="en"] {
+  font-family: var(--font-latin);
+  line-height: 1.3;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+a {
+  color: var(--ink-blue);
+  text-underline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Page frame ---------------------------------------------------------------------------- */
+
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-inline: var(--content-inset) 20px;
+  max-width: calc(760px + var(--content-inset));
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: calc(var(--rule-gap) * 3);
+}
+
+.brand {
+  font-weight: 650;
+  font-stretch: 90%;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 4px;
+}
+
+.lang-switch button {
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.lang-switch button:lang(ur) {
+  font-size: 14px;
+  line-height: 1.6;
+  padding-block: 2px 4px;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.content {
+  flex: 1;
+}
+
+.footer {
+  padding-block: calc(var(--rule-gap) * 2) var(--rule-gap);
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* Type ----------------------------------------------------------------------------------- */
+
+.hero {
+  padding-block: var(--rule-gap) calc(var(--rule-gap) * 2);
+}
+
+.display {
+  margin: 0;
+  font-size: clamp(40px, 9vw, 68px);
+  line-height: 1.05;
+  font-weight: 640;
+  font-stretch: 78%;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.display:lang(ur) {
+  font-size: clamp(34px, 7vw, 52px);
+  line-height: 1.9;
+  font-weight: 600;
+}
+
+.display-small {
+  font-size: clamp(34px, 6vw, 48px);
+}
+
+.kind {
+  margin: 0 0 6px;
+  color: var(--ink-soft);
+}
+
+.lede {
+  margin: 14px 0 0;
+  max-width: 34em;
+  font-size: 21px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.lede:lang(ur) {
+  font-size: 19px;
+  line-height: 2.2;
+}
+
+.section-title {
+  margin: 0 0 var(--rule-gap);
+  font-size: 21px;
+  line-height: var(--rule-gap);
+  font-weight: 600;
+  font-stretch: 90%;
+}
+
+.aside,
+.empty {
+  color: var(--ink-soft);
+  max-width: 36em;
+}
+
+.problem {
+  margin-block: calc(var(--rule-gap) * 2);
+  padding-inline-start: 14px;
+  border-inline-start: 3px solid var(--margin);
+  font-size: 19px;
+}
+
+/* Actions -------------------------------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: calc(var(--rule-gap) * 1.5);
+}
+
+.button {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--ink-blue);
+  color: var(--ink-blue-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button:hover {
+  filter: brightness(1.1);
+}
+
+.quiet-link {
+  color: var(--ink);
+}
+
+/* Ledger entries: the shops on the home page and channels on the trust page ------------- */
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry {
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-link,
+.entry-static {
+  display: grid;
+  gap: 2px;
+  padding-block: 12px 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.entry-link:hover .entry-name {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.entry-name {
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+  font-stretch: 86%;
+  color: var(--ink-blue);
+}
+
+.entry-kind {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.entry-note {
+  color: var(--ink);
+}
+
+/* The try-it chat: a phone on the ledger ------------------------------------------------ */
+
+.chat-stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 0;
+}
+
+.phone {
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-raised);
+}
+
+@media (min-width: 560px) {
+  .chat-stage {
+    padding: 24px;
+  }
+
+  .phone {
+    width: 400px;
+    height: min(780px, calc(100dvh - 72px));
+    border: 1.5px solid var(--ink);
+    border-radius: 34px;
+    overflow: hidden;
+    box-shadow: 0 1px 0 var(--rule), 0 24px 48px -32px rgb(23 32 58 / 0.45);
+  }
+}
+
+.phone-bar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.phone-back {
+  font-size: 15px;
+}
+
+.phone-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 640;
+  font-stretch: 84%;
+}
+
+.phone-title:lang(ur) {
+  font-size: 20px;
+  line-height: 1.9;
+}
+
+.phone-bar .lang-switch {
+  margin-inline-start: -10px;
+}
+
+.phone-note {
+  margin: 0;
+  padding: 8px 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.thread {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thread-empty {
+  margin: auto 8px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.bubble {
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 18px;
+  font-size: 16px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble :lang(ur),
+.bubble[dir="rtl"] {
+  line-height: 2;
+}
+
+.bubble-out {
+  align-self: flex-start;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-end-start-radius: 5px;
+}
+
+.bubble-in {
+  align-self: flex-end;
+  background: var(--ink-blue);
+  color: var(--ink-blue-text);
+  border-end-end-radius: 5px;
+}
+
+.bubble-sending {
+  opacity: 0.65;
+}
+
+.bubble-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bubble-button {
+  padding: 4px 10px;
+  border: 1px solid var(--ink-blue);
+  border-radius: 999px;
+  color: var(--ink-blue);
+  font-size: 14px;
+}
+
+.typing {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  animation: typing 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.phone-error {
+  margin: 0;
+  padding: 6px 18px;
+  color: var(--margin);
+  font-size: 15px;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+}
+
+.composer input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.composer button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink-blue);
+  color: var(--ink-blue-text);
+  cursor: pointer;
+}
+
+.composer button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.phone-credit {
+  margin: 0;
+  padding: 0 18px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink-soft);
+}
