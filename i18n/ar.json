@@ -266,7 +266,7 @@
   "payment.rejected": "رُفض. طُلب من العميل مراجعة الدفع للطلب {code}.",
   "payment.decided_before": "سبق اتخاذ قرار بشأن هذه الدفعة.",
   "console.payments_title": "المدفوعات",
-  "console.payments_review": "للتحقق",
+  "console.payments_review": "مدفوعات للتحقق",
   "console.payments_none": "لا شيء للتحقق. تظهر هنا المدفوعات التي تحتاجك.",
   "console.payments_waiting": "بانتظار الدفع",
   "console.payments_due": "المطلوب {amount}",

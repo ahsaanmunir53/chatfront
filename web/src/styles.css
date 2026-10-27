@@ -2528,3 +2528,385 @@ button {
   color: var(--chili);
   font-size: 14px;
 }
+
+/* Payments in the console --------------------------------------------------------------- */
+
+.pay-review {
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-inline-start: 5px solid var(--saffron);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.pay-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.pay-item:has(.pay-shot) {
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
+.pay-shot img {
+  display: block;
+  width: 88px;
+  height: 152px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.pay-facts,
+.pay-signals {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.pay-facts li + li {
+  margin-top: 2px;
+}
+
+.pay-signals li {
+  position: relative;
+  margin-top: 4px;
+  padding-inline-start: 18px;
+  color: color-mix(in srgb, var(--chili) 78%, var(--text));
+}
+
+.pay-signals li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2px;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chili);
+}
+
+.pay-panel {
+  margin-top: 36px;
+}
+
+.pay-columns {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .pay-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 340px);
+  }
+}
+
+.pay-block {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.pay-block-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.pay-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pay-rows li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.pay-code {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-amount {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pay-receipt {
+  margin-inline-start: auto;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.pay-on,
+.pay-off {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.pay-on {
+  color: color-mix(in srgb, var(--stamp) 80%, var(--text));
+}
+
+.pay-off {
+  color: var(--muted);
+}
+
+.pay-sms .action {
+  padding: 8px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pay-link p {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.pay-link code {
+  display: block;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+/* A receipt is a paper slip with torn edges; the stamp lands when the signature checks. -- */
+
+.slip,
+.slip-verdict {
+  max-width: 540px;
+  margin-inline: auto;
+}
+
+.slip-verdict {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+.slip-verdict p {
+  margin: 0;
+}
+
+.slip-verdict.is-checking {
+  background: var(--card);
+  color: var(--muted);
+}
+
+.slip-verdict.is-valid {
+  background: color-mix(in srgb, var(--stamp) 14%, var(--card));
+  color: color-mix(in srgb, var(--stamp) 60%, var(--text));
+}
+
+.slip-verdict.is-invalid {
+  background: color-mix(in srgb, var(--chili) 16%, var(--card));
+  color: color-mix(in srgb, var(--chili) 60%, var(--text));
+}
+
+.slip-small {
+  margin-top: 4px !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.slip {
+  --tear: radial-gradient(circle at 8px 0, transparent 6px, #000 6.5px) top / 16px 12px repeat-x,
+    radial-gradient(circle at 8px 12px, transparent 6px, #000 6.5px) bottom / 16px 12px repeat-x,
+    linear-gradient(#000, #000) center / 100% calc(100% - 22px) no-repeat;
+  margin-bottom: 40px;
+  padding: 34px 26px 30px;
+  background: var(--card);
+  -webkit-mask: var(--tear);
+  mask: var(--tear);
+  filter: drop-shadow(0 1px 0 var(--line));
+}
+
+.slip-skeleton {
+  height: 520px;
+  margin-top: 24px;
+}
+
+.slip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px dashed var(--line);
+}
+
+.slip-shop {
+  margin: 0;
+  font-size: clamp(26px, 5vw, 34px);
+  font-weight: 700;
+  font-stretch: 80%;
+  line-height: 1.1;
+}
+
+.slip-order {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.slip-stamp {
+  margin-top: 6px;
+  animation-delay: 120ms;
+  letter-spacing: 0.04em;
+}
+
+.slip-paid {
+  display: grid;
+  gap: 2px;
+  margin: 18px 0 6px;
+}
+
+.slip-paid span {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.slip-paid strong {
+  font-size: clamp(34px, 8vw, 44px);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.slip-items ul {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slip-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px dashed var(--rule);
+}
+
+.slip-lines {
+  display: grid;
+  margin: 14px 0 0;
+  border-top: 1.5px dashed var(--line);
+}
+
+.slip-lines div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.slip-lines div + div {
+  border-top: 1px solid var(--rule);
+}
+
+.slip-lines dt {
+  color: var(--muted);
+}
+
+.slip-lines dd {
+  margin: 0;
+  font-weight: 650;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.slip-foot {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 12px 18px;
+  align-items: start;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1.5px dashed var(--line);
+}
+
+.slip-qr {
+  border-radius: 8px;
+  background: #fff;
+}
+
+.slip-proof summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.slip-proof p {
+  margin: 10px 0 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.slip-proof code {
+  display: block;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.slip-print {
+  grid-column: 2;
+  justify-self: start;
+  padding: 8px 16px;
+  background: var(--card);
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .slip {
+    padding-inline: 18px;
+  }
+
+  .slip-foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .slip-print {
+    grid-column: 1;
+  }
+}
+
+@media print {
+  .topbar,
+  .wake,
+  .slip-print {
+    display: none !important;
+  }
+
+  .slip {
+    filter: none;
+  }
+}

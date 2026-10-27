@@ -266,7 +266,7 @@
   "payment.rejected": "رد کر دتا۔ گاہک نوں آرڈر {code} دی ادائیگی چیک کرن لئی آکھیا گیا اے۔",
   "payment.decided_before": "ایس ادائیگی دا فیصلہ پہلاں ہو چکیا اے۔",
   "console.payments_title": "ادائیگیاں",
-  "console.payments_review": "چیک کرنیاں نیں",
+  "console.payments_review": "چیک کرن والیاں ادائیگیاں",
   "console.payments_none": "چیک کرن نوں کجھ نہیں۔ جنہاں ادائیگیاں تے تہاڈی لوڑ ہووے، اوہ ایتھے آن گیاں۔",
   "console.payments_waiting": "ادائیگی دی اڈیک",
   "console.payments_due": "{amount} دینے نیں",

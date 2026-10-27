@@ -266,7 +266,7 @@
   "payment.rejected": "Rejected. The customer was asked to check the payment for order {code}.",
   "payment.decided_before": "This payment has already been decided.",
   "console.payments_title": "Payments",
-  "console.payments_review": "To check",
+  "console.payments_review": "Payments to check",
   "console.payments_none": "Nothing to check. Payments that need you appear here.",
   "console.payments_waiting": "Waiting for payment",
   "console.payments_due": "{amount} to pay",

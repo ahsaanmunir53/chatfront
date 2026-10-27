@@ -266,7 +266,7 @@
   "payment.rejected": "Radd kar diya. Customer se order {code} ki payment check karne ko kaha gaya hai.",
   "payment.decided_before": "Is payment ka faisla pehle ho chuka hai.",
   "console.payments_title": "Payments",
-  "console.payments_review": "Check karni hain",
+  "console.payments_review": "Check karne wali payments",
   "console.payments_none": "Check karne ko kuch nahi. Jin payments par aap ki zaroorat ho, woh yahan aayein gi.",
   "console.payments_waiting": "Payment ka intezar",
   "console.payments_due": "{amount} ada karne hain",

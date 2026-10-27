@@ -266,7 +266,7 @@
   "payment.rejected": "رد ڪيو ويو. گراهڪ کي آرڊر {code} جي ادائگي چيڪ ڪرڻ لاءِ چيو ويو آهي.",
   "payment.decided_before": "هن ادائگيءَ جو فيصلو اڳ ۾ ٿي چڪو آهي.",
   "console.payments_title": "ادائگيون",
-  "console.payments_review": "چيڪ ڪرڻيون آهن",
+  "console.payments_review": "چيڪ ڪرڻ واريون ادائگيون",
   "console.payments_none": "چيڪ ڪرڻ لاءِ ڪجهه ناهي. جن ادائگين تي توهان جي ضرورت هوندي، اهي هتي اينديون.",
   "console.payments_waiting": "ادائگيءَ جو انتظار",
   "console.payments_due": "{amount} ادا ڪرڻا آهن",

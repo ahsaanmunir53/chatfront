@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { OwnerMe, OwnerProduct } from "../api";
 import { ChatView } from "../components/ChatView";
+import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
 import { languageOf, scriptLang } from "../i18n";
@@ -245,7 +246,7 @@ function Products({
   );
 }
 
-/** The signed-in console: the assistant, the products and the customers waiting. */
+/** The signed-in console: the assistant, the products, the customers waiting and payments. */
 function Console({
   me,
   token,
@@ -263,6 +264,7 @@ function Console({
   const [saves, setSaves] = useState(0);
   const [panel, setPanel] = useState<"chat" | "products">("chat");
   const waiting = useHandovers(token);
+  const payments = usePayments(token);
   const saved = useCallback(() => setSaves((n) => n + 1), []);
 
   // Each reply may have added or changed a product: read the list again.
@@ -299,6 +301,7 @@ function Console({
       </header>
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
       <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />
+      <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
       <div className="console-switch" role="tablist" aria-label={t("console.title")}>
         {(["chat", "products"] as const).map((name) => (
           <button
@@ -328,6 +331,7 @@ function Console({
         />
         <Products me={me} token={token} products={products} onSaved={saved} />
       </div>
+      <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
     </Page>
   );
 }

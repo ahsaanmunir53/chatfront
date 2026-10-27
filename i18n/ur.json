@@ -266,7 +266,7 @@
   "payment.rejected": "رد کر دیا۔ گاہک سے آرڈر {code} کی ادائیگی چیک کرنے کو کہا گیا ہے۔",
   "payment.decided_before": "اس ادائیگی کا فیصلہ پہلے ہو چکا ہے۔",
   "console.payments_title": "ادائیگیاں",
-  "console.payments_review": "چیک کرنی ہیں",
+  "console.payments_review": "چیک کرنے والی ادائیگیاں",
   "console.payments_none": "چیک کرنے کو کچھ نہیں۔ جن ادائیگیوں پر آپ کی ضرورت ہو، وہ یہاں آئیں گی۔",
   "console.payments_waiting": "ادائیگی کا انتظار",
   "console.payments_due": "{amount} ادا کرنے ہیں",

@@ -266,7 +266,7 @@
   "payment.rejected": "अस्वीकार किया। ग्राहक से ऑर्डर {code} का भुगतान जाँचने को कहा गया है।",
   "payment.decided_before": "इस भुगतान का फ़ैसला पहले हो चुका है।",
   "console.payments_title": "भुगतान",
-  "console.payments_review": "जाँचने हैं",
+  "console.payments_review": "जाँचने वाले भुगतान",
   "console.payments_none": "जाँचने को कुछ नहीं। जिन भुगतानों पर आपकी ज़रूरत होगी, वे यहाँ आएँगे।",
   "console.payments_waiting": "भुगतान का इंतज़ार",
   "console.payments_due": "{amount} देने हैं",

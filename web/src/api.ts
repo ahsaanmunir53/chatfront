@@ -1,5 +1,6 @@
 import { API_BASE } from "./config";
 import type { Text3 } from "./i18n";
+import type { ReceiptPayload } from "./receipt";
 
 export class ApiError extends Error {
   constructor(
@@ -104,6 +105,53 @@ export type ConsoleMessage = {
   created_at: string;
 };
 
+export type PaymentSignal = { code: string; detail: string };
+export type PaymentReview = {
+  id: string;
+  order_code: string;
+  customer: string;
+  asked: number | null;
+  screenshot_amount: number | null;
+  provider: string | null;
+  transaction_id: string | null;
+  sms_amount: number | null;
+  signals: PaymentSignal[];
+  screenshot_url: string | null;
+  created_at: string;
+};
+export type PaymentWaiting = {
+  order_code: string;
+  customer: string;
+  method: string | null;
+  due_now: number | null;
+  total: number;
+  paid: number;
+  placed_at: string | null;
+  reminded: boolean;
+};
+export type PaymentDone = {
+  order_code: string;
+  amount: number;
+  verified_by: "sms" | "owner";
+  receipt_code: string | null;
+  created_at: string;
+};
+export type Payments = {
+  forwarding: boolean;
+  currency: string;
+  reviews: PaymentReview[];
+  waiting: PaymentWaiting[];
+  recent: PaymentDone[];
+};
+export type Forwarding = { url: string; header: string; secret: string };
+export type ReceiptCheck = {
+  payload: ReceiptPayload;
+  signature: string;
+  public_key: string | null;
+  signed_text: string;
+  valid: boolean;
+};
+
 /** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
 export type ChatAuth = { token: string; owner: boolean };
 
@@ -204,6 +252,15 @@ export const api = {
       headers: bearer(token),
       body: JSON.stringify({ text }),
     }),
+  payments: (token: string) => call<Payments>("/api/owner/payments", { headers: bearer(token) }),
+  decidePayment: (token: string, claimId: string, answer: "approve" | "reject") =>
+    call<{ outcome: string; receipt_code: string | null }>(
+      `/api/owner/payments/${encodeURIComponent(claimId)}/${answer}`,
+      { method: "POST", headers: bearer(token) },
+    ),
+  setUpForwarding: (token: string) =>
+    call<Forwarding>("/api/owner/sms-forwarding", { method: "POST", headers: bearer(token) }),
+  receipt: (code: string) => call<ReceiptCheck>(`/api/receipts/${encodeURIComponent(code)}`),
   resumeHandover: (token: string, handoverId: string) =>
     call<{ resumed: boolean }>(`/api/owner/handovers/${encodeURIComponent(handoverId)}/resume`, {
       method: "POST",

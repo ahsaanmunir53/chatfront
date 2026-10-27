@@ -266,7 +266,7 @@
   "payment.rejected": "رد شو. له پېرودونکي وغوښتل شول چې د امر {code} تادیه وګوري.",
   "payment.decided_before": "د دې تادیې پرېکړه مخکې شوې ده.",
   "console.payments_title": "تادیې",
-  "console.payments_review": "د کتلو لپاره",
+  "console.payments_review": "د کتلو لپاره تادیې",
   "console.payments_none": "د کتلو لپاره څه نشته. هغه تادیې چې تاسو ته اړتیا لري دلته به راشي.",
   "console.payments_waiting": "تادیې ته انتظار",
   "console.payments_due": "{amount} ورکول پاتې",

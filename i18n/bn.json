@@ -266,7 +266,7 @@
   "payment.rejected": "বাতিল করা হয়েছে। গ্রাহককে অর্ডার {code}-এর পেমেন্ট দেখতে বলা হয়েছে।",
   "payment.decided_before": "এই পেমেন্টের সিদ্ধান্ত আগেই নেওয়া হয়েছে।",
   "console.payments_title": "পেমেন্ট",
-  "console.payments_review": "যাচাই করতে হবে",
+  "console.payments_review": "যাচাই করার পেমেন্ট",
   "console.payments_none": "যাচাই করার কিছু নেই। যেসব পেমেন্টে আপনাকে দরকার, সেগুলো এখানে আসবে।",
   "console.payments_waiting": "পেমেন্টের অপেক্ষায়",
   "console.payments_due": "{amount} দিতে হবে",
