@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     ai_mode: Literal["auto", "mock"] = "auto"
     baseten_api_key: SecretStr | None = None
     baseten_base_url: str = "https://inference.baseten.co/v1"
-    spark_model_baseten: str = "meta-models/muse-spark-open"
+    spark_model_baseten: str = "meta-models/muse-spark-open-1026"
     fireworks_api_key: SecretStr | None = None
     fireworks_base_url: str = "https://api.fireworks.ai/inference/v1"
     spark_model_fireworks: str = "accounts/fireworks/models/muse-spark-open"

@@ -153,8 +153,11 @@ stays the same.
   books and stock work so the planned order is unchanged.
 - A `stock` staff role is added with 117 and 118.
 
-- Spark Open model slug on Baseten is `meta-models/muse-spark-open` (Baseten's model page);
-  the spec's `-1026` suffix is kept out until a live call confirms it. Configurable.
+- Spark Open model slug on Baseten is `meta-models/muse-spark-open-1026`, as section 6 of the
+  participant guide says (the docs' `meta-models/muse-spark-open` is not the hackathon one).
+  Set by `SPARK_MODEL_BASETEN`.
+- Event times are Eastern Time (participant guide). The first commit, 26 Oct 22:44 Pacific, is
+  27 Oct 01:44 ET, inside the building period. History is never rewritten.
 - Spark Open failover is Baseten -> Fireworks; Modal hosts only Glimmer.
 - Shop pages live at `/s/<slug>`; one Render service serves API and web.
 - Ids are UUIDv7; order codes will use the short Crockford code in `core/ids.py`.

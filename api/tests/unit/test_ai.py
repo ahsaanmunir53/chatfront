@@ -38,7 +38,7 @@ from chatfront.core.settings import Settings
 
 TENANT = uuid.UUID(int=1)
 BASETEN = Endpoint(
-    "baseten", "https://b.test/v1", "kb", "meta-models/muse-spark-open", *SPARK_OPEN_PRICE
+    "baseten", "https://b.test/v1", "kb", "meta-models/muse-spark-open-1026", *SPARK_OPEN_PRICE
 )
 FIREWORKS = Endpoint("fireworks", "https://f.test/v1", "kf", "fw/muse", *SPARK_OPEN_PRICE)
 
@@ -110,6 +110,12 @@ class TestConfig:
         assert roles[Role.CHAT].effort is Effort.LOW
         assert roles[Role.VISION].effort is Effort.MEDIUM
 
+    def test_baseten_uses_the_hackathon_model_unless_configured(self) -> None:
+        default = build_roles(Settings(baseten_api_key=SecretStr("b")))
+        assert default[Role.CHAT].endpoints[0].model == "meta-models/muse-spark-open-1026"
+        custom = Settings(baseten_api_key=SecretStr("b"), spark_model_baseten="meta-models/other")
+        assert build_roles(custom)[Role.CHAT].endpoints[0].model == "meta-models/other"
+
     def test_meta_needs_explicit_url(self) -> None:
         settings = Settings(meta_model_api_enabled=True, meta_model_api_key=SecretStr("m"))
         assert build_roles(settings)[Role.CHAT].endpoints == ()
@@ -177,7 +183,7 @@ class TestProvider:
             result = await OpenAICompatibleProvider(http).complete(BASETEN, chat(), Effort.LOW, 100)
         sent = route.calls[0].request
         assert sent.headers["Authorization"] == "Bearer kb"
-        assert json.loads(sent.content)["model"] == "meta-models/muse-spark-open"
+        assert json.loads(sent.content)["model"] == "meta-models/muse-spark-open-1026"
         assert result.content == "salam"
         assert result.provider == "baseten"
 
