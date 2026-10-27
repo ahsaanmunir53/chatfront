@@ -1,7 +1,8 @@
 # Features
 
-All 116 features from the spec, numbered as there. Phase says when each is planned:
-Build (works end to end by 2 November), Stretch (after Build passes), Later (roadmap).
+All 120 features: 1 to 116 from the spec, numbered as there, and 117 to 120 added on
+27 October. Phase says when each is planned: Build (works end to end by 2 November; 45
+features), Stretch (after Build passes; 34), Later (roadmap; 41).
 
 Status values:
 
@@ -131,3 +132,7 @@ Phase 0 (the foundation every feature stands on) is done; see PROGRESS.md.
 | 114 | Failover between Baseten, Modal and Fireworks | Demo | Spark Open | Stretch | `needs-key` | Failover Baseten -> Fireworks for Spark Open (Modal hosts Glimmer), tested against mocked endpoints. Runs live with BASETEN_API_KEY and FIREWORKS_API_KEY. | api/src/chatfront/ai/client.py, api/src/chatfront/ai/config.py | tests/unit/test_ai.py::TestClient |
 | 115 | Urdu right-to-left dashboard, installable, with push alerts | Demo | None | Stretch | `partial` | The web app reads right to left in Urdu and installs as a PWA. The dashboard and push alerts come later. | web/src/lang.tsx, web/public/manifest.webmanifest, web/public/sw.js | web/src/i18n.test.ts, web/e2e/try-it.spec.ts |
 | 116 | Share cards: product link previews for WhatsApp and X | Growth | None | Stretch | `planned` |  |  |  |
+| 117 | Restock by chat, voice note or bill photo: Confirm before stock changes, bill lines to products, purchase into the ledger, sheet import; every change a stock movement | Growth | Spark Open (audio, vision, JSON) | Build | `planned` | Uses the ledger (48); the sheet import path is built here and reused by 85. |  |  |
+| 118 | Owner panel inside WhatsApp: Flows to edit products, prices, limits and settings; low-stock alert once per crossing with Reorder and Snooze | Growth | Spark Open (owner's chat commands) | Build | `planned` | Reorder button needs the supplier draft from 53; alerts outside 24 hours need an approved utility template. |  |  |
+| 119 | Stock batches and true profit per batch: FIFO or FEFO, batch cost saved on each order line, the owner decides prices when costs change | Books | None | Build | `planned` | Feeds 51; returns go back to their batch. |  |  |
+| 120 | Expiry dates and write-offs: daily expiry alerts, expired stock never sold, discards recorded as a loss | Growth | Spark Open (vision, expiry from a bill or label) | Build | `planned` | Builds on 119's batches. |  |  |

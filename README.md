@@ -104,7 +104,7 @@ Developer Hackathon. The commit history shows the order.
   the hash-chained audit log; six business templates and their demo shops; the web app
   with the shop page, try-it chat and trust page in English, Urdu and Roman Urdu; CI.
 
-The table in [FEATURES.md](FEATURES.md) tracks all 116 features and what state each is in.
+The table in [FEATURES.md](FEATURES.md) tracks all 120 features and what state each is in.
 
 ## Model API upgrade path
 
@@ -142,7 +142,7 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
 
 ## Roadmap
 
-Build features (41) work end to end by 2 November, Stretch features (34) follow, and Later
+Build features (45) work end to end by 2 November, Stretch features (34) follow, and Later
 features (41) stay on the roadmap. The demo shows only work built during the event.
 
 ## Attribution
