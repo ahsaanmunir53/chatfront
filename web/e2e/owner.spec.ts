@@ -50,7 +50,8 @@ test("a visitor runs a demo shop as its owner: a product from a photo, a new pri
   // A photo, with the typed words as its caption: the card waits for Confirm.
   await showChat();
   await page.getByLabel("Type a message").fill("Lawn suit 4850");
-  await page.locator('input[type="file"]').setInputFiles(PHOTO);
+  const assistant = page.getByRole("region", { name: "Your assistant" });
+  await assistant.locator('input[type="file"]').setInputFiles(PHOTO);
   await expect(page.locator(".bubble-in .bubble-photo")).toBeVisible();
   await tapFirstButton(page, "Lawn suit: Rs 4,850");
   await expect(page.locator(".bubble-out").last()).toContainText("Lawn suit", { timeout: 15_000 });
