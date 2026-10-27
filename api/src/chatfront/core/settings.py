@@ -20,9 +20,8 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:8000"
     log_level: str = "INFO"
 
-    # Database: one URL; tenant work runs as `app_db_role` so row-level security applies.
+    # Database: one URL as the owner role; tenant work switches to the app role (see core.db).
     database_url: str = "postgresql+asyncpg://chatfront_owner:owner@127.0.0.1:5432/chatfront"
-    app_db_role: str = "chatfront_app"
     db_pool_size: int = 5
 
     # Secrets used to sign and hash. They must be long random strings in production.
