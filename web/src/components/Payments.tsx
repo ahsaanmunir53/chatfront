@@ -1,35 +1,23 @@
 // The owner's side of payments: payments to check with the evidence and Approve and Reject
 // (feature 25), orders waiting for money, money received with its signed receipt, and the
 // one-time setup of SMS forwarding (feature 24).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Forwarding, OwnerMe, PaymentReview, Payments } from "../api";
 import { isolate } from "../i18n";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
+import { usePolled } from "../usePolled";
 import { formatMoney } from "../money";
-import { useServer } from "../server";
 
 const POLL_MS = 5000;
 const DASH = "—";
 
-/** Polls the payments panel; refresh() after a decision. */
-export function usePayments(token: string) {
-  const { state } = useServer();
-  const [data, setData] = useState<Payments | null>(null);
-  const refresh = useCallback(() => {
-    api.payments(token).then(setData, () => {
-      // The next poll tries again.
-    });
-  }, [token]);
-  useEffect(() => {
-    if (state !== "online") return;
-    refresh();
-    const timer = window.setInterval(refresh, POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [state, refresh]);
-  return { data, refresh };
+/** Polls the payments panel, for people who handle payments; refresh() after a decision. */
+export function usePayments(token: string, enabled: boolean) {
+  const load = useCallback(() => api.payments(token), [token]);
+  return usePolled(enabled ? load : null, POLL_MS);
 }
 
 function useMoney(me: OwnerMe) {

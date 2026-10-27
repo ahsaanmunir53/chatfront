@@ -1,34 +1,24 @@
 // The owner's orders: where each one stands, what is paid and what the rider collects, the
 // risk of a cash-on-delivery order coming back with its reasons (feature 34), the next moves,
-// and the shipping label (feature 101).
-import { useCallback, useEffect, useState } from "react";
+// the shipping label (feature 101), and why each decision was made (feature 107).
+import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
 import type { OwnerMe, OwnerOrder } from "../api";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
+import { usePolled } from "../usePolled";
 import { formatMoney } from "../money";
-import { useServer } from "../server";
 import { PinIcon } from "./Icons";
+import { WhyDetails } from "./Why";
 
 const POLL_MS = 6000;
 
-/** Polls the owner's orders; refresh() after a move. */
-export function useOrders(token: string) {
-  const { state } = useServer();
-  const [orders, setOrders] = useState<OwnerOrder[] | null>(null);
-  const refresh = useCallback(() => {
-    api.orders(token).then(setOrders, () => {
-      // The next poll tries again.
-    });
-  }, [token]);
-  useEffect(() => {
-    if (state !== "online") return;
-    refresh();
-    const timer = window.setInterval(refresh, POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [state, refresh]);
-  return { orders, refresh };
+/** Polls the shop's orders, for people who see orders; refresh() after a move. */
+export function useOrders(token: string, enabled: boolean) {
+  const load = useCallback(() => api.orders(token), [token]);
+  const { data, refresh } = usePolled(enabled ? load : null, POLL_MS);
+  return { orders: data, refresh };
 }
 
 async function downloadLabel(token: string, code: string) {
@@ -146,6 +136,7 @@ function OrderRow({
         )}
       </div>
       <Risk order={order} />
+      <WhyDetails me={me} token={token} code={order.code} />
       {(order.next.length > 0 || order.label) && (
         <div className="waiting-actions">
           {order.next.map((to) =>

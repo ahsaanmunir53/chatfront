@@ -5,10 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
-import type { OwnerMe, OwnerProduct } from "../api";
+import type { LowStock, OwnerMe, OwnerProduct } from "../api";
+import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { ChatView } from "../components/ChatView";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
+import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
+import { ActivityPanel, TeamPanel } from "../components/Team";
 import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
 import { languageOf, scriptLang } from "../i18n";
@@ -217,11 +220,13 @@ function Products({
   me,
   token,
   products,
+  low,
   onSaved,
 }: {
   me: OwnerMe;
   token: string;
   products: OwnerProduct[] | null;
+  low: LowStock[];
   onSaved: () => void;
 }) {
   const { t } = useLang();
@@ -231,6 +236,7 @@ function Products({
         {t("shop.products")}
         {products && <span className="console-count">{products.length}</span>}
       </h2>
+      <LowStockList low={low} />
       {products && products.length === 0 && <p className="aside">{t("console.no_products")}</p>}
       <ul className="khata" aria-busy={!products}>
         {products?.map((product) => (
@@ -247,7 +253,9 @@ function Products({
   );
 }
 
-/** The signed-in console: the assistant, products, customers waiting, orders and payments. */
+/** The signed-in console: what waits for an answer, the assistant and products, orders,
+ * payments and the books, then customers, the team, settings and the activity log; each
+ * person sees the parts their role allows (feature 42). */
 function Console({
   me,
   token,
@@ -264,9 +272,12 @@ function Console({
   const [replies, setReplies] = useState(0);
   const [saves, setSaves] = useState(0);
   const [panel, setPanel] = useState<"chat" | "products">("chat");
-  const waiting = useHandovers(token);
-  const payments = usePayments(token);
-  const orders = useOrders(token);
+  const can = (right: string) => me.rights.includes(right);
+  const waiting = useHandovers(token, can("chats"));
+  const payments = usePayments(token, can("payments"));
+  const orders = useOrders(token, can("orders"));
+  const books = useBooks(token, can("books"));
+  const approvals = useApprovals(token);
   const saved = useCallback(() => setSaves((n) => n + 1), []);
 
   // Each reply may have added or changed a product: read the list again.
@@ -302,8 +313,11 @@ function Console({
         </div>
       </header>
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
-      <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />
-      <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
+      <Approvals token={token} list={approvals.list} onChange={approvals.refresh} />
+      {can("chats") && <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />}
+      {can("payments") && (
+        <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
+      )}
       <div className="console-switch" role="tablist" aria-label={t("console.title")}>
         {(["chat", "products"] as const).map((name) => (
           <button
@@ -331,10 +345,21 @@ function Console({
           onSignedOut={onSessionEnded}
           onReplies={setReplies}
         />
-        <Products me={me} token={token} products={products} onSaved={saved} />
+        <Products me={me} token={token} products={products} low={books.low} onSaved={saved} />
       </div>
-      <OrdersPanel me={me} token={token} orders={orders.orders} onChange={orders.refresh} />
-      <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
+      {can("orders") && (
+        <OrdersPanel me={me} token={token} orders={orders.orders} onChange={orders.refresh} />
+      )}
+      {can("payments") && (
+        <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
+      )}
+      {can("books") && (
+        <BooksPanel me={me} token={token} books={books.books} onChange={books.refresh} />
+      )}
+      {can("orders") && <CustomersPanel me={me} token={token} />}
+      {can("team") && <TeamPanel token={token} />}
+      {can("settings") && <SettingsPanel token={token} />}
+      {can("audit") && <ActivityPanel token={token} />}
     </Page>
   );
 }

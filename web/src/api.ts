@@ -78,6 +78,8 @@ export type OwnerMe = {
   currency: string;
   is_demo: boolean;
   languages: string[];
+  role: string;
+  rights: string[];
 };
 export type OwnerProduct = {
   id: string;
@@ -162,7 +164,7 @@ export type OwnerOrder = {
   code: string;
   customer: string;
   status: string;
-  method: "cod" | "transfer" | null;
+  method: "cod" | "transfer" | "credit" | null;
   total: number;
   paid: number;
   due_now: number | null;
@@ -185,6 +187,109 @@ export type Parcel = {
   courier: string | null;
   tracking_number: string | null;
 };
+
+export type Sums = {
+  sales: number;
+  udhaar_given: number;
+  udhaar_paid: number;
+  expenses: number;
+  orders: number;
+  cash_profit: number;
+};
+export type LedgerEntry = {
+  id: string;
+  kind: "sale" | "expense" | "udhaar_given" | "udhaar_paid";
+  category: string;
+  amount: number;
+  description: string;
+  occurred_on: string;
+  source: string;
+  order_code: string | null;
+  account: string | null;
+  reverses: string | null;
+  reversed: boolean;
+  has_bill: boolean;
+};
+export type KhataAccount = {
+  id: string;
+  name: string;
+  balance: number;
+  owed_days: number | null;
+  reminders_sent: number;
+  customer_id: string | null;
+};
+export type Books = {
+  today: Sums;
+  week: Sums;
+  month: Sums;
+  entries: LedgerEntry[];
+  accounts: KhataAccount[];
+  categories: string[];
+};
+export type NewExpense = { amount: number; category: string; description: string };
+export type UdhaarMove = {
+  kind: "udhaar_given" | "udhaar_paid";
+  amount: number;
+  account_id?: string;
+  name?: string;
+};
+export type LowStock = { name: string; left: number; limit: number };
+export type Approval = { id: string; kind: string; text: string; created_at: string };
+export type OwnerCustomer = {
+  id: string;
+  name: string | null;
+  verified: boolean;
+  verified_by: "rule" | "owner" | null;
+  orders: number;
+  delivered: number;
+  returned: number;
+  owes: number;
+};
+export type ShopSettings = {
+  autonomy: Record<string, string>;
+  choices: Record<string, string[]>;
+  verified_after: number;
+  low_stock_limit: number;
+  ask_discount_over: number;
+};
+export type SettingsChange = {
+  autonomy?: Record<string, string>;
+  verified_after?: number;
+  low_stock_limit?: number;
+};
+export type Member = {
+  id: string;
+  name: string;
+  role: string;
+  active: boolean;
+  whatsapp: boolean;
+  rights: string[];
+  created_at: string;
+};
+export type Invite = { member: Member; link: string };
+export type ActivityEntry = {
+  seq: number;
+  at: string;
+  actor: string;
+  action: string;
+  entity: string | null;
+  data: Record<string, unknown>;
+};
+export type ActivityLog = {
+  intact: boolean;
+  checked: number;
+  broken_at: number | null;
+  entries: ActivityEntry[];
+};
+export type WhyDecision = {
+  topic: "risk" | "advance" | "price" | "payment";
+  outcome: string;
+  rule: string;
+  values: Record<string, unknown>;
+  evidence: Record<string, unknown>[];
+};
+export type WhyHistory = { at: string; action: string; actor: string; data: Record<string, unknown> };
+export type Why = { code: string; status: string; decisions: WhyDecision[]; history: WhyHistory[] };
 
 /** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
 export type ChatAuth = { token: string; owner: boolean };
@@ -322,6 +427,67 @@ export const api = {
       method: "POST",
       headers: bearer(token),
     }),
+  books: (token: string) => call<Books>("/api/owner/books", { headers: bearer(token) }),
+  addExpense: (token: string, expense: NewExpense) =>
+    call<{ id: string }>("/api/owner/books/expenses", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(expense),
+    }),
+  reverseEntry: (token: string, entryId: string) =>
+    call<{ id: string }>(`/api/owner/books/entries/${encodeURIComponent(entryId)}/reverse`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  moveUdhaar: (token: string, move: UdhaarMove) =>
+    call<KhataAccount>("/api/owner/udhaar", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(move),
+    }),
+  lowStock: (token: string) => call<LowStock[]>("/api/owner/low-stock", { headers: bearer(token) }),
+  approvals: (token: string) => call<Approval[]>("/api/owner/approvals", { headers: bearer(token) }),
+  answerApproval: (token: string, approvalId: string, approve: boolean) =>
+    call<{ outcome: string }>(`/api/owner/approvals/${encodeURIComponent(approvalId)}`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ approve }),
+    }),
+  customers: (token: string) =>
+    call<OwnerCustomer[]>("/api/owner/customers", { headers: bearer(token) }),
+  setVerified: (token: string, customerId: string, verified: boolean) =>
+    call<{ verified: boolean }>(`/api/owner/customers/${encodeURIComponent(customerId)}/verified`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ verified }),
+    }),
+  settings: (token: string) => call<ShopSettings>("/api/owner/settings", { headers: bearer(token) }),
+  saveSettings: (token: string, change: SettingsChange) =>
+    call<ShopSettings>("/api/owner/settings", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(change),
+    }),
+  team: (token: string) => call<Member[]>("/api/owner/team", { headers: bearer(token) }),
+  addMember: (token: string, member: { name: string; role: string; phone?: string }) =>
+    call<Invite>("/api/owner/team", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(member),
+    }),
+  memberLink: (token: string, staffId: string) =>
+    call<Invite>(`/api/owner/team/${encodeURIComponent(staffId)}/link`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  removeMember: (token: string, staffId: string) =>
+    call<Member>(`/api/owner/team/${encodeURIComponent(staffId)}/deactivate`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  activity: (token: string) => call<ActivityLog>("/api/owner/activity", { headers: bearer(token) }),
+  why: (token: string, code: string) =>
+    call<Why>(`/api/owner/orders/${encodeURIComponent(code)}/why`, { headers: bearer(token) }),
   saveWording: (
     token: string,
     productId: string,

@@ -112,3 +112,20 @@ export function formatMoney(amount: number, country: string | null | undefined, 
 export function toMinor(major: number, country: string | null | undefined): number {
   return Math.round(major * 10 ** packOf(country).minorDigits);
 }
+
+// Zero in each digit set an owner may type in: Arabic-Indic, Persian/Urdu, Devanagari, Bengali.
+const ZEROS = [0x0660, 0x06f0, 0x0966, 0x09e6];
+
+/** An amount as typed in a form ("4,850", "۴۸۵۰", "৪৮৫০.৫০") in major units, or null. */
+export function parseAmount(typed: string): number | null {
+  let ascii = "";
+  for (const char of typed.trim()) {
+    const code = char.codePointAt(0) ?? 0;
+    const zero = ZEROS.find((start) => code >= start && code <= start + 9);
+    ascii += zero === undefined ? char : String(code - zero);
+  }
+  const cleaned = ascii.replace(/[,\u066c\s]/g, "").replace("\u066b", ".");
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
+  const amount = Number(cleaned);
+  return amount > 0 ? amount : null;
+}

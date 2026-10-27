@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import cases from "@i18n/money-cases.json";
-import { formatMoney, packOf, toDigits, toMinor } from "./money";
+import { formatMoney, packOf, parseAmount, toDigits, toMinor } from "./money";
 
 describe("money", () => {
   it("is written exactly as the API writes it", () => {
@@ -23,5 +23,16 @@ describe("money", () => {
     expect(toDigits("4,850", "beng")).toBe("৪,৮৫০");
     expect(toDigits("4,850", "latn")).toBe("4,850");
     expect(toMinor(4850, "PK")).toBe(485_000);
+  });
+
+  it("reads amounts typed in any digits", () => {
+    expect(parseAmount("4,850")).toBe(4850);
+    expect(parseAmount(" ۴۸۵۰ ")).toBe(4850);
+    expect(parseAmount("٤٬٨٥٠")).toBe(4850);
+    expect(parseAmount("৪৮৫০.৫০")).toBe(4850.5);
+    expect(parseAmount("४५००")).toBe(4500);
+    expect(parseAmount("0")).toBeNull();
+    expect(parseAmount("12abc")).toBeNull();
+    expect(parseAmount("")).toBeNull();
   });
 });

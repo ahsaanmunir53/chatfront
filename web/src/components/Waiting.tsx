@@ -6,7 +6,7 @@ import { api } from "../api";
 import type { ConsoleMessage, Handover } from "../api";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
-import { useServer } from "../server";
+import { usePolled } from "../usePolled";
 
 const POLL_MS = 4000;
 const CHANNELS: Record<string, string> = {
@@ -21,22 +21,11 @@ const BY: Record<ConsoleMessage["by"], Key> = {
   staff: "console.you",
 };
 
-/** Polls the open handovers; refresh() after a change. */
-export function useHandovers(token: string) {
-  const { state } = useServer();
-  const [list, setList] = useState<Handover[]>([]);
-  const refresh = useCallback(() => {
-    api.handovers(token).then(setList, () => {
-      // The next poll tries again.
-    });
-  }, [token]);
-  useEffect(() => {
-    if (state !== "online") return;
-    refresh();
-    const timer = window.setInterval(refresh, POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [state, refresh]);
-  return { list, refresh };
+/** Polls the open handovers, for people who answer chats; refresh() after a change. */
+export function useHandovers(token: string, enabled: boolean) {
+  const load = useCallback(() => api.handovers(token), [token]);
+  const { data, refresh } = usePolled(enabled ? load : null, POLL_MS);
+  return { list: data ?? [], refresh };
 }
 
 function timeOf(iso: string): string {

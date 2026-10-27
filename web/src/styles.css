@@ -3181,3 +3181,380 @@ button {
 .track .action {
   justify-self: start;
 }
+
+/* Decisions waiting for the owner: saffron, the colour of "your turn". ------------------- */
+
+.approvals {
+  border-inline-start-color: var(--saffron);
+}
+
+/* The books: a day book ruled like a ledger page, its total under an accountant's double rule.
+   Entries keep the khata's red margin; money in is stamp green, money out is chili. ------ */
+
+.books-panel,
+.customers-panel,
+.team-panel,
+.settings-panel,
+.activity-panel {
+  margin-top: 36px;
+}
+
+.daybook {
+  width: 100%;
+  margin-bottom: 16px;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.daybook th,
+.daybook td {
+  padding: 9px 14px;
+  border-top: 1px solid var(--rule);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.daybook thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.daybook tbody th,
+.daybook tfoot th {
+  text-align: start;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.daybook tfoot th,
+.daybook tfoot td {
+  border-top: 3px double var(--text);
+  font-weight: 700;
+}
+
+.daybook .is-loss {
+  color: var(--chili);
+}
+
+@media (max-width: 559px) {
+  .daybook th,
+  .daybook td {
+    padding: 8px 8px;
+    font-size: 14px;
+  }
+}
+
+.books-columns {
+  margin-top: 0;
+}
+
+.books-entries {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.books-entries::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 56px;
+  width: 4px;
+  border-inline: 1.5px solid var(--margin-red);
+}
+
+.entry-line {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.entry-line time {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-what {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.entry-kind {
+  font-weight: 650;
+}
+
+.entry-note {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.entry-bill {
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.entry-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.entry-amount.is-in {
+  color: color-mix(in srgb, var(--stamp) 80%, var(--text));
+}
+
+.entry-amount.is-out {
+  color: color-mix(in srgb, var(--chili) 85%, var(--text));
+}
+
+.entry-undo {
+  grid-column: 2 / -1;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.entry-line.is-undone .entry-what,
+.entry-line.is-undone .entry-amount {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.books-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.books-form .pay-block-title {
+  margin: 0;
+}
+
+.pay-block > .books-form:first-child {
+  margin-top: 0;
+}
+
+.team-link .action {
+  padding: 8px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.books-form label,
+.setting-number {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.books-form input,
+.books-form select,
+.setting-number input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.setting-number input {
+  max-width: 8em;
+}
+
+.khata-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.khata-kinds button {
+  padding: 5px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.khata-kinds [aria-checked="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.khata-who {
+  font-weight: 650;
+}
+
+/* What is running low, above the product list. */
+.low-stock {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--saffron) 16%, var(--card));
+  font-size: 14px;
+}
+
+.low-stock ul {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.low-stock li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+/* Customers, the team and the activity log reuse the payment rows. */
+.customers .action,
+.team-actions .action {
+  padding: 5px 12px;
+  background: var(--card);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.customers .action {
+  margin-inline-start: auto;
+}
+
+.team-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+.verified-badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 1px 10px;
+  border: 1.5px solid var(--stamp);
+  border-radius: 6px;
+  color: color-mix(in srgb, var(--stamp) 75%, var(--text));
+  font-size: 13px;
+  font-weight: 700;
+  transform: rotate(-1.5deg);
+}
+
+.pay-rows li.is-removed {
+  opacity: 0.6;
+}
+
+.team-link {
+  margin-top: 12px;
+}
+
+.settings {
+  display: grid;
+  gap: 16px;
+}
+
+.setting {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.setting legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 650;
+}
+
+.setting .pay-note {
+  margin: 0;
+}
+
+.activity time {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-broken {
+  color: var(--chili);
+  font-weight: 650;
+}
+
+/* The why panel under an order. */
+.order-why {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.order-why summary {
+  color: var(--muted);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.why-decisions,
+.why-history {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-inline-start: 18px;
+}
+
+.why-decisions ul {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+}
+
+.why-history-title {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .khata-kinds [aria-checked="true"] {
+    border-color: var(--on-ink);
+    background: var(--on-ink);
+    color: var(--ink);
+  }
+
+  .daybook tfoot th,
+  .daybook tfoot td {
+    border-top-color: var(--on-ink-muted);
+  }
+}
