@@ -251,6 +251,42 @@ What it delivered:
 Not verified yet: bill photos and owner commands read by the real model (no keys yet); the
 evening card on a real phone.
 
+## Done on 27 October: restock, owner panel, batches and expiry (117, 118, 119, 120)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 692 passed, 94.3% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 29 passed |
+| Browser tests, desktop and phone | 52 passed |
+
+What it delivered:
+
+- Restock (117): stock that came in by chat, voice note, a supplier's bill or challan photo,
+  a CSV or Excel sheet, or the console's form. The model reads; code matches every line to
+  one product and variant and shows before and after; nothing changes until Confirm. Each
+  line becomes a batch, and the purchase goes in the books with its bill photo.
+- The owner's panel (118): "products" and "orders" lists in the owner's chat, a product's
+  price, stock and alert limit with buttons, an order's next moves, and a product form as a
+  WhatsApp Flow once it is published. Alerts (low stock with Reorder and Snooze, expiry,
+  price questions) go to WhatsApp in the 24-hour window, as the alert template outside it,
+  and wait in the console's Alerts otherwise.
+- Batches (119): first in, first out, or first to expire first; the exact cost of every
+  unit sold kept on the order line; returns back to their batch; the price question when new
+  stock costs differently; goods profit on the daily card, in the day book and per product.
+- Expiry (120): one warning per batch, expired stock held out of sale, discards written off
+  as a loss.
+- The `stock` role: receives stock and keeps batches and expiry dates; it sees costs but not
+  profit or the books.
+- Migration 0009: stock batches, batch allocations (append-only), owner notices, and a
+  snooze time on variants.
+
+Not verified yet: bill photos, the owner's words and voice notes read by the real model (no
+keys yet); the Flow and the alert template on a real WhatsApp number (both need Ahsaan's
+WhatsApp Manager).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -274,10 +310,9 @@ In the timeline's order:
 3. 30-31 Oct: payments: 23, 24, 25, 26, 27, 30, 97, 98, 99. Done on 27 October.
 4. 31 Oct: delivery and COD: 33, 34, 101. Done on 27 October.
 5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107. Done on 27 October.
-6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120.
+6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120. Done on 27
+   October, console views included (sheet upload, alerts, batches, expiry, profit).
 7. 2 Nov: dashboard, eval set, cost meter, reasoning routing, deploy: 74, 80, 111, 112, 113.
-   The dashboard parts of 117 to 120 (sheet upload, queued alerts, batch and expiry views)
-   land here with 74.
 
 Build is now 45 features in six days; 117 to 120 are the largest. If 2 November slips, the
 dashboard views of 119 and 120 are the first to move, since the WhatsApp cards already show
@@ -423,7 +458,6 @@ stays the same.
   the address or the phone number.
 - The owner moves orders in the console for now; WhatsApp owner commands (75) answer
   questions about the shop and do not move orders yet.
-- Profit is cash profit (money in less expenses) until batches (119) give each sale its cost.
 - A low-stock alert fires when a sale or write-off reaches the limit, not for stock that
   starts low; the console and "low stock?" list those.
 - Udhaar reminders default to "ask me": each one waits for the owner's Approve until the owner
@@ -433,6 +467,31 @@ stays the same.
 - A customer's verified badge set by the owner is never changed by the automatic rule.
 - Expenses come from the owner's words or the bill; a bill photo without a readable total and
   without a typed amount waits for the owner to type it, never a guess.
+- Goods profit (what goods sold for, less what those very pieces cost, less stock thrown
+  away) sits beside cash profit; neither replaces the other.
+- Stock counted before batches existed is "loose": the oldest stock, sold first, its cost
+  unknown and counted apart rather than guessed. Demo products carry a synthetic cost
+  (about 70% of the price) so their opening stock has a batch.
+- Once any batch of a variant has an expiry date, that variant sells first to expire first,
+  and loose stock sells last.
+- A cancelled or returned unit goes back to the batch it came from at the cost it left at;
+  units of a batch already held out as expired are held out again; a batch already discarded
+  takes them back as loose stock.
+- The price question is asked when new stock costs 2% or more away from the stock on hand.
+  "After the old stock" is applied at the new batch's first sale; answered after that batch
+  has started selling, it applies at once.
+- Snooze on a low-stock alert is 3 days; Remind later on an expiry warning is 2 days; the
+  expiry warning period is 7 days unless the shop sets its own (`expiry_warning_days`).
+- The morning stock job runs once a day per shop after 8 am shop time (hourly cron, deduped).
+- A reorder never messages a supplier: the owner gets the draft and a wa.me link that opens
+  their own WhatsApp, when the supplier's number is on a bill.
+- "Maal" is not a purchase word for photos ("naya maal" also means a new design); "challan",
+  "stock" and "supplier" are.
+- A write-off cannot be undone from the books, since the stock stays thrown away.
+- Sheets are read with openpyxl (MIT): the first sheet of an .xlsx, or a CSV; 2 MB and 500
+  rows at most.
+- Notices keep the text in the owner's language at the time they were made; the console shows
+  that text as it is.
 
 ## Working notes for the next session
 

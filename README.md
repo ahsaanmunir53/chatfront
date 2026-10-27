@@ -112,6 +112,15 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, restock, batches and expiry:** stock that came in by chat, voice note, a
+  supplier's bill photo, a CSV or Excel sheet or the console's form, always shown as before
+  and after and saved on Confirm; every delivery kept as a batch with its exact cost, sold
+  first in first out (or first to expire first), so each sale carries its true cost and
+  goods profit sits beside cash profit; the owner deciding the price when new stock costs
+  differently; expiry warnings, expired stock kept off sale and written off as a loss; the
+  owner's panel in WhatsApp (product and order lists, buttons, a product form as a WhatsApp
+  Flow) and alerts with Reorder and Snooze that use the approved template outside the
+  24-hour window.
 - **27 October, books and shield:** the shop's books kept by chat, voice note, bill photo or
   the console's form, with Undo by a mirror entry; the udhaar khata with reminders that grow
   firmer; today's and the week's cash profit as a WhatsApp card in the evening, and answers to
