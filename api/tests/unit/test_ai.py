@@ -1,5 +1,6 @@
 import json
 import uuid
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,7 @@ from chatfront.ai.config import (
     cost_millipaisa,
 )
 from chatfront.ai.factory import build_ai_client
-from chatfront.ai.mock import Fixture, MockMiss, MockProvider, load_fixtures
+from chatfront.ai.mock import Fixture, MockMiss, MockProvider, load_fixtures, tool_rounds
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.provider import OpenAICompatibleProvider, build_payload, parse_response
 from chatfront.ai.tools import Tool, ToolRegistry
@@ -202,6 +203,28 @@ class TestMock:
     def test_miss(self) -> None:
         with pytest.raises(MockMiss):
             MockProvider([]).find(chat())
+
+    def test_a_tool_loop_moves_through_its_steps(self) -> None:
+        mock = MockProvider(
+            [
+                Fixture("*", "*", "lawn", tool_calls=[{"name": "find_products"}]),
+                Fixture("*", "*", "lawn", step=1, tool_calls=[{"name": "add_to_cart"}]),
+                Fixture("*", "*", "lawn", content="Added."),
+            ]
+        )
+        first = chat("lawn chahiye")
+        assert [c["name"] for c in mock.find(first).tool_calls] == ["find_products"]
+        call = ToolCall("call_0", "find_products", {})
+        looped = [
+            *first.messages,
+            ChatMessage("assistant", None, (call,)),
+            ChatMessage("tool", "{}", tool_call_id="call_0"),
+        ]
+        second = replace(first, messages=looped)
+        assert tool_rounds(second) == 1
+        assert [c["name"] for c in mock.find(second).tool_calls] == ["add_to_cart"]
+        third = replace(second, messages=[*looped, ChatMessage("assistant", None, (call,))])
+        assert mock.find(third).content == "Added."  # tool fixtures never repeat forever
 
     def test_shipped_fixtures_load(self) -> None:
         assert any(f.prompt == "shop_assistant" for f in load_fixtures())

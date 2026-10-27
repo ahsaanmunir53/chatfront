@@ -2,7 +2,9 @@
 
 Fixtures live in ai/fixtures/*.json. Each entry names a prompt and role ("*" for any), a
 `match` substring of the last user message and the answer language `lang` (both "*" for any).
-Specific entries win over "*": a match on the text first, then on the language.
+Specific entries win over "*": a match on the text first, then on the language. In a tool
+loop, `step` is how many rounds of tool results the request already holds; an entry with tool
+calls and no step answers only the first round, so a loop always reaches a text answer.
 Real responses can be captured with AI_RECORD_DIR and promoted into fixtures.
 """
 
@@ -40,14 +42,17 @@ class Fixture:
     content: str | None = None
     json: dict[str, Any] | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    step: int | None = None
 
     def matches(self, req: ChatRequest, last_user_text: str) -> bool:
         prompt_name = (req.prompt or "").split("@")[0]  # fixtures hold across prompt versions
+        step = self.step if self.step is not None else (0 if self.tool_calls else None)
         return (
             self.prompt in ("*", prompt_name)
             and self.role in ("*", req.role.value)
             and (self.match == "*" or self.match.lower() in last_user_text.lower())
             and self.lang in ("*", req.lang)
+            and (step is None or step == tool_rounds(req))
         )
 
 
@@ -57,6 +62,17 @@ def load_fixtures(directory: Path = FIXTURES_DIR) -> list[Fixture]:
         for raw in json.loads(path.read_text(encoding="utf-8")):
             fixtures.append(Fixture(**raw))
     return fixtures
+
+
+def tool_rounds(req: ChatRequest) -> int:
+    """How many times the model has already called tools since the user last spoke."""
+    rounds = 0
+    for message in reversed(req.messages):
+        if message.role == "user":
+            break
+        if message.role == "assistant" and message.tool_calls:
+            rounds += 1
+    return rounds
 
 
 def _last_user_text(req: ChatRequest) -> str:
@@ -74,7 +90,7 @@ class MockProvider:
     def find(self, req: ChatRequest) -> Fixture:
         text = _last_user_text(req)
         candidates = [f for f in self.fixtures if f.matches(req, text)]
-        candidates.sort(key=lambda f: (f.match == "*", f.lang == "*"))
+        candidates.sort(key=lambda f: (f.match == "*", f.step is None, f.lang == "*"))
         if not candidates:
             raise MockMiss(req)
         return candidates[0]
