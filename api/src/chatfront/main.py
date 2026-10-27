@@ -13,16 +13,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from chatfront.books.routes import router as books_router
 from chatfront.channels.routes import router as channel_router
 from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
 from chatfront.core.settings import Settings, get_settings
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.owner.routes import router as owner_router
+from chatfront.owner.team import router as team_router
 from chatfront.payments.routes import router as payments_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
+from chatfront.shield.routes import router as shield_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -69,6 +72,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(channel_router)
     app.include_router(public_router)
     app.include_router(owner_router)
+    app.include_router(team_router)
+    app.include_router(books_router)
+    app.include_router(shield_router)
     app.include_router(payments_router)
     app.include_router(delivery_router)
     registries.modules.install(app, registries.jobs, registries.cron, registries.tools)
