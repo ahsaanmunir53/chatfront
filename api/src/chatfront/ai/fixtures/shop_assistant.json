@@ -1,0 +1,14 @@
+[
+  {
+    "prompt": "shop_assistant",
+    "role": "chat",
+    "match": "*",
+    "content": "[mock reply] Assalam-o-alaikum! Model keys are not set yet, so this is a recorded reply."
+  },
+  {
+    "prompt": "shop_assistant",
+    "role": "chat",
+    "match": "salam",
+    "content": "Wa alaikum assalam! Bataiye, main aap ki kya madad kar sakta hoon?"
+  }
+]

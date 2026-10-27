@@ -48,10 +48,12 @@ class Settings(BaseSettings):
     modal_glimmer_api_key: SecretStr | None = None
     glimmer_model: str = "meta-models/Muse-Glimmer-30B"
     meta_model_api_key: SecretStr | None = None
-    meta_model_api_base_url: str = "https://api.llama.com/compat/v1"
+    meta_model_api_base_url: str | None = None
     meta_model_api_enabled: bool = False
+    meta_spark_model: str = "muse-spark-1.3"
     ai_timeout_seconds: float = 60.0
     usd_to_pkr: Decimal = Decimal("280")
+    ai_record_dir: Path | None = None
 
     # Media storage.
     storage_backend: Literal["local", "supabase"] = "local"

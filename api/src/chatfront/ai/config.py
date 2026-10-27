@@ -1,0 +1,116 @@
+"""Which endpoint serves which role, with what reasoning effort, and what it costs.
+
+Spark Open fails over Baseten -> Fireworks (both bill per token). Glimmer runs on our own
+Modal deployment; the watcher and simulator fall back to Spark Open when Modal is absent.
+The Meta Model API sits first in every chain only when META_MODEL_API_ENABLED is set.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from decimal import Decimal
+
+from chatfront.ai.types import Effort, Role
+from chatfront.core.settings import Settings
+
+
+@dataclass(frozen=True)
+class Endpoint:
+    name: str
+    base_url: str
+    api_key: str | None
+    model: str
+    usd_per_m_input: Decimal
+    usd_per_m_output: Decimal
+
+
+@dataclass(frozen=True)
+class RoleConfig:
+    endpoints: tuple[Endpoint, ...]
+    effort: Effort
+    max_tokens: int
+
+
+SPARK_OPEN_PRICE = (Decimal("1.25"), Decimal("4.25"))
+
+_ROLE_SETTINGS: dict[Role, tuple[Effort, int, bool]] = {
+    # role: (effort, max_tokens incl. reasoning, prefers Glimmer)
+    Role.CHAT: (Effort.LOW, 4096, False),
+    Role.VISION: (Effort.MEDIUM, 8192, False),
+    Role.AUDIO: (Effort.MEDIUM, 8192, False),
+    Role.VIDEO: (Effort.MEDIUM, 8192, False),
+    Role.WATCHER: (Effort.MEDIUM, 4096, True),
+    Role.SIMULATOR: (Effort.LOW, 2048, True),
+}
+
+
+def _secret(value: object) -> str | None:
+    getter = getattr(value, "get_secret_value", None)
+    return getter() if getter else None
+
+
+def spark_endpoints(settings: Settings) -> list[Endpoint]:
+    endpoints: list[Endpoint] = []
+    meta_key = _secret(settings.meta_model_api_key)
+    meta_url = settings.meta_model_api_base_url
+    if settings.meta_model_api_enabled and meta_key and meta_url:
+        endpoints.append(
+            Endpoint("meta", meta_url, meta_key, settings.meta_spark_model, *SPARK_OPEN_PRICE)
+        )
+    if key := _secret(settings.baseten_api_key):
+        endpoints.append(
+            Endpoint(
+                "baseten",
+                settings.baseten_base_url,
+                key,
+                settings.spark_model_baseten,
+                *SPARK_OPEN_PRICE,
+            )
+        )
+    if key := _secret(settings.fireworks_api_key):
+        endpoints.append(
+            Endpoint(
+                "fireworks",
+                settings.fireworks_base_url,
+                key,
+                settings.spark_model_fireworks,
+                *SPARK_OPEN_PRICE,
+            )
+        )
+    return endpoints
+
+
+def glimmer_endpoints(settings: Settings) -> list[Endpoint]:
+    if not settings.modal_glimmer_base_url:
+        return []
+    # Glimmer runs on Modal GPU time paid from credits, not per token.
+    return [
+        Endpoint(
+            "modal",
+            settings.modal_glimmer_base_url,
+            _secret(settings.modal_glimmer_api_key),
+            settings.glimmer_model,
+            Decimal(0),
+            Decimal(0),
+        )
+    ]
+
+
+def build_roles(settings: Settings) -> dict[Role, RoleConfig]:
+    spark = spark_endpoints(settings)
+    glimmer = glimmer_endpoints(settings)
+    roles: dict[Role, RoleConfig] = {}
+    for role, (effort, max_tokens, prefers_glimmer) in _ROLE_SETTINGS.items():
+        chain = [*glimmer, *spark] if prefers_glimmer else spark
+        roles[role] = RoleConfig(tuple(chain), effort, max_tokens)
+    return roles
+
+
+def cost_millipaisa(
+    endpoint: Endpoint, input_tokens: int, output_tokens: int, usd_to_pkr: Decimal
+) -> int:
+    """Thousandths of a paisa: USD per million tokens -> PKR -> paisa -> millipaisa."""
+    usd = (
+        endpoint.usd_per_m_input * input_tokens + endpoint.usd_per_m_output * output_tokens
+    ) / Decimal(1_000_000)
+    return int((usd * usd_to_pkr * 100 * 1000).to_integral_value())
