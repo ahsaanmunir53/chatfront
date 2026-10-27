@@ -1,7 +1,7 @@
-"""Answering a customer: the reply job, and the responder that writes the answer.
+"""Answering a customer: the reply job, and the shared pieces every responder uses.
 
-Phase 0 ships a shop assistant that only states the shop's own facts. The order agent
-(feature 9) replaces it as the responder; the job around it stays the same.
+The order agent (orders/agent.py) answers customers. The shop assistant here, which only
+states the shop's own facts and has no tools, is what the language evaluation runs.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 HISTORY_LIMIT = 12
-_CHANNEL_NAMES = {
+CHANNEL_NAMES = {
     Channel.WHATSAPP: "WhatsApp",
     Channel.INSTAGRAM: "Instagram",
     Channel.MESSENGER: "Facebook Messenger",
@@ -125,7 +125,7 @@ def shop_details(tenant: Tenant, items: Sequence[CatalogItem] = ()) -> str:
     return "\n".join(lines)
 
 
-def _as_chat(message: Message) -> ChatMessage:
+def as_chat(message: Message) -> ChatMessage:
     role: Literal["user", "assistant"] = (
         "user" if message.direction == Direction.IN else "assistant"
     )
@@ -133,11 +133,16 @@ def _as_chat(message: Message) -> ChatMessage:
     return ChatMessage(role, text)
 
 
-def _current(turn: Turn) -> ChatMessage:
+def current_message(turn: Turn) -> ChatMessage:
     kind = Kind(turn.message.kind)
     parts: list[Part] = [turn.media] if turn.media else []
     parts.append(TextPart(turn.message.body or f"(the customer sent a {kind.value})"))
     return ChatMessage("user", parts)
+
+
+def role_for(turn: Turn) -> Role:
+    """A photo goes to the vision role, a voice note to audio, a video to video."""
+    return _ROLE_FOR_KIND.get(Kind(turn.message.kind), Role.CHAT)
 
 
 def written_in(text: str, language: Language) -> bool:
@@ -162,13 +167,17 @@ class ShopAssistant:
             shop_name=turn.tenant.name,
             business_type=get_template(turn.tenant.template).name.en.lower(),
             country=get_pack(turn.tenant.country).name,
-            channel=_CHANNEL_NAMES[Channel(turn.message.channel)],
+            channel=CHANNEL_NAMES[Channel(turn.message.channel)],
             reply_language=language.prompt,
             shop_details=shop_details(turn.tenant, items),
         )
         request = ChatRequest(
-            role=_ROLE_FOR_KIND.get(Kind(turn.message.kind), Role.CHAT),
-            messages=[ChatMessage("system", system), *map(_as_chat, turn.history), _current(turn)],
+            role=role_for(turn),
+            messages=[
+                ChatMessage("system", system),
+                *map(as_chat, turn.history),
+                current_message(turn),
+            ],
             tenant_id=turn.tenant.id,
             prompt=prompt.ref,
             ref=("conversation", str(turn.conversation.id)),
@@ -182,35 +191,36 @@ class ShopAssistant:
         text = (result.content or "").strip()
         if not text:
             return [OutText(t("agent.fallback", language.tag))]
-        return [OutText(await self._in_language(request, text, language))]
+        return [OutText(await in_language(self.ai, request, text, language))]
 
-    async def _in_language(self, request: ChatRequest, text: str, language: Language) -> str:
-        """Make sure the answer is in the customer's language: ask once more, then translate."""
-        if written_in(text, language):
-            return text
-        again = replace(
-            request,
-            messages=[
-                *request.messages,
-                ChatMessage("assistant", text),
-                ChatMessage("user", f"Write that answer again, in {language.prompt} only."),
-            ],
-        )
-        try:
-            retry = ((await self.ai.complete(again)).content or "").strip()
-        except ModelUnavailable:
-            retry = ""
-        if retry and written_in(retry, language):
-            return retry
-        translation = await translate(
-            self.ai,
-            text,
-            source=None,
-            target=language,
-            tenant_id=request.tenant_id,
-            ref=request.ref,
-        )
-        return translation.text
+
+async def in_language(ai: AiClient, request: ChatRequest, text: str, language: Language) -> str:
+    """Make sure the answer is in the customer's language: ask once more, then translate."""
+    if written_in(text, language):
+        return text
+    again = replace(
+        request,
+        messages=[
+            *request.messages,
+            ChatMessage("assistant", text),
+            ChatMessage("user", f"Write that answer again, in {language.prompt} only."),
+        ],
+    )
+    try:
+        retry = ((await ai.complete(again)).content or "").strip()
+    except ModelUnavailable:
+        retry = ""
+    if retry and written_in(retry, language):
+        return retry
+    translation = await translate(
+        ai,
+        text,
+        source=None,
+        target=language,
+        tenant_id=request.tenant_id,
+        ref=request.ref,
+    )
+    return translation.text
 
 
 async def _already_replied(services: Services, tenant_id: uuid.UUID, message_id: uuid.UUID) -> bool:

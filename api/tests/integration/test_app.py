@@ -28,46 +28,8 @@ from chatfront.main import create_app
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
 from chatfront.services import Services
+from tests.integration.chat import GRAPH, signed, wa_message
 from tests.integration.conftest import SHOP, app_settings
-
-GRAPH = "https://graph.facebook.com/v23.0"
-
-
-def signed(
-    payload: dict[str, object], secret: bytes = b"test-app-secret"
-) -> tuple[bytes, dict[str, str]]:
-    body = json.dumps(payload).encode()
-    signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
-    return body, {"X-Hub-Signature-256": f"sha256={signature}", "Content-Type": "application/json"}
-
-
-def wa_message(message_id: str, kind: str = "text", **body: object) -> dict[str, object]:
-    content = body or {"body": "salam, lawn suit hai?"}
-    return {
-        "object": "whatsapp_business_account",
-        "entry": [
-            {
-                "changes": [
-                    {
-                        "field": "messages",
-                        "value": {
-                            "metadata": {"phone_number_id": "PN1"},
-                            "contacts": [{"wa_id": "923001234567", "profile": {"name": "Ayesha"}}],
-                            "messages": [
-                                {
-                                    "from": "923001234567",
-                                    "id": message_id,
-                                    "type": kind,
-                                    "timestamp": str(int(utcnow().timestamp())),
-                                    kind: content,
-                                }
-                            ],
-                        },
-                    }
-                ]
-            }
-        ],
-    }
 
 
 async def _messages(db: Database) -> list[Message]:

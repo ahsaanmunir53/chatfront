@@ -4,128 +4,36 @@ note (1, 4), corrections and Cancel, teaching prices and policies (86), making a
 
 from __future__ import annotations
 
-import io
-import struct
 import uuid
-import wave
 from datetime import timedelta
 from typing import Any
 
-import httpx
 import pytest
-from PIL import Image
 from sqlalchemy import select, update
 
-from chatfront.ai.mock import Fixture, MockProvider
+from chatfront.ai.mock import MockProvider
 from chatfront.catalog.models import Product
 from chatfront.channels.models import Conversation, Party
 from chatfront.core.clock import utcnow
 from chatfront.core.models import Tenant
 from chatfront.jobs.models import Job
 from chatfront.services import Services
+from tests.integration.chat import (
+    Client,
+    button,
+    fixture,
+    last,
+    photo,
+    product_json,
+    products,
+    say,
+    send_file,
+    settle,
+    sign_in,
+    use,
+    voice_note,
+)
 from tests.integration.conftest import SHOP
-
-Client = httpx.AsyncClient
-
-
-def photo() -> bytes:
-    out = io.BytesIO()
-    Image.new("RGB", (40, 30), "teal").save(out, "PNG")
-    return out.getvalue()
-
-
-def voice_note() -> bytes:
-    out = io.BytesIO()
-    with wave.open(out, "wb") as audio:
-        audio.setnchannels(1)
-        audio.setsampwidth(2)
-        audio.setframerate(16000)
-        audio.writeframes(struct.pack("<160h", *([0] * 160)))
-    return out.getvalue()
-
-
-def fixture(prompt: str, data: dict[str, Any], match: str = "*") -> Fixture:
-    return Fixture(prompt=prompt, role="*", match=match, json=data)
-
-
-def product_json(name: str, price: float | None, **extra: Any) -> dict[str, Any]:
-    return {
-        "name": name,
-        "price": price,
-        "price_words": None,
-        "description": extra.get("description", ""),
-        "category": extra.get("category"),
-        "tags": [],
-        "attributes": extra.get("attributes", []),
-        "variants": extra.get("variants", []),
-        "stock": None,
-        "missing": [] if price else ["price"],
-    }
-
-
-async def sign_in(client: Client) -> tuple[str, dict[str, str]]:
-    response = await client.post("/api/owner/demo", json={"slug": SHOP})
-    assert response.status_code == 200
-    body = response.json()
-    return body["slug"], {"Authorization": f"Bearer {body['token']}"}
-
-
-async def say(
-    client: Client, services: Services, slug: str, auth: dict[str, str], text: str, **extra: Any
-) -> list[dict[str, Any]]:
-    post = {"client_id": str(uuid.uuid4()), "text": text, **extra}
-    assert (await client.post(f"/api/shops/{slug}/chat/messages", json=post, headers=auth)).json()[
-        "accepted"
-    ]
-    return await settle(client, services, slug, auth)
-
-
-async def send_file(
-    client: Client,
-    services: Services,
-    slug: str,
-    auth: dict[str, str],
-    data: bytes,
-    caption: str | None = None,
-) -> list[dict[str, Any]]:
-    form = {"client_id": str(uuid.uuid4()), **({"caption": caption} if caption else {})}
-    response = await client.post(
-        f"/api/shops/{slug}/chat/media", data=form, files={"file": ("x", data)}, headers=auth
-    )
-    assert response.status_code == 202, response.text
-    return await settle(client, services, slug, auth)
-
-
-async def settle(
-    client: Client, services: Services, slug: str, auth: dict[str, str]
-) -> list[dict[str, Any]]:
-    assert services.worker is not None
-    while await services.worker.run_once():
-        pass
-    response = await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)
-    assert response.status_code == 200
-    return list(response.json())
-
-
-def last(messages: list[dict[str, Any]]) -> dict[str, Any]:
-    assert messages[-1]["direction"] == "out"
-    return messages[-1]
-
-
-def button(message: dict[str, Any], index: int = 0) -> dict[str, str]:
-    choice = message["payload"]["buttons"][index]
-    return {"text": choice["title"], "button_id": choice["id"]}
-
-
-def use(services: Services, *fixtures: Fixture) -> MockProvider:
-    mock = services.ai.mock
-    assert isinstance(mock, MockProvider)
-    mock.fixtures[:0] = list(fixtures)
-    return mock
-
-
-async def products(client: Client, slug: str) -> dict[str, dict[str, Any]]:
-    return {p["name"]: p for p in (await client.get(f"/api/shops/{slug}/products")).json()}
 
 
 async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) -> None:
@@ -272,6 +180,7 @@ async def test_teaching_prices_and_policies(app: tuple[Client, Services]) -> Non
     assert (await products(client, slug))["Printed lawn 3-piece"]["price"] == 250_000
     async with services.db.system() as session:
         profile = await session.scalar(select(Tenant.profile).where(Tenant.slug == slug))
+    assert profile is not None
     assert profile["delivery"] == "Delivery takes two days."
 
 

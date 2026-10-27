@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import timedelta
+from functools import partial
 
 import httpx
 from fastapi import Request
@@ -13,7 +14,8 @@ from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
 from chatfront.catalog.translations import translate_product
 from chatfront.channels.base import ChannelAdapter
-from chatfront.channels.conversation import Responder, ShopAssistant, handle_reply
+from chatfront.channels.conversation import Responder, handle_reply
+from chatfront.channels.handover import resume
 from chatfront.channels.messaging import instagram_adapter, messenger_adapter
 from chatfront.channels.models import Channel, Party
 from chatfront.channels.service import REPLY_JOB, Keys
@@ -26,6 +28,8 @@ from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.orders.agent import OrderAgent
+from chatfront.orders.tools import order_tools
 from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
@@ -73,6 +77,9 @@ class Services:
 
 def build_registries() -> Registries:
     registries = Registries()
+    catalog_tools, orders_tools = order_tools()
+    registries.modules.modules["catalog"].tools.extend(catalog_tools)
+    registries.modules.modules["orders"].tools.extend(orders_tools)
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
@@ -134,8 +141,8 @@ def build_services(settings: Settings, registries: Registries) -> Services:
     )
     storage = services.storage
     services.responders = {
-        Party.CUSTOMER: ShopAssistant(ai, db),
-        Party.STAFF: OwnerAssistant(db, ai, storage, settings),
+        Party.CUSTOMER: OrderAgent(services),
+        Party.STAFF: OwnerAssistant(db, ai, storage, settings, partial(resume, services)),
         Party.ONBOARDING: OnboardingAssistant(db, ai, storage, settings, registries.modules),
     }
     services.worker = Worker(
