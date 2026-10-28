@@ -14,6 +14,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Request
@@ -31,6 +32,8 @@ from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
 from chatfront.delivery.address import Address
 from chatfront.delivery.risk import assess
+from chatfront.offers import service as offers
+from chatfront.offers.pricing import Line
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.delivery import quote, rates_for, weight_of
@@ -56,6 +59,7 @@ class LineIn(BaseModel):
 class QuoteIn(BaseModel):
     lines: list[LineIn] = Field(min_length=1, max_length=MAX_LINES)
     city: str | None = Field(default=None, max_length=60)
+    coupon: str | None = Field(default=None, max_length=24)
 
 
 class LineOut(BaseModel):
@@ -67,6 +71,13 @@ class LineOut(BaseModel):
     line_total: int = 0
     problem: Literal["not_found", "sold_out", "not_enough"] | None = None
     left: int | None = None  # pieces in stock, when fewer than asked
+    ships_from: date | None = None  # a pre-order line (feature 16)
+
+
+class OfferOut(BaseModel):
+    kind: str  # bundle or coupon
+    label: str
+    amount: int
 
 
 class QuoteOut(BaseModel):
@@ -74,6 +85,8 @@ class QuoteOut(BaseModel):
     subtotal: int
     delivery: int | None  # None: no city yet, or the shop confirms the charge itself
     free_delivery: bool
+    offers: list[OfferOut]  # bundles and the coupon, already taken off the total
+    coupon_problem: str | None  # why the coupon given does not apply
     total: int
     methods: list[str]
     currency: str
@@ -92,6 +105,7 @@ class CheckoutIn(BaseModel):
     lines: list[LineIn] = Field(min_length=1, max_length=MAX_LINES)
     details: DetailsIn
     payment_method: Literal["cod", "transfer"]
+    coupon: str | None = Field(default=None, max_length=24)
     source: Literal["shop_page", "facebook", "instagram"] = "shop_page"
     lang: str | None = Field(default=None, max_length=16)
 
@@ -110,11 +124,13 @@ class Priced:
     lines: list[LineOut]
     subtotal: int
     weight_g: int
+    for_offers: list[Line]  # the lines that can be bought, as offers.pricing reads them
 
 
 def price_lines(tenant: Tenant, items: Sequence[CatalogItem], lines: Sequence[LineIn]) -> Priced:
     """Each line at the catalog's price, or what is wrong with it; nothing is reserved."""
     out: list[LineOut] = []
+    for_offers: list[Line] = []
     subtotal = weight = 0
     for line in lines:
         found = by_catalog_id(items, line.item)
@@ -130,15 +146,18 @@ def price_lines(tenant: Tenant, items: Sequence[CatalogItem], lines: Sequence[Li
             unit_price=price,
             quantity=line.quantity,
             line_total=price * line.quantity,
+            ships_from=item.preorder,
         )
-        if variant.stock is not None and variant.stock < line.quantity:
-            row.problem = "sold_out" if variant.stock <= 0 else "not_enough"
-            row.left = max(variant.stock, 0)
+        short = variant.stock is not None and variant.stock < line.quantity
+        if short and item.preorder is None:
+            row.problem = "sold_out" if (variant.stock or 0) <= 0 else "not_enough"
+            row.left = max(variant.stock or 0, 0)
         else:
             subtotal += row.line_total
             weight += line.quantity * weight_of(tenant, item.product.attributes)
+            for_offers.append(Line(item.product.id, line.quantity, row.line_total, False))
         out.append(row)
-    return Priced(out, subtotal, weight)
+    return Priced(out, subtotal, weight, for_offers)
 
 
 async def _shop(services: Services, slug: str) -> Tenant:
@@ -169,7 +188,8 @@ async def checkout_quote(
     tenant = await _shop(services, slug)
     async with services.db.tenant(tenant.id) as session:
         items = await load_items(session)
-    priced = price_lines(tenant, items, body.lines)
+        priced = price_lines(tenant, items, body.lines)
+        found = await offers.price(session, tenant, priced.for_offers, coupon=body.coupon)
     charge = (
         quote(rates_for(tenant), body.city.strip(), priced.weight_g, priced.subtotal)
         if body.city and body.city.strip()
@@ -181,7 +201,9 @@ async def checkout_quote(
         subtotal=priced.subtotal,
         delivery=fee,
         free_delivery=bool(charge and charge.free),
-        total=priced.subtotal + (fee or 0),
+        offers=[OfferOut(kind=o.kind, label=o.label, amount=o.amount) for o in found.offers],
+        coupon_problem=found.coupon_problem,
+        total=max(priced.subtotal + (fee or 0) - found.off, 0),
         methods=_methods(tenant),
         currency=tenant.currency,
     )
@@ -227,6 +249,7 @@ async def _place(
         )
         chat = await channels.open_conversation(session, tenant.id, customer.id, account.id)
         cart = await orders.open_cart(session, tenant, customer.id, conversation_id=chat.id)
+        cart.coupon_code = offers.clean_code(body.coupon) if body.coupon else None
         await _fill_cart(session, tenant, cart, items, body)
         await orders.set_address(
             session,

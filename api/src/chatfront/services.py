@@ -18,9 +18,10 @@ from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
 from chatfront.books.reports import CARD_JOB, CARDS_JOB, card_job, cards_job
 from chatfront.books.reports import EVERY as CARDS_EVERY
 from chatfront.catalog import meta
-from chatfront.catalog.stock import LOW_STOCK_JOB
+from chatfront.catalog.stock import BACK_IN_STOCK_JOB, LOW_STOCK_JOB
 from chatfront.catalog.stock import alert_job as low_stock_alert
 from chatfront.catalog.translations import translate_product
+from chatfront.channels import answers
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.comments import COMMENT_JOB, reply_to_comment
 from chatfront.channels.conversation import Responder, handle_reply
@@ -37,12 +38,14 @@ from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.offers.tools import offer_tools
 from chatfront.orders.agent import OrderAgent
 from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.returns import KIND as return_kind
 from chatfront.orders.returns import RETURN, return_tools
 from chatfront.orders.tools import order_tools
+from chatfront.orders.waitlist import back_in_stock_job, waitlist_tools
 from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
@@ -101,8 +104,12 @@ def build_registries() -> Registries:
     registries = Registries()
     catalog_tools, orders_tools = order_tools()
     registries.modules.modules["catalog"].tools.extend(catalog_tools)
-    registries.modules.modules["orders"].tools.extend([*orders_tools, *return_tools()])
+    registries.modules.modules["orders"].tools.extend(
+        [*orders_tools, *return_tools(), *offer_tools(), *waitlist_tools()]
+    )
     registries.approvals[RETURN] = return_kind
+    registries.approvals[answers.ANSWER] = answers.KIND
+    registries.jobs.register(BACK_IN_STOCK_JOB)(back_in_stock_job)
     payments = registries.modules.modules["payments"]
     payments.tools.extend(payment_tools())
     payments.jobs |= {REVIEW_JOB: review_job, WATCH_JOB: watch}

@@ -5,14 +5,16 @@ from __future__ import annotations
 
 import math
 import uuid
-from datetime import timedelta
+from collections.abc import Sequence
+from datetime import date, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, record
 from chatfront.catalog.models import Product, ProductStatus, StockReason, Variant
+from chatfront.catalog.service import on_preorder
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
@@ -20,10 +22,12 @@ from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
 from chatfront.delivery.address import Address, local_phone
 from chatfront.delivery.pins import Pin
+from chatfront.offers import service as offers
+from chatfront.offers.pricing import CouponProblem
 from chatfront.orders import bargain
 from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
 from chatfront.orders.models import Order, OrderItem, PriceOffer
-from chatfront.orders.states import CLOSED, HOLDS_STOCK, OrderStatus, check_move
+from chatfront.orders.states import CLOSED, HOLDS_STOCK, SHIPPING, OrderStatus, check_move
 from chatfront.payments import refunds
 from chatfront.shield.autonomy import ASK_DISCOUNT_OVER, Action, Level, level
 from chatfront.stock import batches
@@ -105,12 +109,21 @@ async def delivery_quote(session: AsyncSession, order: Order) -> Quote | None:
     return quote(rates_for(tenant), str(city), weight, order.subtotal)
 
 
-async def recalculate(session: AsyncSession, order: Order) -> None:
-    """Subtotal, delivery charge and total from the lines, the address and any discount."""
-    order.subtotal = sum(item.line_total for item in await lines(session, order))
+async def recalculate(session: AsyncSession, order: Order) -> CouponProblem | None:
+    """Subtotal, delivery charge, offers and total from the lines, the address and any
+    discount; returns why the order's coupon no longer applies, if it does not."""
+    items = await lines(session, order)
+    order.subtotal = sum(item.line_total for item in items)
     charge = await delivery_quote(session, order)
     order.delivery_fee = charge.fee or 0 if charge else 0
-    order.total = max(order.subtotal + order.delivery_fee - order.discount - order.unique_off, 0)
+    tenant = await session.get(Tenant, order.tenant_id)
+    assert tenant is not None
+    problem = await offers.apply(session, tenant, order, items)
+    order.total = max(
+        order.subtotal + order.delivery_fee - order.discount - order.offer_off - order.unique_off,
+        0,
+    )
+    return problem
 
 
 async def set_address(
@@ -182,6 +195,11 @@ async def set_quantity(
             await session.flush()
         await recalculate(session, order)
         return None
+    preorder = on_preorder(product)
+    if preorder:
+        room = await preorder_room(session, product, order)
+        if room is not None and quantity > room:
+            raise AppError("preorder_full", f"{product.name}: {room} more on pre-order")
     catalog_price = variant.price if variant.price is not None else product.price
     bargained = agreed_price is not None and 0 < agreed_price < catalog_price
     unit_price = agreed_price if bargained and agreed_price is not None else catalog_price
@@ -198,11 +216,12 @@ async def set_quantity(
             list_price=list_price,
             quantity=quantity,
             line_total=unit_price * quantity,
+            preorder=preorder,
         )
         session.add(item)
     else:
         item.quantity, item.unit_price, item.list_price = quantity, unit_price, list_price
-        item.line_total = unit_price * quantity
+        item.line_total, item.preorder = unit_price * quantity, preorder
     await session.flush()
     await recalculate(session, order)
     return item
@@ -217,16 +236,15 @@ async def move(
     items = await lines(session, order)
     if wanted == OrderStatus.PLACED and not items:
         raise AppError("empty_order", "An order needs at least one item", status_code=409)
-    was_holding, now_holding = order.status in HOLDS_STOCK, wanted in HOLDS_STOCK
     ref = ("order", str(order.id))
-    if now_holding and not was_holding:
-        for item in items:
+    back = StockReason.RETURN if wanted == OrderStatus.RETURNED else StockReason.CANCEL
+    for item in items:
+        before, after = holds(item, order.status), holds(item, wanted)
+        if after and not before:
             await batches.sell(
                 session, await _variant(session, item), item, item.quantity, actor, ref=ref
             )
-    elif was_holding and not now_holding:
-        back = StockReason.RETURN if wanted == OrderStatus.RETURNED else StockReason.CANCEL
-        for item in items:
+        elif before and not after:
             variant = await _variant(session, item)
             await batches.unsell(session, variant, item, item.quantity, back, actor, ref=ref)
     previous, order.status = order.status, wanted
@@ -236,6 +254,9 @@ async def move(
     if wanted in CLOSED:
         order.closed_at = now
     await session.flush()
+    tenant = await session.get(Tenant, order.tenant_id)
+    assert tenant is not None
+    await offers.on_move(session, tenant, order, wanted)
     if wanted == OrderStatus.CANCELLED and order.paid > 0:
         await refunds.on_cancel(session, order)  # what it took goes back (feature 28)
     await record(
@@ -247,6 +268,42 @@ async def move(
         data={"from": previous, "to": wanted, "reason": reason, "total": order.total},
     )
     return order
+
+
+def holds(item: OrderItem, status: str) -> bool:
+    """Whether a line's pieces are out of stock in this state: from placing, or from packing
+    for a pre-order line (feature 16)."""
+    return status in (SHIPPING if item.preorder else HOLDS_STOCK)
+
+
+async def preorder_room(session: AsyncSession, product: Product, cart: Order) -> int | None:
+    """How many more pieces of a pre-order product may be ordered (None: no limit): its limit
+    less what placed orders, not yet packed, are waiting for."""
+    if product.preorder_limit is None:
+        return None
+    waiting = await session.scalar(
+        select(func.coalesce(func.sum(OrderItem.quantity), 0))
+        .join(Order, Order.id == OrderItem.order_id)
+        .where(
+            OrderItem.product_id == product.id,
+            OrderItem.preorder.is_(True),
+            OrderItem.order_id != cart.id,
+            Order.status.in_(CHANGEABLE | {OrderStatus.PAID}),
+        )
+    )
+    return max(product.preorder_limit - int(waiting or 0), 0)
+
+
+async def ships_from(session: AsyncSession, items: Sequence[OrderItem]) -> date | None:
+    """When an order with pre-order lines can go out: its latest pre-order product's day."""
+    days = [
+        product.ships_from
+        for item in items
+        if item.preorder
+        and (product := await session.get(Product, item.product_id)) is not None
+        and product.ships_from is not None
+    ]
+    return max(days, default=None)
 
 
 async def _variant(session: AsyncSession, item: OrderItem) -> Variant:
@@ -268,7 +325,7 @@ async def change_placed_line(
     others = [other for other in await lines(session, order) if other.id != item.id]
     if quantity == 0 and not others:
         raise AppError("empty_order", "Cancel the order instead", status_code=409)
-    delta = quantity - item.quantity
+    delta = quantity - item.quantity if holds(item, order.status) else 0
     ref = ("order", str(order.id))
     if delta > 0:
         await batches.sell(session, await _variant(session, item), item, delta, actor, ref=ref)

@@ -96,7 +96,7 @@ async def ask_for(session: AsyncSession, tenant: Tenant, order: Order) -> None:
         # Instalments: the rest of the advance or of the total, without a new rounding.
         order.due_now = max((order.advance if cod else order.total) - order.paid, 0) or None
         return
-    full = max(order.subtotal + order.delivery_fee - order.discount, 0)
+    full = max(order.subtotal + order.delivery_fee - order.discount - order.offer_off, 0)
     stage = await advance_for(session, tenant, order, full) if cod else full
     taken = await _taken(session, tenant.id, order.id)
     asked, off = unique_due(stage, taken, get_pack(tenant.country).minor_digits)
