@@ -60,6 +60,8 @@ from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.core.settings import Settings
 from chatfront.delivery import packing, picking
+from chatfront.insights.ask import DataAsk, needs, typed_ask
+from chatfront.insights.ask import reply as ask_reply
 from chatfront.jobs.queue import enqueue
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
@@ -320,6 +322,11 @@ class OwnerAssistant:
         read = await self._read(turn, items)
         if read.intent == "report" and read.report is not None:
             return await self._report(turn, read.report, items, allowed)
+        asked = read.ask if read.intent == "data" else None
+        if asked is None and read.intent in ("data", "question", "other"):
+            asked = typed_ask(words)
+        if asked is not None:
+            return await self._ask(turn, asked, allowed)
         if read.intent == "restock" and read.restock:
             return await self._restock(turn, read.restock, read.supplier, items, allowed)
         if read.intent == "money" and read.money:
@@ -390,6 +397,14 @@ class OwnerAssistant:
             else:
                 text = await reports.report_text(session, turn.tenant, report, turn.lang)
         return [OutText(text)]
+
+    async def _ask(self, turn: Turn, asked: DataAsk, allowed: frozenset[Can]) -> list[Outbound]:
+        """A question the shop's records answer (feature 57): code runs it and writes the
+        numbers."""
+        if needs(asked) not in allowed:
+            return refuse(turn)
+        async with self.db.tenant(turn.tenant.id) as session:
+            return [OutText(await ask_reply(session, turn.tenant, asked, turn.lang))]
 
     # -- restock (feature 117) ------------------------------------------------------------
 

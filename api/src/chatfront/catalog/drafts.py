@@ -25,6 +25,7 @@ from chatfront.core.countries import get_pack
 from chatfront.core.models import Tenant
 from chatfront.core.money import Minor
 from chatfront.core.numbers import find_numbers
+from chatfront.insights.ask import DataAsk
 from chatfront.templates import BusinessTemplate, ProductField, get_template
 
 
@@ -116,13 +117,16 @@ Report = Literal[
 
 
 class OwnerMessage(Strict):
-    intent: Literal["new_product", "update", "money", "restock", "report", "question", "other"]
+    intent: Literal[
+        "new_product", "update", "money", "restock", "report", "data", "question", "other"
+    ]
     product: ProductDraft | None
     changes: list[Change]
     money: list[MoneyLine] = Field(default_factory=list)
     restock: list[PurchaseLine] = Field(default_factory=list)
     supplier: str | None = None
     report: Report | None = None
+    ask: DataAsk | None = None  # feature 57: a question the shop's records answer
     note: str
 
 
