@@ -5819,3 +5819,118 @@ button {
 .order-charges .order-dispatch {
   margin-top: 8px;
 }
+
+/* Data and growth: share links, the customers' worth, AI assistants ------------------------- */
+
+.product-share {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.product-share:hover {
+  color: var(--text);
+}
+
+.mcp-url {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.mcp-url code {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.crm-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-weight: 600;
+}
+
+.segment-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.segment-filter .chip {
+  padding: 5px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segment-filter .chip[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.segment {
+  display: inline-block;
+  padding: 1px 10px 2px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.segment.is-repeat,
+.segment.is-loyal {
+  background: color-mix(in srgb, var(--stamp) 16%, var(--card));
+  color: color-mix(in srgb, var(--stamp) 70%, var(--text));
+}
+
+.segment.is-quiet {
+  background: color-mix(in srgb, var(--saffron) 22%, var(--card));
+  color: var(--text);
+}
+
+.greeting {
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.greeting summary {
+  width: fit-content;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.greeting textarea {
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}

@@ -84,6 +84,7 @@ export type PublicProduct = {
   ships_from: string | null;
   size_chart: SizeChart | null;
   variants: PublicVariant[];
+  share_url: string; // the link with a preview card (feature 116)
 };
 
 /** A size chart (feature 5): each size's range per measure, smallest size first. */
@@ -175,7 +176,7 @@ export type CheckoutRequest = {
   details: DeliveryDetails;
   payment_method: "cod" | "transfer";
   coupon: string | null;
-  source: "shop_page" | "facebook" | "instagram";
+  source: "shop_page" | "facebook" | "instagram" | "assistant";
   lang: string;
 };
 export type Placed = {
@@ -640,6 +641,21 @@ export type OwnerCustomer = {
   owes: number;
   reported: FraudStatus | null;
   listed_by: number;
+  spent: number; // lifetime value, minor units (feature 59)
+  first_order: string | null;
+  last_order: string | null;
+  segment: Segment;
+  open_chat: boolean;
+  phone: string | null;
+};
+export type Segment = "new" | "repeat" | "loyal" | "quiet" | "none";
+export type CustomerSummary = {
+  buyers: number;
+  came_back: number;
+  repeat_rate: number | null;
+  quiet: number;
+  average_spent: number;
+  greeting: string;
 };
 /** Fraud reports and the shared list (feature 37). */
 export type FraudReason = "fake_payment" | "refused_cod" | "scam" | "abuse";
@@ -1045,6 +1061,14 @@ export const api = {
     }),
   customers: (token: string) =>
     call<OwnerCustomer[]>("/api/owner/customers", { headers: bearer(token) }),
+  customerSummary: (token: string) =>
+    call<CustomerSummary>("/api/owner/customers/summary", { headers: bearer(token) }),
+  greet: (token: string, text: string, segment: Segment | "all") =>
+    call<{ sent: number; closed: number; recent: number }>("/api/owner/customers/greet", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ text, segment }),
+    }),
   setVerified: (token: string, customerId: string, verified: boolean) =>
     call<{ verified: boolean }>(`/api/owner/customers/${encodeURIComponent(customerId)}/verified`, {
       method: "PUT",

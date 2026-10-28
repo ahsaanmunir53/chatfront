@@ -16,12 +16,15 @@ from fastapi.staticfiles import StaticFiles
 from chatfront.books.routes import router as books_router
 from chatfront.catalog.import_routes import router as imports_router
 from chatfront.catalog.meta_routes import router as catalog_sync_router
+from chatfront.catalog.share_routes import router as share_router
 from chatfront.catalog.size_routes import router as size_charts_router
 from chatfront.channels.routes import router as channel_router
 from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
 from chatfront.core.settings import Settings, get_settings
+from chatfront.crm.routes import router as crm_router
 from chatfront.delivery.routes import router as delivery_router
+from chatfront.mcp.routes import router as mcp_router
 from chatfront.offers.routes import router as offers_router
 from chatfront.orders.checkout import router as checkout_router
 from chatfront.orders.return_routes import router as returns_router
@@ -85,6 +88,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(internal_router)
     app.include_router(channel_router)
     app.include_router(public_router)
+    app.include_router(share_router)
+    app.include_router(mcp_router)
     app.include_router(checkout_router)
     app.include_router(owner_router)
     app.include_router(dashboard_router)
@@ -95,6 +100,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(size_charts_router)
     app.include_router(team_router)
     app.include_router(books_router)
+    app.include_router(crm_router)
     app.include_router(shield_router)
     app.include_router(platform_router)
     app.include_router(reviews_router)
