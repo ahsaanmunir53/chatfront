@@ -19,6 +19,7 @@ from sqlalchemy import select
 
 from chatfront.ai.tools import Tool
 from chatfront.audit.service import Actor, ActorType
+from chatfront.books.ledger import today
 from chatfront.catalog.models import Product, Variant
 from chatfront.catalog.search import Found, best, search
 from chatfront.catalog.service import CatalogItem, load_items
@@ -34,9 +35,11 @@ from chatfront.core.models import Tenant
 from chatfront.delivery.address import Address
 from chatfront.delivery.pins import pin_request
 from chatfront.delivery.risk import assess
+from chatfront.offers import seasons
+from chatfront.offers import service as offers
 from chatfront.orders import service as orders
 from chatfront.orders.bargain import Outcome
-from chatfront.orders.cards import CardMaker
+from chatfront.orders.cards import CardMaker, Extras
 from chatfront.orders.delivery import Quote
 from chatfront.orders.discounts import DISCOUNT, discount_question
 from chatfront.orders.models import Order, OrderItem
@@ -119,7 +122,9 @@ def _describe(ctx: AgentContext, item: CatalogItem) -> dict[str, Any]:
         "in_stock": item.in_stock,
         "description": product.description,
     }
-    if stock:
+    if item.preorder is not None:
+        described["pre_order"] = {"ships_from": item.preorder.isoformat()}
+    elif stock:
         ctx.facts.count(sum(stock))
         described["pieces_left"] = sum(stock)
     if product.floor_price is not None and product.floor_price < product.price:
@@ -127,12 +132,12 @@ def _describe(ctx: AgentContext, item: CatalogItem) -> dict[str, Any]:
     return described
 
 
-async def _items(ctx: AgentContext) -> list[CatalogItem]:
+async def items_of(ctx: AgentContext) -> list[CatalogItem]:
     async with ctx.db.tenant(ctx.tenant.id) as session:
         return await load_items(session)
 
 
-def _by_code(items: Sequence[CatalogItem], code: str) -> CatalogItem | None:
+def by_code(items: Sequence[CatalogItem], code: str) -> CatalogItem | None:
     wanted = code.strip().upper()
     return next((i for i in items if i.product.code.upper() == wanted), None)
 
@@ -146,14 +151,14 @@ class FindProducts(BaseModel):
 
 
 async def find_products(ctx: AgentContext, params: FindProducts) -> dict[str, Any]:
-    found = search(await _items(ctx), params.query, limit=MAX_RESULTS)
+    found = search(await items_of(ctx), params.query, limit=MAX_RESULTS)
     return {"ok": True, "products": [_describe(ctx, f.item) for f in found]}
 
 
 # -- the cart ---------------------------------------------------------------------------------
 
 
-def _variant_for(
+def variant_for(
     item: CatalogItem, wanted: dict[str, str]
 ) -> tuple[Variant | None, dict[str, Any] | None]:
     """The variant the options name, or an error saying what to ask the customer."""
@@ -178,14 +183,30 @@ def _variant_for(
     return None, tool_error("choose_option", available=_options(item))
 
 
-async def _cart(ctx: AgentContext) -> dict[str, Any]:
+async def cart_now(ctx: AgentContext) -> dict[str, Any]:
+    """The cart as the model reads it, with the customer's points when the shop gives them."""
+    loyalty = offers.loyalty_of(ctx.tenant)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
         )
         lines = await orders.lines(session, cart)
         charge = await orders.delivery_quote(session, cart)
-    return _cart_view(ctx, cart, lines, charge)
+        points = await offers.balance(session, ctx.customer_id) if loyalty else 0
+    view = _cart_view(ctx, cart, lines, charge)
+    city = (cart.address or {}).get("city")
+    before = seasons.describe(seasons.cutoff(ctx.tenant, today(ctx.tenant), city))
+    if before is not None:
+        ctx.facts.data(before)
+        view["before_event"] = before
+    if loyalty is not None and points > 0:
+        ctx.facts.count(points)
+        view["points"] = {
+            "balance": points,
+            "worth": ctx.money(points * loyalty.point_value),
+            "can_pay_up_to_percent": loyalty.max_share,
+        }
+    return view
 
 
 def _cart_view(
@@ -211,6 +232,8 @@ def _cart_view(
         "total": ctx.money(cart.total),
         "missing": _missing(ctx, cart, lines),
     }
+    if cart.offers:
+        view["offers"] = [_offer(ctx, offer) for offer in cart.offers]
     if charge is not None:
         view["delivery"] = {
             "city": charge.city,
@@ -218,6 +241,16 @@ def _cart_view(
             "confirmed_by_shop": charge.fee is None,
         }
     return view
+
+
+def _offer(ctx: AgentContext, offer: dict[str, Any]) -> dict[str, Any]:
+    shown = {"kind": offer["kind"], "off": ctx.money(int(offer["amount"]))}
+    if offer.get("label"):
+        shown["name"] = offer["label"]
+    if offer.get("points"):
+        ctx.facts.count(int(offer["points"]))
+        shown["points"] = offer["points"]
+    return shown
 
 
 def _missing(ctx: AgentContext, cart: Order, lines: Sequence[OrderItem]) -> list[str]:
@@ -253,10 +286,10 @@ async def update_cart(ctx: AgentContext, params: CartLine) -> dict[str, Any]:
 
 
 async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, Any]:
-    item = _by_code(await _items(ctx), params.product_code)
+    item = by_code(await items_of(ctx), params.product_code)
     if item is None:
         return tool_error("unknown_product", hint="find the product first")
-    variant, problem = _variant_for(item, params.options)
+    variant, problem = variant_for(item, params.options)
     if variant is None:
         return problem or tool_error("not_for_sale")
     async with ctx.db.tenant(ctx.tenant.id) as session:
@@ -268,9 +301,14 @@ async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, A
             None,
         )
         quantity = params.quantity + (current.quantity if add and current else 0)
-        if variant.stock is not None and quantity > variant.stock:
-            ctx.facts.count(variant.stock)
-            return tool_error("not_enough_stock", pieces_left=variant.stock)
+        short = variant.stock is not None and quantity > variant.stock
+        if short and item.preorder is None:
+            ctx.facts.count(max(variant.stock or 0, 0))
+            return tool_error(
+                "not_enough_stock",
+                pieces_left=max(variant.stock or 0, 0),
+                next_step="offer notify_when_back if they want to wait",
+            )
         agreed = await orders.agreed_price(session, ctx.conversation_id, item.product.id)
         try:
             await orders.set_quantity(
@@ -278,7 +316,32 @@ async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, A
             )
         except AppError as exc:
             return tool_error(exc.code)
-    return await _cart(ctx)
+        suggestions = (
+            await offers.goes_with(
+                session,
+                item.product.id,
+                {line.product_id for line in await orders.lines(session, cart)},
+            )
+            if add
+            else []
+        )
+    view = await cart_now(ctx)
+    if suggestions:
+        view["goes_well_with"] = [_suggestion(ctx, found) for found in suggestions]
+    return view
+
+
+def _suggestion(ctx: AgentContext, found: offers.GoesWith) -> dict[str, Any]:
+    """A product to mention with one just added, with the set's saving when there is one."""
+    ctx.facts.codes.add(found.product.code)
+    shown: dict[str, Any] = {
+        "code": found.product.code,
+        "name": found.product.name,
+        "price": ctx.money(found.product.price),
+    }
+    if found.bundle is not None:
+        shown["together"] = {"name": found.bundle.name, "saving": ctx.money(found.bundle.off)}
+    return shown
 
 
 class NoArguments(BaseModel):
@@ -287,7 +350,7 @@ class NoArguments(BaseModel):
 
 async def view_cart(ctx: AgentContext, params: NoArguments) -> dict[str, Any]:
     del params
-    return await _cart(ctx)
+    return await cart_now(ctx)
 
 
 # -- a shopping list (feature 89) -------------------------------------------------------------
@@ -304,7 +367,7 @@ class ShoppingList(BaseModel):
 
 async def add_items(ctx: AgentContext, params: ShoppingList) -> dict[str, Any]:
     """Every line of a list: added when one product clearly fits, asked about otherwise."""
-    catalog = await _items(ctx)
+    catalog = await items_of(ctx)
     added: list[dict[str, Any]] = []
     unclear: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -330,7 +393,7 @@ async def add_items(ctx: AgentContext, params: ShoppingList) -> dict[str, Any]:
         "added": added,
         "unclear": unclear,
         "not_sold_here": missing,
-        "cart": await _cart(ctx),
+        "cart": await cart_now(ctx),
     }
 
 
@@ -369,7 +432,7 @@ async def set_delivery_details(ctx: AgentContext, params: DeliveryDetails) -> di
             session, cart, city=params.city, address=address, name=params.name, phone=params.phone
         )
         pin_needed = orders.needs_pin(cart)
-    view = await _cart(ctx)
+    view = await cart_now(ctx)
     if pin_needed:
         ctx.cards.append(pin_request(ctx.channel, ctx.lang))
         view["location_pin"] = "the address is too vague for a rider; a pin request was sent"
@@ -385,7 +448,7 @@ class Offer(BaseModel):
 
 
 async def make_offer(ctx: AgentContext, params: Offer) -> dict[str, Any]:
-    item = _by_code(await _items(ctx), params.product_code)
+    item = by_code(await items_of(ctx), params.product_code)
     if item is None:
         return tool_error("unknown_product")
     digits = get_pack(ctx.tenant.country).minor_digits
@@ -486,8 +549,18 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
             if params.payment_method == "cod"
             else 0
         )
+        ships = await orders.ships_from(session, lines)
+        city = (cart.address or {}).get("city")
+        before = seasons.cutoff(ctx.tenant, today(ctx.tenant), city)
         ctx.cards.append(
-            ctx.maker.checkout(action, cart, lines, params.payment_method, charge, advance)
+            ctx.maker.checkout(
+                action,
+                cart,
+                lines,
+                params.payment_method,
+                charge,
+                Extras(advance=advance, ships_from=ships, before=before),
+            )
         )
     return {"ok": True, "summary_card": "sent; the customer taps Place order on it"}
 
@@ -564,7 +637,7 @@ async def change_order(ctx: AgentContext, params: OrderChange) -> dict[str, Any]
     order = found[0]
     if order.status not in orders.CHANGEABLE:
         return tool_error("too_late_or_paid", status=order.status, next_step="hand_over")
-    item = _by_code(await _items(ctx), params.product_code)
+    item = by_code(await items_of(ctx), params.product_code)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         lines = await orders.lines(session, order)
         line = next((ln for ln in lines if item and ln.product_id == item.product.id), None)

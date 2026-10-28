@@ -23,8 +23,9 @@ from chatfront.ai.client import ModelUnavailable
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest
 from chatfront.audit.service import AGENT, Actor, ActorType, record
+from chatfront.books.ledger import today
 from chatfront.catalog.service import CatalogItem, OutOfStock, load_items
-from chatfront.channels import identity
+from chatfront.channels import answers, identity
 from chatfront.channels.codes import link_code_of
 from chatfront.channels.conversation import (
     CHANNEL_NAMES,
@@ -48,10 +49,11 @@ from chatfront.core.languages import load_registry
 from chatfront.delivery import pins
 from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
+from chatfront.offers import seasons
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.catalog_cart import take_catalog_cart
-from chatfront.orders.models import Order, OrderItem
+from chatfront.orders.models import Coupon, Order, OrderItem
 from chatfront.orders.states import OrderStatus
 from chatfront.orders.tools import (
     CANCEL_ORDER,
@@ -142,8 +144,13 @@ class OrderAgent:
             items = await load_items(session)
             modules = await enabled_modules(session, tenant.id)
             trusted = await buyers.trusted(session, turn.conversation.customer_id)
+            shown = await session.scalars(select(Coupon).where(Coupon.show_on_page.is_(True)))
+            notes = [
+                *seasons.sale_lines(tenant, list(shown), today(tenant)),
+                *answers.detail_lines(await answers.approved(session)),
+            ]
         language = load_registry().get(turn.lang)
-        details = shop_details(tenant, items)
+        details = shop_details(tenant, items, notes)
         facts = self._facts(turn, items, details)
         ctx = AgentContext(
             db=services.db,
@@ -381,6 +388,7 @@ class OrderAgent:
             if loaded is None or loaded[1].status != OrderStatus.CART:
                 return [OutText(t("owner.expired", lang))]
             action, order = loaded
+            await orders.recalculate(session, order)  # a coupon may have run out meanwhile
             if order.total != action.payload["total"]:
                 actions.close(action, ActionStatus.EXPIRED)
                 return [OutText(t("order.cart_changed", lang))]

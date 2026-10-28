@@ -97,13 +97,17 @@ def catalog_lines(tenant: Tenant, items: Sequence[CatalogItem]) -> list[str]:
                 options.setdefault(key, []).append(str(value))
         parts = [f"- {item.product.name} (code {item.product.code}): {shown}"]
         parts += [f"{key}: {', '.join(values)}" for key, values in options.items()]
-        if not item.in_stock:
+        if item.preorder is not None:
+            parts.append(f"pre-order, ships from {item.preorder.isoformat()}")
+        elif not item.in_stock:
             parts.append("out of stock")
         lines.append("; ".join(parts))
     return lines
 
 
-def shop_details(tenant: Tenant, items: Sequence[CatalogItem] = ()) -> str:
+def shop_details(
+    tenant: Tenant, items: Sequence[CatalogItem] = (), notes: Sequence[str] = ()
+) -> str:
     profile = tenant.profile or {}
     lines = [f"Name: {tenant.name}"]
     if city := profile.get("city"):
@@ -122,7 +126,7 @@ def shop_details(tenant: Tenant, items: Sequence[CatalogItem] = ()) -> str:
             lines.append(f"{label}: {value}")
     if items:
         lines += ["Products:", *catalog_lines(tenant, items)]
-    return "\n".join(lines)
+    return "\n".join([*lines, *notes])
 
 
 def as_chat(message: Message) -> ChatMessage:

@@ -7,16 +7,30 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
+from typing import Any
 
 from chatfront.channels.types import Button, OutButtons
-from chatfront.core.countries import shop_money
+from chatfront.core.countries import format_day, get_pack, shop_money
 from chatfront.core.i18n import t
+from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
+from chatfront.offers.seasons import Cutoff
 from chatfront.orders.delivery import Quote
 from chatfront.orders.models import Order, OrderItem
 from chatfront.owner.actions import button_id
 from chatfront.owner.models import PendingAction
 from chatfront.payments.messages import pay_details
+
+
+@dataclass(frozen=True, slots=True)
+class Extras:
+    """What else a checkout card may say: the advance for cash on delivery, the day a
+    pre-order ships (feature 16), and the next big day's cut-off (feature 95)."""
+
+    advance: int = 0
+    ships_from: date | None = None
+    before: Cutoff | None = None
 
 
 @dataclass(frozen=True)
@@ -48,8 +62,19 @@ class CardMaker:
             else:
                 amount = self.money(charge.fee)
                 lines.append(t("order.delivery", self.lang, city=charge.city, amount=amount))
+        lines += [self.offer(offer) for offer in order.offers or []]
         lines.append(t("order.total", self.lang, amount=self.money(order.total)))
         return lines
+
+    def offer(self, offer: dict[str, Any]) -> str:
+        """A bundle, coupon or points line, as money off (features 13 and 19)."""
+        return t(
+            f"order.offer_{offer['kind']}",
+            self.lang,
+            name=str(offer.get("label") or ""),
+            points=int(offer.get("points") or 0),
+            amount=self.money(int(offer["amount"])),
+        )
 
     def checkout(
         self,
@@ -58,8 +83,10 @@ class CardMaker:
         items: Sequence[OrderItem],
         method: str,
         charge: Quote | None,
-        advance: int = 0,
+        extras: Extras | None = None,
     ) -> OutButtons:
+        extras = extras or Extras()
+        advance = extras.advance
         address = order.address or {}
         text = "\n".join(
             [
@@ -71,6 +98,8 @@ class CardMaker:
                     self.lang,
                     address=f"{address.get('address', '')}, {address.get('city', '')}",
                 ),
+                *self.preorder(items, extras.ships_from),
+                *self.cutoff(extras.before),
                 t("order.pay_cod_advance", self.lang, advance=self.money(advance))
                 if advance
                 else t(f"order.pay_{method}", self.lang),
@@ -83,6 +112,23 @@ class CardMaker:
                 Button(button_id(action, "no"), t("order.not_yet", self.lang)),
             ),
         )
+
+    def preorder(self, items: Sequence[OrderItem], ships_from: date | None) -> list[str]:
+        """A line saying the order waits for its pre-order pieces (feature 16)."""
+        if ships_from is None or not any(item.preorder for item in items):
+            return []
+        return [t("order.preorder", self.lang, date=self.day(ships_from))]
+
+    def cutoff(self, before: Cutoff | None) -> list[str]:
+        """In time for the next big day, or perhaps not (feature 95)."""
+        if before is None:
+            return []
+        key = "order.after_event" if before.missed else "order.in_time"
+        day = self.day(before.event.day)
+        return [t(key, self.lang, event=before.event.title(self.lang), date=day)]
+
+    def day(self, day: date) -> str:
+        return format_day(day, get_pack(self.tenant.country), load_registry().get(self.lang))
 
     def confirm_cancel(self, action: PendingAction, order: Order) -> OutButtons:
         return OutButtons(
