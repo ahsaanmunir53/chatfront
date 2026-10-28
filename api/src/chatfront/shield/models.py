@@ -146,3 +146,41 @@ class Consent(Base):
     wording: Mapped[str] = mapped_column(Text)  # what the person saw or wrote
     staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = created_at_column()
+
+
+class ScamKind(StrEnum):
+    PHONE = "phone"  # a number that called or wrote
+    WALLET = "wallet"  # a wallet or bank account money was asked into
+    URL = "url"  # a fake login or support link
+
+
+class ScamStatus(StrEnum):
+    PENDING = "pending"  # waiting for Chatfront's review
+    CONFIRMED = "confirmed"  # goes in the STIX report (feature 47)
+    DISMISSED = "dismissed"
+
+
+class ScamReport(Base):
+    """A scammer's number, account or link a shop came across (features 39, 40 and 47). These
+    are the scammers' own details, never a customer's: a customer is reported through the
+    hashed fraud list. Only reports Chatfront confirmed go out in the STIX report."""
+
+    __tablename__ = "scam_reports"
+    __table_args__ = (UniqueConstraint("tenant_id", "kind", "value"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(10))
+    value: Mapped[str] = mapped_column(String(300))
+    posing_as: Mapped[str] = mapped_column(String(20), default="none")
+    source: Mapped[str] = mapped_column(String(12))  # call, voice, chat, console
+    evidence: Mapped[dict[str, Any]] = mapped_column(default=dict)  # what code and the model saw
+    status: Mapped[str] = mapped_column(String(10), default=ScamStatus.PENDING)
+    reported_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("staff.id", ondelete="SET NULL")
+    )
+    review_note: Mapped[str | None] = mapped_column(String(300))
+    reviewed_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()

@@ -3,7 +3,13 @@
 from chatfront.ai.models import AiCall
 from chatfront.audit.models import AuditEntry
 from chatfront.bookings.models import Appointment
-from chatfront.books.models import LedgerEntry, UdhaarAccount
+from chatfront.books.models import (
+    CreditPassport,
+    LedgerEntry,
+    StaffPay,
+    StaffPayment,
+    UdhaarAccount,
+)
 from chatfront.catalog.models import (
     CatalogImport,
     CommerceCatalog,
@@ -37,6 +43,7 @@ from chatfront.delivery.models import (
     PackingCheck,
     Shipment,
 )
+from chatfront.insights.models import CoachNote
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
 from chatfront.orders.models import (
@@ -62,7 +69,14 @@ from chatfront.payments.models import (
 )
 from chatfront.publish.models import Publication
 from chatfront.push.models import PushSubscription
-from chatfront.shield.models import Approval, Consent, FraudListEntry, FraudReport, Review
+from chatfront.shield.models import (
+    Approval,
+    Consent,
+    FraudListEntry,
+    FraudReport,
+    Review,
+    ScamReport,
+)
 from chatfront.sim.models import SimChat, SimRun
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
@@ -78,6 +92,7 @@ __all__ = [
     "Bundle",
     "CatalogImport",
     "ChannelAccount",
+    "CoachNote",
     "CodSettlement",
     "CommerceCatalog",
     "Consent",
@@ -85,6 +100,7 @@ __all__ = [
     "Coupon",
     "CouponUse",
     "CourierAccount",
+    "CreditPassport",
     "CronRun",
     "CustomRequest",
     "Customer",
@@ -122,11 +138,14 @@ __all__ = [
     "SaleHold",
     "SaleItem",
     "SavedAnswer",
+    "ScamReport",
     "Shipment",
     "SimChat",
     "SimRun",
     "SocialPost",
     "Staff",
+    "StaffPay",
+    "StaffPayment",
     "StockBatch",
     "StockMovement",
     "Tenant",
