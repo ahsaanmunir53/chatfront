@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -19,6 +19,7 @@ from chatfront.catalog.share import share_url
 from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.clock import utcnow
+from chatfront.core.countries import get_pack
 from chatfront.core.errors import NotFound
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
@@ -27,6 +28,7 @@ from chatfront.media.models import Media
 from chatfront.offers import seasons
 from chatfront.orders.models import Coupon
 from chatfront.services import Services, get_services
+from chatfront.shield import official
 from chatfront.templates import get_template
 
 router = APIRouter()
@@ -122,6 +124,14 @@ class TrustInfo(BaseModel):
     channels: list[ChannelLink]
 
 
+class OfficialCheck(BaseModel):
+    """Whether a number or account is one of the shop's own (feature 41)."""
+
+    official: bool
+    channel: str | None = None
+    display: str | None = None
+
+
 def _limit(services: Services, request: Request) -> None:
     client = request.client.host if request.client else "unknown"
     services.limiter.check(f"shop:{client}")
@@ -193,6 +203,23 @@ async def trust(slug: str, request: Request, services: ServicesDep) -> TrustInfo
     return TrustInfo(
         slug=tenant.slug, name=tenant.name, channels=await shop_channels(services, tenant)
     )
+
+
+@router.get("/api/shops/{slug}/trust/check")
+async def check_official(
+    slug: str, request: Request, services: ServicesDep, value: str = Query(max_length=120)
+) -> OfficialCheck:
+    """Paste the number or account that wrote to you: is it really this shop?"""
+    _limit(services, request)
+    tenant = await shop_by_slug(services, slug)
+    async with services.db.tenant(tenant.id) as session:
+        accounts = list(
+            await session.scalars(select(ChannelAccount).where(ChannelAccount.active.is_(True)))
+        )
+    found = official.check(accounts, value, get_pack(tenant.country))
+    if found is None:
+        return OfficialCheck(official=False)
+    return OfficialCheck(official=True, channel=found.channel, display=found.display)
 
 
 @router.get("/api/shops/{slug}")
