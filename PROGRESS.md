@@ -727,11 +727,11 @@ Checks after it:
 
 | Check | Result |
 |---|---|
-| API tests | CHECK_API |
+| API tests | 1,032 passed; coverage above the 85% bar in CI |
 | Lint, format, strict types, `alembic check` | clean |
 | Web types and unit tests | clean, 36 passed |
-| Browser tests, desktop and phone | CHECK_E2E |
-| Order agent evaluation set, replayed | CHECK_EVAL |
+| Browser tests, desktop and phone | 76 passed |
+| Order agent evaluation set, replayed | 100/100 |
 
 What it delivered:
 
@@ -763,6 +763,47 @@ Decisions:
 - The offers question comes after the order's own message, once per customer, and never on a
   second order.
 - A group part and a gift are paid by transfer; cash at the door does not fit either.
+
+## Done on 28 October: posting and sales (3, 7, 8, 78, 81, 82)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 1,064 passed |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 36 passed |
+| Browser tests, desktop and phone | 78 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Flash and live sales (8): a sale price below the catalog's for a while, pieces to whoever
+  takes them first, held in their cart for the sale's hold time; a placed order keeps its
+  piece, a cancelled one gives it back, a hold that runs out leaves the cart and the customer
+  hears. In a live sale a number written in a chat or a comment on the Instagram live takes a
+  piece. The shop page shows the sale price, the pieces left and the time left.
+- Pictures (3): the owner's photo cleaned by code, used only if the owner chooses it; cards in
+  the shop's colour for the catalog, an Instagram post and a Status. Muse Image and SAM stay
+  Model API only, behind the same interface.
+- Posts (7, 82): a morning post of new stock, or one product, with pictures and Urdu and English
+  captions (the model's words, code's prices and link); nothing goes out until the owner ticks
+  where; Instagram and the Facebook Page through the Graph API, the WhatsApp catalog through the
+  catalog sync, the Status picture to share by hand.
+- Leads (78, 81): story replies, mentions and ads kept with where they came from; a mention is
+  thanked and the owner told; an order is credited to the customer's latest lead of the week,
+  and the console shows what each ad and link brought.
+- Migration 0024.
+
+Decisions:
+
+- A live sale's claim is read before the model: a message that is only a number takes a piece
+  while a live sale is on. A comment cannot carry buttons, so a comment takes the first colour
+  or size in stock, which the customer can change in the chat.
+- A comment's author is taken as the customer it names: with Instagram Login the id in a
+  comment is the one their messages come from.
+- A caption from the model with any number in it is not used; the shop's plain caption is.
+- A sale price must be below the product's price; code never puts a price up.
 
 ## Where the model keys go (when they arrive)
 
@@ -820,7 +861,7 @@ Proposed order, the Meta platform first since it is what is judged:
 In groups, each committed and pushed when its checks pass:
 
 1. Selling later: 14, 15, 20, 21, 22, 96, 108. Done on 28 October.
-2. Posting and sales: 3, 7, 8, 78, 81, 82.
+2. Posting and sales: 3, 7, 8, 78, 81, 82. Done on 28 October.
 3. Groups 3 and 4: 17, 18, 31, 32, 35, 36.
 4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65.
 5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73.

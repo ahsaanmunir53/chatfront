@@ -140,6 +140,12 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, posting and sales:** flash and live sales where the first to take a piece gets
+  it, held in their cart for a set time, and a live sale's pieces claimed by writing a number in
+  a chat or a comment; a morning post of new stock and one product put up on Instagram, the
+  Facebook Page and the WhatsApp catalog, with pictures drawn from the owner's own photos and a
+  Status picture to share by hand; story replies, mentions and ads kept as leads, with the
+  orders each ad brought.
 - **28 October, selling later:** a reminder about a cart left in a chat, once and inside the
   free 24-hour window; broadcasts to the customers who showed interest and said yes to offers,
   at most one a week, with the orders each brought back; "send to a friend" with a code good
