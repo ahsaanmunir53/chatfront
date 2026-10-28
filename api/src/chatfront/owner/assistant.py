@@ -72,7 +72,8 @@ from chatfront.owner.changes import resolve_changes, typed_price_change
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.types import Problem
-from chatfront.shield import phishing
+from chatfront.shield import guardian, phishing
+from chatfront.shield.models import ScamKind
 from chatfront.shield.phishing import CODE_WORDS as CODE
 from chatfront.shield.phishing import link_line
 from chatfront.stock import changes as stock_changes
@@ -134,6 +135,9 @@ class OwnerAssistant:
         choice = actions.parse_button(button)
         if choice is not None:
             return await self._answer(turn, allowed, *choice)
+        scam = guardian.parse_button(button)
+        if scam is not None:
+            return await self._report_scam(turn, *scam) if Can.TRUST in allowed else refuse(turn)
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
         words, kind = turn.message.body or "", turn.message.kind
@@ -151,6 +155,8 @@ class OwnerAssistant:
             return await self._product(turn, None, None) if Can.CATALOG in allowed else refuse(turn)
         if kind == Kind.VIDEO:
             return await self._video(turn) if Can.CATALOG in allowed else refuse(turn)
+        if kind == Kind.AUDIO and (turn.message.payload or {}).get("forwarded"):
+            return await self._guardian(turn)
         if kind == Kind.TEXT and (phishing.full_links(words) or phishing.says(words, CODE)):
             return await self._links(turn)
         if kind == Kind.TEXT and picking.is_ask(words):
@@ -253,6 +259,35 @@ class OwnerAssistant:
         if scan.asks_for_code or scan.alarm:
             lines.append(t("shield.never_share", turn.lang))
         return [OutText("\n".join(lines))]
+
+    async def _guardian(self, turn: Turn) -> list[Outbound]:
+        """A forwarded voice note or call recording, heard for a scam (feature 39)."""
+        media_id = turn.message.media_id
+        async with self.db.tenant(turn.tenant.id) as session:
+            media = await session.get(Media, media_id) if media_id else None
+        if media is None:
+            return [OutText(t("guardian.not_heard", turn.lang))]
+        try:
+            reading = await guardian.listen(self.ai, self.storage, turn.tenant.id, media)
+        except AppError:
+            return [OutText(t("guardian.not_heard", turn.lang))]
+        return guardian.reply(reading, turn.lang)
+
+    async def _report_scam(
+        self, turn: Turn, kind: ScamKind, posing_as: str, value: str
+    ) -> list[Outbound]:
+        async with self.db.tenant(turn.tenant.id) as session:
+            await guardian.report(
+                session,
+                turn.tenant.id,
+                kind,
+                value,
+                posing_as,
+                "voice",
+                Actor(ActorType.STAFF, str(turn.staff_id)),
+                staff_id=turn.staff_id,
+            )
+        return [OutText(t("guardian.reported", turn.lang, value=value))]
 
     async def _video(self, turn: Turn) -> list[Outbound]:
         """A video of a rack or shelf: its products become drafts in the console (feature 2)."""

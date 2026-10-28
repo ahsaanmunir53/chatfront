@@ -71,10 +71,10 @@ from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.payments.claims import handle_screenshot
 from chatfront.payments.due import ask_for, start_payment
-from chatfront.shield import buyers, consent, phishing
+from chatfront.shield import buyers, consent, guardian, phishing
 from chatfront.shield.answer_check import Facts, describe, unsupported
 from chatfront.shield.injection import injection_attempt, wants_a_person
-from chatfront.shield.models import Purpose
+from chatfront.shield.models import Purpose, ScamKind
 from chatfront.stock import notices
 from chatfront.templates import get_template
 
@@ -211,6 +211,8 @@ class OrderAgent:
             trusted=trusted,
             web_url=services.settings.web_url,
             booking_flow_id=services.settings.whatsapp_flow_booking_id or "",
+            api_url=services.settings.public_base_url.rstrip("/"),
+            link_secret=services.settings.secret_key.get_secret_value(),
         )
         prompt = load_prompt("order_agent")
         system = prompt.render(
@@ -330,6 +332,17 @@ class OrderAgent:
                 entity=("message", str(turn.message.id)),
                 data={"alarm": scam.alarm, "hosts": [link.host for link in suspect]},
             )
+            for link in (link for link in suspect if link.verdict == phishing.Verdict.FAKE):
+                await guardian.report(  # kept for Chatfront's review and the STIX report (47)
+                    session,
+                    turn.tenant.id,
+                    ScamKind.URL,
+                    link.url,
+                    link.brand or "meta",
+                    "chat",
+                    AGENT,
+                    evidence={"host": link.host, "why": link.why},
+                )
             await notices.queue(
                 session,
                 turn.tenant.id,

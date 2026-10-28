@@ -58,6 +58,8 @@ def _parse_message(raw: dict[str, Any], account_id: str, names: dict[str, str]) 
     payload: dict[str, Any] = {}
     if context := raw.get("context"):
         payload["reply_to"] = context.get("id")
+        if context.get("forwarded") or context.get("frequently_forwarded"):
+            payload["forwarded"] = True  # a voice note passed on to be checked (feature 39)
     if raw.get("referral"):
         payload["referral"] = raw["referral"]  # click-to-WhatsApp ads (feature 81)
 
