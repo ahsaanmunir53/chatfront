@@ -890,6 +890,29 @@ Decisions:
 - Scam reports hold scammers' own details only; customers go through the hashed fraud list.
 - The coach's model lines with a digit are dropped, as captions are.
 
+## Done on 28 October: verified commerce, wallet formats, suppliers and prices (72, 73, 53, 56)
+
+Checks after it: each feature's new unit and integration tests, and the suites they touch
+(payments, restock, stock), pass locally; lint, format, strict types and `alembic check` are
+clean; web types are clean. The full API suite with coverage, the browser tests (two new specs:
+`formats.spec.ts`, `suppliers.spec.ts`) and the evaluation replay have not been run locally for
+this group; CI runs all of them on the latest push.
+
+What it delivered:
+
+- Verified commerce standard (72): the written spec, JSON Schemas and test vectors in
+  `docs/verified-commerce/`, each shop's key at `/api/shops/<slug>/keys`, the index at
+  `/.well-known/verified-commerce`, and `python -m chatfront.verify` as the reference checker.
+- Wallet SMS formats (73, partial): the console lists the wallets read for the shop's country;
+  a shop that agrees keeps the shape of wallet messages no parser read (digits as 9, ids as A
+  and 9, names as NAME) for Chatfront's staff, who see them next to each parser. No parser is
+  verified until a real message from that wallet passes in `tests/fixtures/sms`.
+- Suppliers (53): each supplier's latest unit cost for the same item, one reorder message per
+  supplier for the low items, and the low-stock Reorder naming who charged less.
+- Prices elsewhere (56, Model API only): similar items at other Chatfront shops in the same
+  currency, as a count and a spread, never which shops; labelled as not the whole market.
+- Migration 0027.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -953,7 +976,8 @@ In groups, each committed and pushed when its checks pass:
 2. Posting and sales: 3, 7, 8, 78, 81, 82. Done on 28 October.
 3. Groups 3 and 4: 17, 18, 31, 32, 35, 36. Done on 28 October.
 4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65. Done on 28 October.
-5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73.
+5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73. 72, 73, 53 and 56 done on 28
+   October; 54, 61, 67, 68, 69, 70 and 71 not started.
 
 ## Plan for 117 to 120
 
