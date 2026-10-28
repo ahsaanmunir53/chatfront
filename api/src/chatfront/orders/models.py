@@ -155,6 +155,13 @@ class ReturnRequest(Base):
     photo_media_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("media.id", ondelete="SET NULL")
     )
+    # The customer's unboxing video, what Spark Open saw in it, and code's advice from that
+    # for the owner (feature 36): supports_claim, against_claim or unclear.
+    video_media_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("media.id", ondelete="SET NULL")
+    )
+    unboxing: Mapped[dict[str, Any] | None]
+    advice: Mapped[str | None] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(10), default=ReturnStatus.REQUESTED)
     exchange_order_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("orders.id", ondelete="SET NULL")
@@ -302,4 +309,39 @@ class LoyaltyEntry(Base):
     order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
     points: Mapped[int]
     reason: Mapped[str] = mapped_column(String(12))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class CustomStatus(StrEnum):
+    WAITING = "waiting"  # for the owner's price
+    QUOTED = "quoted"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+
+
+class CustomRequest(Base):
+    """Something made for one customer (feature 17): what they want, its sketch, and the
+    owner's price."""
+
+    __tablename__ = "custom_requests"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    code: Mapped[str] = mapped_column(String(12))
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL")
+    )
+    kind: Mapped[str] = mapped_column(String(12))
+    details: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    mockup_media_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("media.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(String(10), default=CustomStatus.WAITING)
+    price: Mapped[int | None] = mapped_column(BigInteger)
+    note: Mapped[str] = mapped_column(Text, default="")
+    quoted_at: Mapped[datetime | None]
+    order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = created_at_column()

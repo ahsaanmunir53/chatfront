@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import BigInteger, ForeignKey, String
+from sqlalchemy import BigInteger, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chatfront.core.db import Base, created_at_column, id_column
@@ -64,5 +64,58 @@ class PackingCheck(Base):
     # Per order line: {"name", "quantity", "seen", "sure"}; and what is not on the order.
     lines: Mapped[list[Any]] = mapped_column(default=list)
     extra: Mapped[list[Any]] = mapped_column(default=list)
+    staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class CourierAccount(Base):
+    """A shop's account with a courier that has an adapter (feature 31): its token, sealed."""
+
+    __tablename__ = "courier_accounts"
+    __table_args__ = (UniqueConstraint("tenant_id", "courier"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    courier: Mapped[str] = mapped_column(String(20))
+    token_sealed: Mapped[str] = mapped_column(Text)
+    pickup_code: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class CodSettlement(Base):
+    """What a courier says it collected and paid over for one parcel (feature 32), from its
+    sheet or its API. One row per sheet row: the same row in a later sheet is not paid twice."""
+
+    __tablename__ = "cod_settlements"
+    __table_args__ = (UniqueConstraint("tenant_id", "row_key"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    row_key: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(20))  # "sheet", or the courier's API
+    collected: Mapped[int | None] = mapped_column(BigInteger)
+    charges: Mapped[int | None] = mapped_column(BigInteger)
+    paid: Mapped[int | None] = mapped_column(BigInteger)
+    short: Mapped[int] = mapped_column(BigInteger, default=0)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class DeliveryProof(Base):
+    """The rider's photo of a parcel at the door (feature 35), what Spark Open read on it, and
+    whether the order's own code or tracking number was on the label."""
+
+    __tablename__ = "delivery_proofs"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    media_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("media.id", ondelete="CASCADE"))
+    reading: Mapped[dict[str, Any] | None]
+    matched: Mapped[bool | None]  # None until read
     staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = created_at_column()

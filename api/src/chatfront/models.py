@@ -2,6 +2,7 @@
 
 from chatfront.ai.models import AiCall
 from chatfront.audit.models import AuditEntry
+from chatfront.bookings.models import Appointment
 from chatfront.books.models import LedgerEntry, UdhaarAccount
 from chatfront.catalog.models import (
     CatalogImport,
@@ -29,13 +30,20 @@ from chatfront.channels.models import (
 from chatfront.core.db import Base
 from chatfront.core.models import Customer, Staff, Tenant, TenantModule
 from chatfront.crm.models import Broadcast, BroadcastRecipient
-from chatfront.delivery.models import PackingCheck, Shipment
+from chatfront.delivery.models import (
+    CodSettlement,
+    CourierAccount,
+    DeliveryProof,
+    PackingCheck,
+    Shipment,
+)
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
 from chatfront.orders.models import (
     Bundle,
     Coupon,
     CouponUse,
+    CustomRequest,
     GroupOrder,
     LoyaltyEntry,
     Order,
@@ -60,6 +68,7 @@ from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
 __all__ = [
     "AiCall",
+    "Appointment",
     "Approval",
     "AuditEntry",
     "Base",
@@ -69,14 +78,18 @@ __all__ = [
     "Bundle",
     "CatalogImport",
     "ChannelAccount",
+    "CodSettlement",
     "CommerceCatalog",
     "Consent",
     "Conversation",
     "Coupon",
     "CouponUse",
+    "CourierAccount",
     "CronRun",
+    "CustomRequest",
     "Customer",
     "CustomerIdentity",
+    "DeliveryProof",
     "FlashSale",
     "FraudListEntry",
     "FraudReport",
