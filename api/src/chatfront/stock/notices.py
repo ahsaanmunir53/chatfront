@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chatfront.channels.handover import staff_language
+from chatfront.channels.language import staff_language
 from chatfront.channels.notify import tell_owner
 from chatfront.channels.types import Button, Outbound, OutButtons, OutTemplate, OutText
 from chatfront.core.clock import utcnow

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.channels.models import Conversation
 from chatfront.core.langdetect import Detection, load_detector
 from chatfront.core.languages import load_registry
-from chatfront.core.models import Tenant
+from chatfront.core.models import Staff, Tenant
 
 
 def note_language(
@@ -34,6 +34,11 @@ def note_language(
     if detection.confident or current is None or current.script != detection.script:
         conversation.lang = detection.tag
     return detection
+
+
+def staff_language(staff: Staff, tenant: Tenant) -> str:
+    """The language a staff member reads and writes the console in."""
+    return staff.lang or tenant.default_lang
 
 
 def reply_language(conversation: Conversation, tenant: Tenant) -> str:

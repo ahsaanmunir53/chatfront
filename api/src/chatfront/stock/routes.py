@@ -16,7 +16,7 @@ from chatfront.audit.service import Actor, ActorType
 from chatfront.catalog.models import Product, ProductStatus, Variant
 from chatfront.catalog.service import load_items
 from chatfront.catalog.stock import label
-from chatfront.channels.handover import staff_language
+from chatfront.channels.language import staff_language
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Staff, Tenant

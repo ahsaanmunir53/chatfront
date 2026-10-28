@@ -21,8 +21,8 @@ from chatfront.channels.handover import (
     reply_as_staff,
     resume,
     show_to_staff,
-    staff_language,
 )
+from chatfront.channels.language import staff_language
 from chatfront.channels.models import (
     Conversation,
     Direction,

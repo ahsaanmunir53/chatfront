@@ -21,8 +21,7 @@ from chatfront.ai.client import ModelUnavailable
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest, Role
 from chatfront.audit.service import Actor, ActorType, record
-from chatfront.channels.handover import staff_language
-from chatfront.channels.language import chat_language
+from chatfront.channels.language import chat_language, staff_language
 from chatfront.channels.notify import send_to, tell_owner
 from chatfront.channels.types import Button, Outbound, OutButtons, OutText
 from chatfront.core.clock import utcnow

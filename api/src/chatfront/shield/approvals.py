@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType, record
-from chatfront.channels.handover import staff_language
+from chatfront.channels.language import staff_language
 from chatfront.channels.notify import tell_owner
 from chatfront.channels.types import Button, Outbound, OutButtons, OutText
 from chatfront.core.clock import utcnow
