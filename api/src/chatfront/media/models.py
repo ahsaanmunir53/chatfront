@@ -32,5 +32,7 @@ class Media(Base):
     sha256: Mapped[str] = mapped_column(String(64), index=True)
     storage_key: Mapped[str] = mapped_column(String(300))
     blurred_key: Mapped[str | None] = mapped_column(String(300))
+    # Set when the photo is an ID card or a bank card: only a blurred copy is kept (feature 43).
+    private: Mapped[str | None] = mapped_column(String(12))
     source: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = created_at_column()

@@ -46,7 +46,7 @@ from chatfront.payments.models import (
     Refund,
     WalletCredit,
 )
-from chatfront.shield.models import Approval
+from chatfront.shield.models import Approval, FraudListEntry, FraudReport, Review
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
 __all__ = [
@@ -65,6 +65,8 @@ __all__ = [
     "CronRun",
     "Customer",
     "CustomerIdentity",
+    "FraudListEntry",
+    "FraudReport",
     "Handover",
     "IdentityLink",
     "ImportDraft",
@@ -85,6 +87,7 @@ __all__ = [
     "Receipt",
     "Refund",
     "ReturnRequest",
+    "Review",
     "SavedAnswer",
     "Shipment",
     "SocialPost",
