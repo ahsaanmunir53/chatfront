@@ -1,0 +1,29 @@
+{
+  "about": "When shops sell more (feature 55). An event window takes its date from the offers calendar (offers/seasons.json) for the year ahead and from `past` for the years behind, so last year's same window can be compared. Islamic dates are the expected ones and move with the moon sighting by a day. A month window repeats every year. `usual` names the categories that rise for each business template, used only while the shop has no history of its own.",
+  "past": [
+    {"key": "ramadan", "date": "2025-03-02"},
+    {"key": "eid_ul_fitr", "date": "2025-03-31"},
+    {"key": "eid_ul_adha", "date": "2025-06-07"},
+    {"key": "independence_pk", "date": "2025-08-14"},
+    {"key": "ramadan", "date": "2026-02-19"},
+    {"key": "eid_ul_fitr", "date": "2026-03-21"},
+    {"key": "eid_ul_adha", "date": "2026-05-27"},
+    {"key": "independence_pk", "date": "2026-08-14"}
+  ],
+  "windows": [
+    {"key": "ramadan", "event": "ramadan", "before": 21, "after": 29, "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"],
+     "usual": {"food": ["dessert", "rice", "kebab"], "grocery": ["basics", "oil", "rice", "dairy", "pulses"], "clothing": ["suits", "kurtas"]}},
+    {"key": "eid_ul_fitr", "event": "eid_ul_fitr", "before": 21, "after": 2, "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"],
+     "usual": {"clothing": ["suits", "kurtas", "dupattas"], "services": ["makeup", "mehndi", "hair", "nails"], "food": ["dessert"], "electronics": ["phones", "accessories"]}},
+    {"key": "eid_ul_adha", "event": "eid_ul_adha", "before": 14, "after": 3, "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"],
+     "usual": {"food": ["karahi", "kebab", "rice"], "grocery": ["oil", "basics", "rice"], "clothing": ["suits", "kurtas"]}},
+    {"key": "independence_pk", "event": "independence_pk", "before": 10, "after": 0, "countries": ["PK"],
+     "usual": {"clothing": ["kurtas", "dupattas"]}},
+    {"key": "weddings", "months": [11, 12, 1, 2], "countries": ["PK", "IN", "BD"],
+     "usual": {"clothing": ["suits", "dupattas"], "services": ["makeup", "mehndi", "hair"], "food": ["rice", "dessert"], "wholesale": ["fabric"]}},
+    {"key": "winter", "months": [11, 12, 1], "countries": ["PK", "IN", "BD"],
+     "usual": {"clothing": ["shawls", "kurtas"], "grocery": ["tea", "dairy"]}},
+    {"key": "summer_lawn", "months": [3, 4, 5], "countries": ["PK"],
+     "usual": {"clothing": ["suits"], "wholesale": ["fabric"]}}
+  ]
+}

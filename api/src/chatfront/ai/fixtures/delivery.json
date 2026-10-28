@@ -24,5 +24,15 @@
       "damage": "",
       "notes": "[mock] The model keys are not set yet, so this video was not watched."
     }
+  },
+  {
+    "prompt": "business_coach",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "advice": [
+        "[mock reply] The model keys are not set yet, so this advice is a recorded example: post your best sellers again this week, and put slow pieces together as a bundle."
+      ]
+    }
   }
 ]
