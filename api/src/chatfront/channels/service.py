@@ -32,6 +32,7 @@ from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.core.secretbox import seal, unseal
 from chatfront.jobs.queue import enqueue
+from chatfront.shield import privacy
 
 if TYPE_CHECKING:
     from chatfront.core.settings import Settings
@@ -178,6 +179,11 @@ async def accept(
         )
         if detected is not None:
             payload["lang"] = detected.tag
+        body = msg.text
+        if conversation.party == Party.CUSTOMER:  # feature 43: card and ID numbers masked
+            body, hidden = privacy.masked(msg.text)
+            if hidden:
+                payload["masked"] = hidden
         message_id = await session.scalar(
             insert(Message)
             .values(
@@ -188,7 +194,7 @@ async def accept(
                 channel=msg.channel,
                 external_id=msg.message_id,
                 kind=msg.kind,
-                body=msg.text,
+                body=body,
                 media_id=msg.media_id,
                 payload=payload,
                 status="received",

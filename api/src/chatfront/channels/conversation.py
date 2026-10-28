@@ -48,6 +48,7 @@ from chatfront.core.money import Minor
 from chatfront.jobs.queue import JobContext
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
+from chatfront.shield import privacy
 from chatfront.templates import get_template
 
 if TYPE_CHECKING:
@@ -137,9 +138,20 @@ def as_chat(message: Message) -> ChatMessage:
     return ChatMessage(role, text)
 
 
+_PRIVATE = {"id_card": "an ID card", "bank_card": "a bank card"}
+
+
 def current_message(turn: Turn) -> ChatMessage:
     kind = Kind(turn.message.kind)
     parts: list[Part] = [turn.media] if turn.media else []
+    if private := (turn.message.payload or {}).get("private"):
+        # Feature 43: the photo was a card, kept only blurred; the model never sees it.
+        parts.append(
+            TextPart(
+                f"(the customer sent a photo of {_PRIVATE.get(private, 'a card')}; Chatfront "
+                "kept only a blurred copy for their privacy. Do not ask for card or ID numbers.)"
+            )
+        )
     parts.append(TextPart(turn.message.body or f"(the customer sent a {kind.value})"))
     return ChatMessage("user", parts)
 
@@ -271,6 +283,20 @@ async def _attach_media(
     )
 
 
+async def _guard(services: Services, message: Message, media: Part) -> Part | None:
+    """A photo of an ID or bank card is kept only blurred, and the model does not see it."""
+    assert message.media_id is not None
+    private = await privacy.guard(services, message.tenant_id, message.media_id, media)
+    if private is None:
+        return media
+    async with services.db.tenant(message.tenant_id) as session:
+        stored = await session.get(Message, message.id)
+        assert stored is not None
+        stored.payload = {**(stored.payload or {}), "private": private}
+        message.payload = stored.payload
+    return None
+
+
 async def handle_reply(ctx: JobContext) -> None:
     """The job queued for every inbound message. Safe to run twice: it checks for a reply first."""
     services: Services = ctx.services
@@ -303,6 +329,8 @@ async def handle_reply(ctx: JobContext) -> None:
             )
         )[::-1]
     media = await _attach_media(services, message, account)
+    if media is not None and message.media_id and conversation.party == Party.CUSTOMER:
+        media = await _guard(services, message, media)
     turn = Turn(
         tenant,
         conversation,
