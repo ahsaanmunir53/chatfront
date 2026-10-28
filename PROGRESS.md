@@ -851,6 +851,45 @@ Decisions:
 - A delivery photo and an unboxing video are advice; delivered stays the owner's or the
   courier's word, since it posts the cash.
 
+## Done on 28 October: privacy, scams, the books ahead and the coach (39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 1,170 passed |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 38 passed |
+| Browser tests, desktop and phone | 82 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Is it really the shop (41): the trust page checks any number or account pasted into it
+  against the shop's channels connected through Meta's APIs.
+- A customer's own data (44): a copy by a one-day link from the chat; erasing asks the owner,
+  then removes the person and keeps the amounts in the books. The console can do both.
+- Call guardian (39): a forwarded voice note or an uploaded recording heard by Spark Open; code
+  decides scam, suspicious or no signs, and the owner can report the numbers given.
+- STIX report (47): scammers' numbers, accounts and links (and fake links caught in customers'
+  messages) wait for Chatfront's review; confirmed ones download as a STIX 2.1 bundle.
+- Cash-flow forecast (58), staff pay (60), the tax year with zakat (62), the workbook for tax
+  filing (63) and the signed credit passport with its public check page (64).
+- Seasons ahead (55) from a calendar file and last year's sales, and the coach's Monday note
+  (65): code's lines with every number, the model's advice in words only.
+- Migration 0026.
+
+Decisions:
+
+- The cash forecast never guesses: averages and fixed costs come from the shop's own entries,
+  and the cash starts from what the owner counted.
+- Zakat is arithmetic on figures the owner checks; the page says schools differ.
+- An erased customer is told before their channel ids are forgotten, so the message reaches
+  them; erasing a khata that still has money owed keeps its name, as the shop's claim.
+- A call recording that could not be heard says so; there is no "no signs" without a reading.
+- Scam reports hold scammers' own details only; customers go through the hashed fraud list.
+- The coach's model lines with a digit are dropped, as captions are.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -913,7 +952,7 @@ In groups, each committed and pushed when its checks pass:
 1. Selling later: 14, 15, 20, 21, 22, 96, 108. Done on 28 October.
 2. Posting and sales: 3, 7, 8, 78, 81, 82. Done on 28 October.
 3. Groups 3 and 4: 17, 18, 31, 32, 35, 36. Done on 28 October.
-4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65.
+4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65. Done on 28 October.
 5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73.
 
 ## Plan for 117 to 120
