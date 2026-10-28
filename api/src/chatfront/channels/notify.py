@@ -8,10 +8,11 @@ import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.channels import service as channels
 from chatfront.channels.base import WindowClosed
-from chatfront.channels.models import Channel, ChannelAccount, Conversation
+from chatfront.channels.models import Channel, ChannelAccount, Conversation, Party
 from chatfront.channels.types import Outbound, to_record
 from chatfront.core.errors import AppError
 from chatfront.core.models import Customer, Staff
@@ -56,6 +57,26 @@ async def send_to(
         log.info("message not sent on %s: %s", account.channel, exc)
         return False
     return True
+
+
+async def customer_chat(
+    session: AsyncSession, customer_id: uuid.UUID
+) -> tuple[Conversation, str] | None:
+    """A customer's latest chat with the shop where they wrote, and its channel."""
+    row = (
+        await session.execute(
+            select(Conversation, ChannelAccount.channel)
+            .join(ChannelAccount, ChannelAccount.id == Conversation.channel_account_id)
+            .where(
+                Conversation.customer_id == customer_id,
+                Conversation.party == Party.CUSTOMER,
+                Conversation.last_inbound_at.is_not(None),
+            )
+            .order_by(Conversation.last_inbound_at.desc())
+            .limit(1)
+        )
+    ).first()
+    return (row[0], str(row[1])) if row else None
 
 
 async def owner_chat(services: Services, tenant_id: uuid.UUID, owner: Staff) -> uuid.UUID | None:

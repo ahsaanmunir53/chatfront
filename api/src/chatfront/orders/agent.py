@@ -68,9 +68,10 @@ from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.payments.claims import handle_screenshot
 from chatfront.payments.due import ask_for, start_payment
-from chatfront.shield import buyers, phishing
+from chatfront.shield import buyers, consent, phishing
 from chatfront.shield.answer_check import Facts, describe, unsupported
 from chatfront.shield.injection import injection_attempt, wants_a_person
+from chatfront.shield.models import Purpose
 from chatfront.stock import notices
 from chatfront.templates import get_template
 
@@ -127,7 +128,13 @@ class OrderAgent:
     async def respond(self, turn: Turn) -> list[Outbound]:
         if turn.conversation.status == HANDOVER:
             return []  # a person has this chat; their replies go out from the console
-        button = actions.parse_button((turn.message.payload or {}).get("button_id"))
+        tapped = (turn.message.payload or {}).get("button_id")
+        offers = consent.answer_of(tapped)
+        if offers is None and turn.message.kind == Kind.TEXT:
+            offers = consent.said(turn.message.body)
+        if offers is not None:
+            return await self._offers(turn, offers, via="button" if tapped else "chat")
+        button = actions.parse_button(tapped)
         if button is not None:
             return await self._tap(turn, *button)
         if turn.message.kind == Kind.ORDER:  # a cart from the WhatsApp catalog (feature 6)
@@ -189,6 +196,7 @@ class OrderAgent:
             modules=frozenset(modules),
             phone_hash_key=services.keys.phone_hash_key,
             trusted=trusted,
+            web_url=services.settings.web_url,
         )
         prompt = load_prompt("order_agent")
         system = prompt.render(
@@ -458,7 +466,28 @@ class OrderAgent:
             await orders.move(session, order, OrderStatus.PLACED, actor)
             await start_payment(session, tenant, order, actor)
             actions.close(action, ActionStatus.CONFIRMED)
-            return [OutText(_maker(turn).placed(order))]
+            ask = await consent.ask_offers(session, order.customer_id)
+        placed: list[Outbound] = [OutText(_maker(turn).placed(order))]
+        if ask:
+            placed.append(consent.offers_question(lang, tenant.name))
+        return placed
+
+    async def _offers(self, turn: Turn, yes: bool, *, via: str) -> list[Outbound]:
+        """A customer's yes or no to offers (feature 108), kept with their words."""
+        wording = turn.message.body or ""
+        if via == "button":
+            wording = f"{t('consent.offers_ask', turn.lang, shop=turn.tenant.name)} -> {wording}"
+        async with self.services.db.tenant(turn.tenant.id) as session:
+            await consent.record(
+                session,
+                turn.tenant.id,
+                Purpose.OFFERS,
+                yes,
+                via=via,
+                wording=wording,
+                customer_id=turn.conversation.customer_id,
+            )
+        return [OutText(t("consent.offers_on" if yes else "consent.offers_off", turn.lang))]
 
     async def _cancel(self, turn: Turn, action_id: uuid.UUID) -> list[Outbound]:
         db, tenant, lang = self.services.db, turn.tenant, turn.lang

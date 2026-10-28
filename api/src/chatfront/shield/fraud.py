@@ -23,15 +23,18 @@ from chatfront.audit.service import Actor, record
 from chatfront.channels.models import Conversation
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
+from chatfront.core.i18n import t
 from chatfront.core.models import Customer
 from chatfront.core.phone import hash_phone
 from chatfront.orders.models import Order
 from chatfront.payments.models import ClaimStatus, PaymentClaim
+from chatfront.shield import consent
 from chatfront.shield.models import (
     FraudListEntry,
     FraudReason,
     FraudReport,
     ListStatus,
+    Purpose,
     ReportStatus,
 )
 
@@ -155,6 +158,17 @@ async def report(
     if found.status != ReportStatus.CONFIRMED:
         found.status, found.reviewed_at, found.review_note = ReportStatus.PENDING, None, None
     await session.flush()
+    if staff_id is not None and await consent.current(session, Purpose.FRAUD_LIST) is not True:
+        # Sending a report is the shop agreeing to share it, in the words the console shows.
+        await consent.record(
+            session,
+            tenant_id,
+            Purpose.FRAUD_LIST,
+            True,
+            via="console",
+            wording=t("consent.fraud_list_terms", "en"),
+            staff_id=staff_id,
+        )
     await record(
         session,
         tenant_id,
