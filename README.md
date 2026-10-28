@@ -129,6 +129,11 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, packing and books:** the day's pick list, added up across orders waiting to
+  be packed and printed with a packing slip per order, in the console, in the chat and to the
+  packers each morning; a photo of the packed parcel checked against the order before it is
+  sealed, with unclear checks going to the owner; and true profit per product after what the
+  courier charged, out and back, and what came-back parcels cost.
 - **28 October, shield:** a buyer reported by a shop counts against them there at once and,
   once Chatfront's own staff confirm it, at every shop, as a hash of the number that nobody
   can read back; fake WhatsApp and Meta support links and requests for a one-time code caught

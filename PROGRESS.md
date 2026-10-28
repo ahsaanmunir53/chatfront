@@ -571,6 +571,54 @@ Decisions:
 Not verified yet: the photo check on the real model (needs a key); Safe Browsing with a real
 key (Google allows the free API for non-commercial use).
 
+## Done on 28 October: packing and books (102, 103, 51)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 922 passed, 94.86% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 66 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Pick list and packing slips (103): the pieces to pick across every order waiting to be
+  packed, per product and colour or size, with the orders each is for. Orders with a
+  pre-order wait, listed apart, until the ship day; on the day, a line short of stock says how
+  many are still to come in. In the console under Orders, printed as a PDF with one slip per
+  order; in the chat on "pick list"; and to the packers each morning at 9 (to the owner when
+  the shop has none).
+- Packing check (102): a photo of the packed order, in the chat with the order's code and
+  "pack", or from the order in the console. Spark Open counts each line against the products'
+  own photos (a new prompt, `packing_check`); code decides match, mismatch or unclear. A match
+  gets Mark packed; a packer's unclear check goes to the owner with Approve and Reject.
+- True profit per product (51): courier charges per parcel, out and back, entered at dispatch
+  or later under the order. Profit by product takes in the delivery charges buyers paid, the
+  courier's charges and what returned parcels cost, split over each order's products by line
+  value. Asked in chat too ("asal munafa").
+- Migration 0019: packing checks, and the two courier charges on each parcel.
+- Fixed in passing: in a label or slip, a line after one in Urdu, Hindi or Bengali script
+  printed blank, because the fallback font stayed set on the page. Every line now names its
+  own font again (a regression test checks it).
+
+Decisions:
+
+- Courier charges are what a parcel cost, kept on the parcel, not cash in the books: the owner
+  may still write the courier's weekly bill as an expense, and nothing is counted twice.
+- A parcel with no courier charge is counted apart and its delivery charge is left out, so
+  true profit is never flattered by a missing number.
+- Nothing is packed by a model: a match only offers Mark packed; only a person taps it.
+- With no model key the packing check says so instead of guessing, and the slip is ticked by
+  hand. There is no recorded answer for it in the mock, so the demo does not show a made-up
+  check.
+- The morning list goes to people with the packing role; the owner gets it only when no packer
+  could be reached, so the owner's chat does not fill up.
+
+Not verified yet: the packing check on the real model (needs a model key).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -618,7 +666,7 @@ Proposed order, the Meta platform first since it is what is judged:
 3. Selling more: 13, 16, 19, 95, 91. Done on 28 October.
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88. Done on 28 October.
 5. Shield: 37, 40, 43, 45, 46. Done on 28 October.
-6. Packing and books: 102, 103, 51.
+6. Packing and books: 102, 103, 51. Done on 28 October.
 7. Data and growth: 57, 59, 116, 66.
 8. Demo engineering: 110, 114, 115.
 
