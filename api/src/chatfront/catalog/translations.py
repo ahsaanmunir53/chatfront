@@ -25,6 +25,8 @@ from chatfront.jobs.queue import JobContext
 
 log = logging.getLogger(__name__)
 
+TRANSLATE_JOB = "catalog.translate"
+
 
 class ProductText(BaseModel):
     model_config = ConfigDict(extra="forbid")

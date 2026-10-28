@@ -19,10 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from chatfront.ai.client import AiClient
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest, Part, Role, TextPart
+from chatfront.books.ledger import today
 from chatfront.catalog.service import MAX_PRICE, MAX_VARIANTS, ProductInput, VariantInput
+from chatfront.core.countries import get_pack
+from chatfront.core.models import Tenant
 from chatfront.core.money import Minor
 from chatfront.core.numbers import find_numbers
-from chatfront.templates import BusinessTemplate, ProductField
+from chatfront.templates import BusinessTemplate, ProductField, get_template
 
 
 class Strict(BaseModel):
@@ -143,6 +146,20 @@ def fields_text(template: BusinessTemplate) -> str:
     return "; ".join(parts)
 
 
+def prompt_context(tenant: Tenant) -> dict[str, str]:
+    """What every prompt about the shop's own goods is told about the shop."""
+    template = get_template(tenant.template)
+    pack = get_pack(tenant.country)
+    return {
+        "shop_name": tenant.name,
+        "business_type": template.name.en.lower(),
+        "country": pack.name,
+        "currency": pack.currency,
+        "fields": fields_text(template),
+        "today": today(tenant).isoformat(),
+    }
+
+
 async def read_product(
     ai: AiClient,
     *,
@@ -222,7 +239,8 @@ def _allowed(spec: ProductField, value: str) -> str | None:
     return cleaned[:60]
 
 
-def _options(template: BusinessTemplate, pairs: Sequence[DraftOption]) -> dict[str, str]:
+def allowed_options(template: BusinessTemplate, pairs: Sequence[DraftOption]) -> dict[str, str]:
+    """The pairs the shop's template allows, with their values as it spells them."""
     fields = {spec.key: spec for spec in template.product_fields}
     kept: dict[str, str] = {}
     for pair in pairs:
@@ -292,7 +310,7 @@ def to_input(
     for spec in draft.variants[:MAX_VARIANTS]:
         stock = spec.stock if spec.stock is not None and spec.stock >= 0 else None
         variant_price = to_minor(spec.price, digits) if spec.price is not None else None
-        variants.append(VariantInput(_options(template, spec.options), variant_price, stock))
+        variants.append(VariantInput(allowed_options(template, spec.options), variant_price, stock))
     variants = [v for i, v in enumerate(variants) if v.options or i == 0] or [VariantInput()]
     if len(variants) == 1 and draft.stock is not None and draft.stock >= 0:
         only = variants[0]
@@ -304,7 +322,7 @@ def to_input(
         description=draft.description.strip(),
         category=(draft.category or "").strip().lower() or None,
         tags=tuple(dict.fromkeys(t.strip().lower() for t in draft.tags if t.strip()))[:10],
-        attributes=_options(template, draft.attributes),
+        attributes=allowed_options(template, draft.attributes),
         variants=tuple(variants),
         image_media_id=image_media_id,
     )

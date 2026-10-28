@@ -23,6 +23,7 @@ from chatfront.catalog.drafts import (
     EMPTY_DRAFT,
     ProductDraft,
     complete_draft,
+    prompt_context,
     read_product,
     to_input,
 )
@@ -43,7 +44,6 @@ from chatfront.media.models import Media
 from chatfront.media.storage import Storage
 from chatfront.modules.registry import ModuleRegistry
 from chatfront.owner import actions
-from chatfront.owner.assistant import prompt_context
 from chatfront.owner.cards import confirm_card
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.sessions import console_link, issue

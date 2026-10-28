@@ -124,3 +124,54 @@ class CommerceCatalog(Base):
     left_out: Mapped[list[Any]] = mapped_column(default=list)  # names of products with no photo
     synced_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
+
+
+class CatalogImport(Base):
+    """One import of products the shop already has (features 84, 85 and 2): a sheet, its Meta
+    catalog, its Instagram posts or a video of a rack. What it finds waits as drafts."""
+
+    __tablename__ = "catalog_imports"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    source: Mapped[str] = mapped_column(String(20))
+    label: Mapped[str] = mapped_column(String(160))  # a file name, or what was read
+    status: Mapped[str] = mapped_column(String(12))  # reading, ready or failed
+    found: Mapped[int] = mapped_column(default=0)
+    error: Mapped[str | None] = mapped_column(String(60))
+    staff_id: Mapped[uuid.UUID | None]
+    created_at: Mapped[datetime] = created_at_column()
+    finished_at: Mapped[datetime | None]
+
+
+class ImportDraft(Base):
+    """A product found by an import, waiting for the owner to add it to the shop or drop it.
+    Its data is a product draft (catalog.drafts.ProductDraft); nothing is on sale until the
+    owner adds it."""
+
+    __tablename__ = "import_drafts"
+    __table_args__ = (UniqueConstraint("tenant_id", "source", "source_ref"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    import_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("catalog_imports.id", ondelete="CASCADE"), index=True
+    )
+    source: Mapped[str] = mapped_column(String(20))
+    # What it came from, so the same post, catalog item or sheet row is not drafted twice.
+    source_ref: Mapped[str] = mapped_column(String(120))
+    data: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    price_from: Mapped[str | None] = mapped_column(String(10))  # where its price was read
+    extra: Mapped[dict[str, Any]] = mapped_column(default=dict)  # the source's own details
+    image_media_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("media.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(String(12))  # waiting, added or dropped
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("products.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = created_at_column()

@@ -121,11 +121,11 @@ def batch(
 # -- talking to Meta ------------------------------------------------------------------------
 
 
-def _graph(settings: Settings) -> str:
+def graph_url(settings: Settings) -> str:
     return f"{settings.meta_graph_base_url.rstrip('/')}/{settings.meta_graph_version}"
 
 
-def _token(services: Services, link: CommerceCatalog) -> str:
+def catalog_token(services: Services, link: CommerceCatalog) -> str:
     secret = services.settings.secret_key.get_secret_value()
     if link.access_token_sealed:
         return unseal(link.access_token_sealed, secret)
@@ -135,7 +135,7 @@ def _token(services: Services, link: CommerceCatalog) -> str:
     return fallback.get_secret_value()
 
 
-async def _catalog(services: Services, tenant_id: uuid.UUID) -> tuple[Tenant, CommerceCatalog]:
+async def connected(services: Services, tenant_id: uuid.UUID) -> tuple[Tenant, CommerceCatalog]:
     async with services.db.tenant(tenant_id) as session:
         tenant = await session.get(Tenant, tenant_id)
         link = await session.scalar(select(CommerceCatalog))
@@ -154,7 +154,7 @@ async def _save(services: Services, tenant_id: uuid.UUID, **values: Any) -> None
 
 async def push(services: Services, tenant_id: uuid.UUID) -> int:
     """Send the shop's products to its catalog; returns how many items were sent."""
-    tenant, link = await _catalog(services, tenant_id)
+    tenant, link = await connected(services, tenant_id)
     async with services.db.tenant(tenant_id) as session:
         items = await load_items(session)
     settings = services.settings
@@ -168,13 +168,13 @@ async def push(services: Services, tenant_id: uuid.UUID) -> int:
     response = await request(
         services.http,
         "POST",
-        f"{_graph(settings)}/{link.catalog_id}/items_batch",
+        f"{graph_url(settings)}/{link.catalog_id}/items_batch",
         service="catalog",
         content=urlencode(
             {"item_type": "PRODUCT_ITEM", "requests": json.dumps(requests, ensure_ascii=False)}
         ).encode(),
         headers={
-            "Authorization": f"Bearer {_token(services, link)}",
+            "Authorization": f"Bearer {catalog_token(services, link)}",
             "Content-Type": "application/x-www-form-urlencoded",
         },
         retries=0,
@@ -210,20 +210,20 @@ async def push(services: Services, tenant_id: uuid.UUID) -> int:
 
 async def check(services: Services, tenant_id: uuid.UUID, handle: str) -> str:
     """Ask Meta how a batch went; keep its status and errors. Returns the status."""
-    _, link = await _catalog(services, tenant_id)
+    _, link = await connected(services, tenant_id)
     if link.handle != handle:
         return "superseded"  # a newer send has taken its place
     response = await request(
         services.http,
         "GET",
-        f"{_graph(services.settings)}/{link.catalog_id}/check_batch_request_status",
+        f"{graph_url(services.settings)}/{link.catalog_id}/check_batch_request_status",
         service="catalog",
         params={
             "handle": handle,
             "load_ids_of_invalid_requests": "true",
             "fields": "handle,status,errors,errors_total_count,ids_of_invalid_requests",
         },
-        headers={"Authorization": f"Bearer {_token(services, link)}"},
+        headers={"Authorization": f"Bearer {catalog_token(services, link)}"},
     )
     found: dict[str, Any] = next(iter(response.json().get("data") or []), {})
     status = str(found.get("status", "unknown")).lower()

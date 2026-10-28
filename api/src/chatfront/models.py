@@ -3,7 +3,14 @@
 from chatfront.ai.models import AiCall
 from chatfront.audit.models import AuditEntry
 from chatfront.books.models import LedgerEntry, UdhaarAccount
-from chatfront.catalog.models import CommerceCatalog, Product, StockMovement, Variant
+from chatfront.catalog.models import (
+    CatalogImport,
+    CommerceCatalog,
+    ImportDraft,
+    Product,
+    StockMovement,
+    Variant,
+)
 from chatfront.channels.models import (
     ChannelAccount,
     Conversation,
@@ -49,6 +56,7 @@ __all__ = [
     "Base",
     "BatchAllocation",
     "Bundle",
+    "CatalogImport",
     "ChannelAccount",
     "CommerceCatalog",
     "Conversation",
@@ -59,6 +67,7 @@ __all__ = [
     "CustomerIdentity",
     "Handover",
     "IdentityLink",
+    "ImportDraft",
     "Job",
     "LedgerEntry",
     "LoyaltyEntry",
