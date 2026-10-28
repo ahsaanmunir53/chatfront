@@ -35,5 +35,5 @@ def setup_logging(level: str) -> None:
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level)
-    for noisy in ("httpx", "httpcore"):
+    for noisy in ("httpx", "httpcore", "fontTools"):  # fontTools: a line per PDF glyph
         logging.getLogger(noisy).setLevel(logging.WARNING)

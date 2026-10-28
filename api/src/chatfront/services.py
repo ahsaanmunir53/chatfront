@@ -34,12 +34,15 @@ from chatfront.channels.whatsapp import WhatsAppAdapter
 from chatfront.core.db import Database
 from chatfront.core.ratelimit import RateLimiter
 from chatfront.core.settings import Settings
+from chatfront.crm import broadcasts
 from chatfront.delivery import packing, picking
 from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.offers import referrals
 from chatfront.offers.tools import offer_tools
+from chatfront.orders import reminders as cart_reminders
 from chatfront.orders.agent import OrderAgent
 from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
@@ -137,6 +140,12 @@ def build_registries() -> Registries:
         expiry.DAY_JOB: expiry.day_job,
     }
     growth.periodic.append(Periodic("stock-mornings", expiry.EVERY, expiry.DAILY_JOB))
+    growth.jobs |= {
+        cart_reminders.JOB: cart_reminders.remind_carts,
+        broadcasts.SEND_JOB: broadcasts.send_job,
+        referrals.THANKS_JOB: referrals.thanks_job,
+    }
+    growth.periodic.append(Periodic("cart-reminders", cart_reminders.EVERY, cart_reminders.JOB))
     delivery = registries.modules.modules["delivery"]
     delivery.jobs |= {picking.DAILY_JOB: picking.daily_job, picking.SEND_JOB: picking.send_job}
     delivery.periodic.append(Periodic("pick-lists", picking.EVERY, picking.DAILY_JOB))

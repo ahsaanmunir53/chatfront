@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     # parameter); without it they wait in the console (feature 118).
     whatsapp_alert_template: str | None = None
     whatsapp_alert_template_lang: str = "en"
+    whatsapp_offer_template: str | None = None
+    whatsapp_offer_template_lang: str = "en"
     # The owner panel's WhatsApp Flow, once published in WhatsApp Manager (feature 118).
     whatsapp_flow_product_id: str | None = None
     # Instagram API with Instagram Login signs webhooks with its own app secret.

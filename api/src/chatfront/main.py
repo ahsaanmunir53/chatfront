@@ -22,11 +22,13 @@ from chatfront.channels.routes import router as channel_router
 from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
 from chatfront.core.settings import Settings, get_settings
+from chatfront.crm.broadcast_routes import router as broadcasts_router
 from chatfront.crm.routes import router as crm_router
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.mcp.routes import router as mcp_router
 from chatfront.offers.routes import router as offers_router
 from chatfront.orders.checkout_routes import router as checkout_router
+from chatfront.orders.group_routes import router as groups_router
 from chatfront.orders.return_routes import router as returns_router
 from chatfront.orders.waitlist_routes import router as waitlist_router
 from chatfront.owner.dashboard import router as dashboard_router
@@ -40,6 +42,7 @@ from chatfront.push.routes import router as push_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
+from chatfront.shield.consent_routes import router as consents_router
 from chatfront.shield.platform_routes import router as platform_router
 from chatfront.shield.review_routes import router as reviews_router
 from chatfront.shield.routes import router as shield_router
@@ -93,6 +96,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(share_router)
     app.include_router(mcp_router)
     app.include_router(checkout_router)
+    app.include_router(groups_router)
     app.include_router(owner_router)
     app.include_router(dashboard_router)
     app.include_router(busy_day_router)
@@ -105,7 +109,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(team_router)
     app.include_router(books_router)
     app.include_router(crm_router)
+    app.include_router(broadcasts_router)
     app.include_router(shield_router)
+    app.include_router(consents_router)
     app.include_router(platform_router)
     app.include_router(reviews_router)
     app.include_router(stock_router)
