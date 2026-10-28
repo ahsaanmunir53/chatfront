@@ -37,6 +37,8 @@ jobs:
             -c "CREATE DATABASE chatfront_test OWNER chatfront_owner" \
             -c "CREATE DATABASE chatfront_eval OWNER chatfront_owner"
       - run: uv sync --frozen
+      # Voice notes and videos are read with ffmpeg; the tests make a short video with it.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
       - name: Types

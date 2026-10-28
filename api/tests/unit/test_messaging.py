@@ -65,7 +65,18 @@ def test_parse_instagram_events(instagram: MetaMessagingAdapter) -> None:
         event(
             message={
                 "mid": "m4",
-                "attachments": [{"type": "ig_reel", "payload": {"url": "https://cdn.test/reel"}}],
+                "attachments": [{"type": "share", "payload": {"url": "https://cdn.test/post"}}],
+            }
+        ),
+        event(
+            message={
+                "mid": "m7",
+                "attachments": [
+                    {
+                        "type": "ig_reel",
+                        "payload": {"url": "https://cdn.test/reel", "reel_video_id": "R9"},
+                    }
+                ],
             }
         ),
         event(message={"mid": "m5", "text": "our own reply", "is_echo": True}),
@@ -80,6 +91,7 @@ def test_parse_instagram_events(instagram: MetaMessagingAdapter) -> None:
         Kind.BUTTON,
         Kind.IMAGE,
         Kind.UNSUPPORTED,
+        Kind.VIDEO,  # a shared reel is read as a video (feature 88)
         Kind.BUTTON,
     ]
     first = inbound[0]
@@ -92,8 +104,9 @@ def test_parse_instagram_events(instagram: MetaMessagingAdapter) -> None:
     assert inbound[1].payload["button_id"] == "size:m"
     assert inbound[2].media_ref == "https://cdn.test/p.jpg"
     assert inbound[3].media_ref is None
-    assert inbound[3].payload["url"] == "https://cdn.test/reel"
-    assert (inbound[4].text, inbound[4].payload["button_id"], inbound[4].message_id) == (
+    assert inbound[3].payload["url"] == "https://cdn.test/post"
+    assert (inbound[4].media_ref, inbound[4].payload["reel_id"]) == ("https://cdn.test/reel", "R9")
+    assert (inbound[5].text, inbound[5].payload["button_id"], inbound[5].message_id) == (
         "Track order",
         "track",
         "m6",
