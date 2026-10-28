@@ -1,7 +1,8 @@
 """Money that arrived (features 24, 97, 98): a wallet or bank SMS forwarded from the owner's
 Android phone, read by the provider's parser and matched.
 
-A message no parser trusts is dropped and never stored (it may be a personal text). A credit
+A message no parser trusts is dropped and never stored (it may be a personal text), unless
+the shop agreed to share the shape of wallet messages no parser could read (feature 73). A credit
 pays the screenshot claim it matches; with no screenshot, the order whose code is in its
 remarks or whose unique amount it is. A parser not yet checked against a real message never
 settles alone: its matches go to the owner.
@@ -34,7 +35,7 @@ from chatfront.payments.messages import paid_text
 from chatfront.payments.models import ClaimStatus, PaymentClaim, Receipt, VerifiedBy, WalletCredit
 from chatfront.payments.review import to_review, why_not_alone
 from chatfront.payments.settle import claim_facts, credit_facts, settle
-from chatfront.payments.sms import PARSERS, parse_sms
+from chatfront.payments.sms import PARSERS, parse_sms, samples
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -42,6 +43,7 @@ if TYPE_CHECKING:
 
 class Taken(StrEnum):
     IGNORED = "ignored"  # not a credit from a sender the shop's country trusts
+    SAMPLED = "sampled"  # no parser read it; its shape is kept to add the format (feature 73)
     DUPLICATE = "duplicate"  # this exact message arrived before
     PAID = "paid"  # it settled an order
     REVIEW = "review"  # it matched, and the owner decides
@@ -71,7 +73,8 @@ async def take_sms(services: Services, tenant_id: uuid.UUID, sms: Forwarded) -> 
             raise NotFound("shop")
         found = parse_sms(sms.sender, sms.body, tenant.country)
         if found is None:
-            return Taken.IGNORED
+            kept = await samples.keep(session, tenant, sms.sender, sms.body)
+            return Taken.SAMPLED if kept else Taken.IGNORED
         digest = body_hash(sms)
         if await session.scalar(select(WalletCredit.id).where(WalletCredit.body_hash == digest)):
             return Taken.DUPLICATE

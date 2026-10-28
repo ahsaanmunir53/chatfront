@@ -99,6 +99,25 @@ class WalletCredit(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+class SmsSample(Base):
+    """The shape of a wallet message no parser read, kept when the shop agreed, so the format
+    can be added (feature 73). No digit, id, email or name survives in the text."""
+
+    __tablename__ = "sms_samples"
+    __table_args__ = (UniqueConstraint("tenant_id", "text_hash"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    country: Mapped[str] = mapped_column(String(2))
+    sender: Mapped[str] = mapped_column(String(40))
+    text: Mapped[str] = mapped_column(Text)
+    text_hash: Mapped[str] = mapped_column(String(64))
+    seen: Mapped[int]
+    last_seen_at: Mapped[datetime]
+    handled_at: Mapped[datetime | None]  # a parser now reads it, or it is not money
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class Payment(Base):
     """The decision: this much money for this order, and who or what vouched for it. A credit
     or a claim pays once."""

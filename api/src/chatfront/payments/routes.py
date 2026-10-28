@@ -15,10 +15,11 @@ import segno
 from fastapi import APIRouter, Header, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType, record
+from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.models import Customer, Tenant
 from chatfront.media.models import Media
@@ -29,8 +30,16 @@ from chatfront.owner.routes import ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession
 from chatfront.payments import receipts
 from chatfront.payments.credits import Forwarded, take_sms
-from chatfront.payments.models import ClaimStatus, Payment, PaymentClaim, Receipt, WalletCredit
+from chatfront.payments.models import (
+    ClaimStatus,
+    Payment,
+    PaymentClaim,
+    Receipt,
+    SmsSample,
+    WalletCredit,
+)
 from chatfront.payments.review import decide
+from chatfront.payments.sms import PARSERS, samples
 from chatfront.services import Services
 
 router = APIRouter()
@@ -160,9 +169,19 @@ class PaidOut(BaseModel):
     created_at: datetime
 
 
+class WalletOut(BaseModel):
+    name: str
+    kind: str
+    read: bool  # Chatfront reads its credit messages
+    checked: bool  # and has checked that on a real message
+
+
 class PaymentsOut(BaseModel):
     forwarding: bool
     currency: str
+    wallets: list[WalletOut]
+    share_unread: bool  # the shape of wallet messages no parser read is kept (feature 73)
+    unread_kept: int
     reviews: list[ReviewOut]
     waiting: list[WaitingOut]
     recent: list[PaidOut]
@@ -185,6 +204,9 @@ async def payments(
         if tenant is None:
             raise NotFound("shop")
         reviews = await _reviews(services, db)
+        kept = await db.scalar(
+            select(func.count()).select_from(SmsSample).where(SmsSample.handled_at.is_(None))
+        )
         waiting = [
             WaitingOut(
                 order_code=order.code,
@@ -227,10 +249,57 @@ async def payments(
     return PaymentsOut(
         forwarding=tenant.sms_secret_hash is not None,
         currency=tenant.currency,
+        wallets=_wallets(tenant),
+        share_unread=samples.sharing(tenant),
+        unread_kept=kept or 0,
         reviews=reviews,
         waiting=waiting,
         recent=recent,
     )
+
+
+def _wallets(tenant: Tenant) -> list[WalletOut]:
+    out = []
+    for wallet in get_pack(tenant.country).wallets:
+        parser = PARSERS.get(wallet.parser or "")
+        out.append(
+            WalletOut(
+                name=wallet.name,
+                kind=wallet.kind,
+                read=parser is not None,
+                checked=parser is not None and parser.verified,
+            )
+        )
+    return out
+
+
+class Sharing(BaseModel):
+    share: bool
+
+
+@router.put("/api/owner/sms-samples")
+async def share_unread(
+    body: Sharing,
+    session: Annotated[OwnerSession, needs(Can.SETTINGS)],
+    services: ServicesDep,
+) -> Sharing:
+    """Agree, or stop, keeping the shape of wallet messages no parser read; stopping deletes
+    the ones kept."""
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await db.get(Tenant, session.tenant_id)
+        if tenant is None:
+            raise NotFound("shop")
+        tenant.profile = {**(tenant.profile or {}), samples.SHARE: body.share}
+        removed = 0 if body.share else await samples.stop_sharing(db)
+        await record(
+            db,
+            tenant.id,
+            Actor(ActorType.STAFF, str(session.staff_id)),
+            "payment.share_unread",
+            entity=("tenant", str(tenant.id)),
+            data={"share": body.share, "removed": removed},
+        )
+    return Sharing(share=body.share)
 
 
 async def _reviews(services: Services, db: AsyncSession) -> list[ReviewOut]:
