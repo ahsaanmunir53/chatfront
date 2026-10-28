@@ -1,13 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { WakeBar } from "./components/WakeBar";
 import { BASE_PATH } from "./config";
 import { LangProvider } from "./lang";
 import { ChatPage } from "./pages/ChatPage";
+import { CheckoutPage } from "./pages/CheckoutPage";
 import { HomePage } from "./pages/HomePage";
-import { DashboardPage, NotFoundPage, TrustPage } from "./pages/InfoPages";
+import { NotFoundPage, TrustPage } from "./pages/InfoPages";
 import { ReceiptPage } from "./pages/ReceiptPage";
 import { TrackPage } from "./pages/TrackPage";
 import { OwnerPage } from "./pages/OwnerPage";
@@ -40,10 +41,11 @@ createRoot(root).render(
             <Route path="/" element={<HomePage />} />
             <Route path="/s/:slug" element={<ShopPage />} />
             <Route path="/s/:slug/chat" element={<ChatPage />} />
+            <Route path="/s/:slug/checkout" element={<CheckoutPage />} />
             <Route path="/s/:slug/trust" element={<TrustPage />} />
             <Route path="/start" element={<StartPage />} />
             <Route path="/owner" element={<OwnerPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<Navigate to="/owner" replace />} />
             <Route path="/r/:code?" element={<ReceiptPage />} />
             <Route path="/t/:code" element={<TrackPage />} />
             <Route path="*" element={<NotFoundPage />} />

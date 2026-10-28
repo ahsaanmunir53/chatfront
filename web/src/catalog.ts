@@ -26,6 +26,8 @@ export type ShopProduct = {
   options: string[]; // one label per variant: "M", "Sea green"
   imageUrl: string | null;
   inStock: boolean;
+  // What can go in the cart; empty until the live catalog answers.
+  variants: { catalogId: string; label: string; inStock: boolean }[];
 };
 
 const files = import.meta.glob<TemplateFile>("@templates/*.json", {
@@ -64,6 +66,7 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       options: variants.map((v) => optionLabel(v.options)).filter(Boolean),
       imageUrl: null,
       inStock: variants.some((v) => v.stock == null || v.stock > 0),
+      variants: [],
     };
   });
 }
@@ -83,6 +86,11 @@ export function fromApi(product: PublicProduct): ShopProduct {
     options: product.variants.map((v) => optionLabel(v.options)).filter(Boolean),
     imageUrl: product.image_url,
     inStock: product.in_stock,
+    variants: product.variants.map((v) => ({
+      catalogId: v.catalog_id,
+      label: optionLabel(v.options),
+      inStock: v.in_stock,
+    })),
   };
 }
 

@@ -1948,6 +1948,76 @@ button {
   text-underline-offset: 4px;
 }
 
+.product-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.product-actions .product-ask {
+  margin-top: 0;
+}
+
+.add-to-cart {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.add-to-cart select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.product-add {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.product-add:hover {
+  background: var(--ink-raised);
+}
+
+.product-in-cart {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The cart: a slip pinned to the bottom of the shop page while something is in it. */
+.cart-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 20px 0 0;
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--on-ink);
+  box-shadow: 0 8px 24px rgb(15 30 74 / 0.25);
+  font-weight: 650;
+}
+
 /* Try a demo shop as its owner. */
 .owner-try {
   display: grid;
@@ -4294,5 +4364,220 @@ button {
   .dash-costs .daybook {
     display: block;
     overflow-x: auto;
+  }
+}
+
+/* The shop page's checkout (feature 80): the cart as a till slip beside where it goes. */
+
+.checkout {
+  padding: 8px 0 24px;
+}
+
+.checkout .lede {
+  margin-bottom: 8px;
+}
+
+.checkout-source {
+  display: inline-block;
+  margin: 4px 0 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--saffron) 22%, var(--card));
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkout-empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.checkout-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .checkout-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.checkout-lines {
+  display: grid;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-lines li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.checkout-lines li:first-child {
+  border-top: 0;
+}
+
+.checkout-line-name {
+  font-weight: 650;
+}
+
+.checkout-line-options {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.checkout-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+}
+
+.checkout-qty button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.checkout-qty button:hover {
+  background: var(--paper);
+}
+
+.checkout-qty output {
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkout-line-total {
+  min-width: 6em;
+  text-align: end;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.checkout-line-problem {
+  grid-column: 1 / -1;
+  color: var(--chili);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkout-lines li.is-problem .checkout-line-name {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.checkout-sums {
+  border-top: 3px double var(--text);
+  padding-top: 4px;
+}
+
+.checkout-total dt,
+.checkout-total dd {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.checkout-pay {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.checkout-pay legend {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkout-pay label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.checkout-pay label:has(input:checked) {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, var(--card));
+}
+
+.checkout-pay input {
+  accent-color: var(--ink);
+}
+
+.checkout-place {
+  width: 100%;
+  margin-top: 16px;
+  border: 0;
+  cursor: pointer;
+}
+
+.checkout-place:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field-error {
+  color: var(--chili);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checkout-done {
+  max-width: 40em;
+  padding: 24px 0;
+}
+
+.checkout-message {
+  margin: 0 0 12px;
+  padding: 16px 18px;
+  border-inline-start: 4px solid var(--stamp);
+  border-radius: 12px;
+  background: var(--card);
+  white-space: pre-line;
+}
+
+.checkout-done-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .checkout-pay label:has(input:checked) {
+    border-color: var(--on-ink);
+  }
+
+  .checkout-sums {
+    border-top-color: var(--on-ink-muted);
   }
 }

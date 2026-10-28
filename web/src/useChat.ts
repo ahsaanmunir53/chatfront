@@ -29,6 +29,16 @@ function storeToken(slug: string, token: string): void {
   }
 }
 
+/** This browser's chat token for the shop, made on first need: the shop page's checkout
+ * places its order into the same chat (feature 80). */
+export async function chatToken(slug: string): Promise<string> {
+  const stored = storedToken(slug);
+  if (stored) return stored;
+  const { token } = await api.startChat(slug);
+  storeToken(slug, token);
+  return token;
+}
+
 function problemOf(error: unknown): { problem: SendProblem; drop: boolean } {
   if (!(error instanceof ApiError)) return { problem: "network", drop: false };
   if (error.status === 401) return { problem: "signed_out", drop: true };

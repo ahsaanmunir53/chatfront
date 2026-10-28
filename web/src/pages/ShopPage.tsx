@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useCart } from "../cart";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ChannelLink } from "../api";
@@ -126,12 +127,71 @@ function ProductCard({
             {product.options.join(", ")}
           </p>
         )}
-        <Link to={`/s/${slug}/chat?${new URLSearchParams({ ask })}`} className="product-ask">
-          <ChatIcon size={16} />
-          {t("catalog.ask")}
-        </Link>
+        <div className="product-actions">
+          {product.inStock && product.variants.length > 0 && (
+            <AddToCart slug={slug} product={product} name={text.name} />
+          )}
+          <Link to={`/s/${slug}/chat?${new URLSearchParams({ ask })}`} className="product-ask">
+            <ChatIcon size={16} />
+            {t("catalog.ask")}
+          </Link>
+        </div>
       </div>
     </li>
+  );
+}
+
+/** One variant into the cart: picked from the options when there are several. */
+function AddToCart({ slug, product, name }: { slug: string; product: ShopProduct; name: string }) {
+  const { t } = useLang();
+  const cart = useCart(slug);
+  const choices = product.variants.filter((variant) => variant.inStock);
+  const [chosen, setChosen] = useState(choices[0]?.catalogId ?? "");
+  const inCart = cart.lines.find((line) => line.item === chosen)?.quantity ?? 0;
+  return (
+    <div className="add-to-cart">
+      {choices.length > 1 && (
+        <select
+          aria-label={t("shop.option", { name })}
+          value={chosen}
+          onChange={(e) => setChosen(e.target.value)}
+        >
+          {choices.map((variant) => (
+            <option key={variant.catalogId} value={variant.catalogId}>
+              {variant.label}
+            </option>
+          ))}
+        </select>
+      )}
+      <button
+        type="button"
+        className="product-add"
+        aria-label={`${t("shop.add_to_cart")}: ${name}`}
+        onClick={() => cart.add(chosen)}
+      >
+        {t("shop.add_to_cart")}
+      </button>
+      {inCart > 0 && (
+        <span className="product-in-cart" role="status">
+          {t("shop.in_cart", { count: inCart })}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** What is in the cart, and the way to the checkout. */
+function CartBar({ slug }: { slug: string }) {
+  const { t } = useLang();
+  const { count } = useCart(slug);
+  if (count === 0) return null;
+  return (
+    <div className="cart-bar" role="region" aria-label={t("checkout.cart")}>
+      <span>{t("shop.cart_bar", { count })}</span>
+      <Link to={`/s/${slug}/checkout`} className="button button-saffron button-small">
+        {t("shop.checkout")}
+      </Link>
+    </div>
   );
 }
 
@@ -273,6 +333,7 @@ export function ShopPage() {
       </section>
 
       <Catalog slug={slug} profile={profile} />
+      <CartBar slug={slug} />
 
       {copyable && <TryAsOwner slug={slug} />}
 

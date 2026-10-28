@@ -76,20 +76,6 @@ export function TrustPage() {
   );
 }
 
-function Explainer({ title, lede }: { title: Key; lede: Key }) {
-  const { t } = useLang();
-  return (
-    <Page>
-      <section className="plain-hero">
-        <h1 className="title">{t(title)}</h1>
-        <p className="lede">{t(lede)}</p>
-      </section>
-    </Page>
-  );
-}
-
-export const DashboardPage = () => <Explainer title="dashboard.title" lede="dashboard.lede" />;
-
 export function NotFoundPage() {
   const { t } = useLang();
   return (

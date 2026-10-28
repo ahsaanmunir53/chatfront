@@ -28,13 +28,17 @@ describe("catalog", () => {
       image_url: null,
       in_stock: false,
       variants: [
-        { id: "a", options: { size: "M" }, price: 275_000, in_stock: false },
-        { id: "b", options: { size: "XL" }, price: 299_000, in_stock: false },
+        { id: "a", catalog_id: "KRT01-1", options: { size: "M" }, price: 275_000, in_stock: false },
+        { id: "b", catalog_id: "KRT01-2", options: { size: "XL" }, price: 299_000, in_stock: false },
       ],
     };
     const shown = fromApi(product);
     expect(shown).toMatchObject({ key: "KRT01", price: 275_000, priceVaries: true, inStock: false });
     expect(shown.options).toEqual(["M", "XL"]);
+    expect(shown.variants).toEqual([
+      { catalogId: "KRT01-1", label: "M", inStock: false },
+      { catalogId: "KRT01-2", label: "XL", inStock: false },
+    ]);
     expect(productText(shown, "ur")).toEqual({
       name: "لینن کرتا",
       description: "Plain linen kurta.",

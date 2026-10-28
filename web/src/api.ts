@@ -51,6 +51,7 @@ export type ServerMessage = {
 
 export type PublicVariant = {
   id: string;
+  catalog_id: string;
   options: Record<string, string>;
   price: number;
   in_stock: boolean;
@@ -66,6 +67,49 @@ export type PublicProduct = {
   image_url: string | null;
   in_stock: boolean;
   variants: PublicVariant[];
+};
+
+export type QuoteLine = {
+  item: string;
+  name: string | null;
+  options: Record<string, string>;
+  unit_price: number;
+  quantity: number;
+  line_total: number;
+  problem: "not_found" | "sold_out" | "not_enough" | null;
+  left: number | null;
+};
+export type Quote = {
+  lines: QuoteLine[];
+  subtotal: number;
+  delivery: number | null;
+  free_delivery: boolean;
+  total: number;
+  methods: ("cod" | "transfer")[];
+  currency: string;
+};
+export type DeliveryDetails = {
+  name: string;
+  phone: string;
+  city: string;
+  address: string;
+  area: string;
+  landmark: string;
+};
+export type CheckoutRequest = {
+  lines: { item: string; quantity: number }[];
+  details: DeliveryDetails;
+  payment_method: "cod" | "transfer";
+  source: "shop_page" | "facebook" | "instagram";
+  lang: string;
+};
+export type Placed = {
+  code: string;
+  status: string;
+  total: number;
+  due_now: number | null;
+  payment_method: string;
+  message: string;
 };
 
 export type OwnerMe = {
@@ -464,6 +508,17 @@ export const api = {
   shop: (slug: string) => call<Shop>(shopPath(slug)),
   products: (slug: string) => call<PublicProduct[]>(`${shopPath(slug)}/products`),
   trust: (slug: string) => call<TrustInfo>(`${shopPath(slug)}/trust`),
+  quote: (slug: string, lines: { item: string; quantity: number }[], city: string) =>
+    call<Quote>(`${shopPath(slug)}/checkout/quote`, {
+      method: "POST",
+      body: JSON.stringify({ lines, city: city.trim() || null }),
+    }),
+  checkout: (slug: string, chatToken: string, order: CheckoutRequest) =>
+    call<Placed>(`${shopPath(slug)}/checkout`, {
+      method: "POST",
+      headers: { "X-Chat-Token": chatToken },
+      body: JSON.stringify(order),
+    }),
   startChat: (slug: string) =>
     call<{ token: string }>(`${shopPath(slug)}/chat/session`, { method: "POST" }),
   postChat: (slug: string, auth: ChatAuth, message: ChatText) =>
