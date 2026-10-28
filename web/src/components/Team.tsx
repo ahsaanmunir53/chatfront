@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
+import { useCopy } from "../clipboard";
 import type { Invite, Member } from "../api";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
@@ -14,16 +15,12 @@ const ACTIVITY_POLL_MS = 10_000;
 
 function LinkCard({ invite }: { invite: Invite }) {
   const { t } = useLang();
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    await navigator.clipboard?.writeText(invite.link).catch(() => undefined);
-    setCopied(true);
-  }
+  const { copied, copy } = useCopy();
   return (
     <div className="pay-link team-link" role="status">
       <p>{t("console.team_link", { name: invite.member.name })}</p>
       <code dir="ltr">{invite.link}</code>
-      <button type="button" className="action" onClick={() => void copy()}>
+      <button type="button" className="action" onClick={() => void copy(invite.link)}>
         {copied ? t("console.copied") : t("console.copy")}
       </button>
     </div>

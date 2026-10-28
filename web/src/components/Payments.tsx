@@ -4,6 +4,7 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import { useCopy } from "../clipboard";
 import type { Forwarding, OwnerMe, PaymentReview, Payments } from "../api";
 import { isolate } from "../i18n";
 import type { Key } from "../i18n";
@@ -149,21 +150,16 @@ function SmsForwarding({
 }) {
   const { t } = useLang();
   const [made, setMade] = useState<Forwarding | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy, reset } = useCopy();
 
   async function makeLink() {
     try {
       setMade(await api.setUpForwarding(token));
-      setCopied(false);
+      reset();
       onChange();
     } catch {
       // The button stays; the owner can try again.
     }
-  }
-
-  async function copy(text: string) {
-    await navigator.clipboard?.writeText(text).catch(() => undefined);
-    setCopied(true);
   }
 
   return (
