@@ -89,15 +89,17 @@ def _pick(orders: list[Order], picture: Picture, body: str) -> Order:
     return by_amount[0] if len(by_amount) == 1 else orders[0]
 
 
-async def _read(services: Services, turn: Turn, image: ImagePart) -> Picture:
+async def _read(services: Services, turn: Turn, image: ImagePart, waiting: list[Order]) -> Picture:
     pack = get_pack(turn.tenant.country)
+    # The cost meter books the reading to the order when only one waits (feature 112).
+    ref = ("order", str(waiting[0].id)) if len(waiting) == 1 else ("message", str(turn.message.id))
     try:
         reading: PaymentReading | None = await forensics.read_screenshot(
             services.ai,
             tenant_id=turn.tenant.id,
             picture=image,
             currency=pack.currency,
-            ref=("message", str(turn.message.id)),
+            ref=ref,
         )
     except (ModelUnavailable, AppError) as exc:
         log.warning("payment screenshot not read: %s", exc)
@@ -151,9 +153,10 @@ async def handle_screenshot(services: Services, turn: Turn) -> list[Outbound] | 
     if turn.message.kind != Kind.IMAGE or not isinstance(image, ImagePart):
         return None
     async with services.db.tenant(turn.tenant.id) as session:
-        if not await _waiting(session, turn.conversation.customer_id):
-            return None
-    picture = await _read(services, turn, image)
+        waiting = await _waiting(session, turn.conversation.customer_id)
+    if not waiting:
+        return None
+    picture = await _read(services, turn, image, waiting)
     if picture.reading is not None and not picture.reading.is_payment:
         return None
     elsewhere = await _seen_elsewhere(services, turn.tenant.id, picture)
