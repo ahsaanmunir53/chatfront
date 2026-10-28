@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import { useCopy } from "../clipboard";
 import { API_BASE } from "../config";
-import type { TrustInfo, TrustStats } from "../api";
+import type { OfficialResult, TrustInfo, TrustStats } from "../api";
 import { Avatar } from "../components/Avatar";
 import { ShieldIcon } from "../components/Icons";
 import { ShopReviewsSection } from "../components/Reviews";
@@ -75,10 +76,67 @@ export function TrustPage() {
           ))}
         </ul>
       </section>
+      {name && <OfficialCheck slug={slug} shop={name} />}
       <TrustNumbers slug={slug} />
       <ShopReviewsSection slug={slug} />
       <AssistantAccess slug={slug} />
     </Page>
+  );
+}
+
+/** "Is this number really the shop's?" (feature 41): paste the number or account that wrote
+ * to you; only the shop's connected channels pass. */
+function OfficialCheck({ slug, shop }: { slug: string; shop: string }) {
+  const { t } = useLang();
+  const [value, setValue] = useState("");
+  const [result, setResult] = useState<OfficialResult | "checking" | "failed" | null>(null);
+  async function check(event: FormEvent) {
+    event.preventDefault();
+    if (!value.trim()) return;
+    setResult("checking");
+    try {
+      setResult(await api.checkOfficial(slug, value.trim()));
+    } catch {
+      setResult("failed");
+    }
+  }
+  return (
+    <section aria-labelledby="official-heading" className="plain-section official-check">
+      <h2 id="official-heading" className="section-title">
+        {t("trust.check_title")}
+      </h2>
+      <p className="lede">{t("trust.check_lede", { shop })}</p>
+      <form className="official-form" onSubmit={(event) => void check(event)}>
+        <label>
+          <span>{t("trust.check_label")}</span>
+          <input
+            value={value}
+            maxLength={120}
+            dir="ltr"
+            autoComplete="off"
+            onChange={(e) => {
+              setValue(e.target.value);
+              setResult(null);
+            }}
+          />
+        </label>
+        <button
+          type="submit"
+          className="button button-ink button-small"
+          disabled={result === "checking"}
+        >
+          {t("trust.check_button")}
+        </button>
+      </form>
+      {result === "failed" && <p role="alert">{t("trust.check_failed")}</p>}
+      {result !== null && typeof result === "object" && (
+        <p role="status" className={result.official ? "pay-on" : "order-failed"}>
+          {result.official
+            ? t("trust.check_yes", { shop, channel: t(`channel.${result.channel}` as Key) })
+            : t("trust.check_no", { shop })}
+        </p>
+      )}
+    </section>
   );
 }
 

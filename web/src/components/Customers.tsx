@@ -7,6 +7,7 @@ import { api } from "../api";
 import type { CustomerSummary, OwnerCustomer, OwnerMe, Segment } from "../api";
 import type { Key } from "../i18n";
 import { FraudBadges, ReportFraud } from "./Fraud";
+import { saveFile } from "../download";
 import { useLang } from "../lang";
 import { formatMoney } from "../money";
 import { useServer } from "../server";
@@ -100,6 +101,67 @@ function Stats({ me, summary }: { me: OwnerMe; summary: CustomerSummary }) {
   );
 }
 
+/** A customer's own data (feature 44): a copy to hand them, and erasing it when they ask. */
+function DataRights({
+  token,
+  person,
+  onDone,
+}: {
+  token: string;
+  person: OwnerCustomer;
+  onDone: () => void;
+}) {
+  const { t } = useLang();
+  const [asking, setAsking] = useState(false);
+  const [failed, setFailed] = useState(false);
+  async function copy() {
+    setFailed(false);
+    try {
+      saveFile(
+        await api.customerData(token, person.id),
+        `customer-data-${person.id.slice(0, 8)}.json`,
+      );
+    } catch {
+      setFailed(true);
+    }
+  }
+  async function erase() {
+    setFailed(false);
+    try {
+      await api.eraseCustomer(token, person.id);
+      setAsking(false);
+      onDone();
+    } catch {
+      setFailed(true);
+    }
+  }
+  return (
+    <>
+      <button type="button" className="action" onClick={() => void copy()}>
+        {t("console.data_copy")}
+      </button>
+      {asking ? (
+        <span className="data-erase-confirm" role="group">
+          <span>
+            {t("console.data_erase_sure", { name: person.name || t("console.customer_label") })}
+          </span>
+          <button type="button" className="action action-danger" onClick={() => void erase()}>
+            {t("console.data_erase_yes")}
+          </button>
+          <button type="button" className="action" onClick={() => setAsking(false)}>
+            {t("console.data_erase_no")}
+          </button>
+        </span>
+      ) : (
+        <button type="button" className="action" onClick={() => setAsking(true)}>
+          {t("console.data_erase")}
+        </button>
+      )}
+      {failed && <span role="alert">{t("console.offers_failed")}</span>}
+    </>
+  );
+}
+
 function CustomerRow({
   me,
   token,
@@ -173,6 +235,7 @@ function CustomerRow({
         </button>
       )}
       {canTrust && <ReportFraud token={token} person={person} onDone={onChange} />}
+      {canTrust && <DataRights token={token} person={person} onDone={onChange} />}
     </li>
   );
 }

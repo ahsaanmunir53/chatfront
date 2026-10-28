@@ -518,6 +518,133 @@ export type Unboxing = {
   damage: string;
   notes: string;
 };
+export type ForecastWeek = {
+  starts: string;
+  money_in: number;
+  money_out: number;
+  fixed: { category: string; amount: number }[];
+  balance: number | null;
+  short: boolean;
+};
+export type CashForecast = {
+  usual_in: number;
+  usual_out: number;
+  cash_now: number | null;
+  cash_on: string | null;
+  fixed: { category: string; amount: number; day: number }[];
+  weeks: ForecastWeek[];
+};
+export type YearSummary = {
+  label: string;
+  start: string;
+  end: string;
+  sales: number;
+  udhaar_paid: number;
+  expenses: number;
+  refunds: number;
+  write_offs: number;
+  cash_profit: number;
+  goods_profit: number;
+  orders: number;
+  months: { month: string; money_in: number; money_out: number }[];
+  expense_categories: Record<string, number>;
+  top: { name: string; units: number; revenue: number }[];
+  zakat_inputs: { stock: number; stock_without_cost: number; owed_to_shop: number };
+};
+export type ZakatIn = {
+  cash: number;
+  stock: number | null;
+  owed_to_shop: number | null;
+  debts: number;
+  nisab: number;
+};
+export type Zakat = {
+  cash: number;
+  stock: number;
+  stock_without_cost: number;
+  owed_to_shop: number;
+  debts: number;
+  net: number;
+  nisab: number;
+  due: number;
+};
+export type StaffPayRow = {
+  staff_id: string;
+  name: string;
+  salary: number;
+  commission_bp: number;
+  pay_day: number;
+  sales: number;
+  commission: number;
+  due: number;
+  paid: number | null;
+  paid_at: string | null;
+};
+export type Passport = {
+  code: string;
+  made_on: string;
+  revoked: boolean;
+  totals: Record<string, number>;
+};
+export type PassportMonth = {
+  month: string;
+  orders_delivered: number;
+  delivered_value: number;
+  orders_returned: number;
+  paid_matched_to_sms: number;
+  paid_approved_by_owner: number;
+  cash_at_door: number;
+};
+export type PublicPassport = {
+  statement: {
+    code: string;
+    shop: string;
+    shop_page: string;
+    country: string;
+    currency: string;
+    selling_since: string | null;
+    made_on: string;
+    months: PassportMonth[];
+    totals: Omit<PassportMonth, "month">;
+  };
+  signature: string;
+  public_key: string;
+  signed_text: string;
+  valid: boolean;
+  revoked: boolean;
+};
+export type SeasonAhead = {
+  key: string;
+  starts: string;
+  ends: string;
+  last_year: { starts: string; ends: string } | null;
+  lifts: { category: string; units: number; times: number }[];
+  usual: string[];
+};
+export type CoachNote = {
+  week: string;
+  lines: string[];
+  advice: string[];
+  by_model: boolean;
+  created_at: string;
+};
+export type ScamKind = "phone" | "wallet" | "url";
+export type ScamReportOut = {
+  id: string;
+  kind: ScamKind;
+  value: string;
+  posing_as: string;
+  source: string;
+  status: "pending" | "confirmed" | "dismissed";
+  created_at: string;
+};
+export type ScamToReview = ScamReportOut & { shop: string; evidence: Record<string, unknown> };
+export type CallCheck = {
+  verdict: "scam" | "suspicious" | "no_signs";
+  reading: { posing_as: string; summary: string; numbers: string[] } & Record<string, unknown>;
+};
+export type Erased = { messages: number; media: number; orders: number; reviews: number };
+export type OfficialResult = { official: boolean; channel: string | null; display: string | null };
 export type BookingHours = { days: Record<string, string>; seats: number };
 export type AppointmentStatus = "booked" | "cancelled" | "done" | "no_show";
 export type Appointment = {
@@ -1023,6 +1150,16 @@ async function pdf(token: string, path: string): Promise<Blob> {
   return response.blob();
 }
 
+/** A file the owner downloads (a workbook, a data copy, a report). */
+async function blob(token: string, path: string): Promise<Blob> {
+  const response = await fetch(API_BASE + path, { headers: bearer(token) });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: { code?: string } } | null;
+    throw new ApiError(response.status, body?.error?.code ?? `http_${response.status}`, "No file");
+  }
+  return response.blob();
+}
+
 async function call<T>(path: string, init?: Init): Promise<T> {
   // JSON bodies say so; a FormData body lets the browser set its multipart boundary.
   const json: Record<string, string> =
@@ -1073,6 +1210,8 @@ export const api = {
   shop: (slug: string) => call<Shop>(shopPath(slug)),
   products: (slug: string) => call<PublicProduct[]>(`${shopPath(slug)}/products`),
   trust: (slug: string) => call<TrustInfo>(`${shopPath(slug)}/trust`),
+  checkOfficial: (slug: string, value: string) =>
+    call<OfficialResult>(`${shopPath(slug)}/trust/check?value=${encodeURIComponent(value)}`),
   quote: (
     slug: string,
     lines: { item: string; quantity: number }[],
@@ -1709,6 +1848,98 @@ export const api = {
       body: form,
     });
   },
+  forecast: (token: string) =>
+    call<CashForecast>("/api/owner/books/forecast", { headers: bearer(token) }),
+  setCash: (token: string, amount: number) =>
+    call<CashForecast>("/api/owner/books/cash", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ amount }),
+    }),
+  yearSummary: (token: string, starts?: number) =>
+    call<YearSummary>(`/api/owner/books/year${starts ? `?starts=${starts}` : ""}`, {
+      headers: bearer(token),
+    }),
+  zakat: (token: string, figures: ZakatIn) =>
+    call<Zakat>("/api/owner/books/zakat", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(figures),
+    }),
+  taxWorkbook: (token: string, start: string, end: string) =>
+    blob(
+      token,
+      `/api/owner/books/export.xlsx?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`,
+    ),
+  staffPay: (token: string, month: string) =>
+    call<StaffPayRow[]>(`/api/owner/team/pay?month=${encodeURIComponent(month)}`, {
+      headers: bearer(token),
+    }),
+  setStaffPay: (
+    token: string,
+    staffId: string,
+    pay: { salary: number; commission_bp: number; pay_day: number },
+  ) =>
+    call<{ salary: number }>(`/api/owner/team/${encodeURIComponent(staffId)}/pay`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(pay),
+    }),
+  payStaff: (token: string, staffId: string, month: string) =>
+    call<StaffPayRow>(
+      `/api/owner/team/${encodeURIComponent(staffId)}/pay/${encodeURIComponent(month)}`,
+      { method: "POST", headers: bearer(token) },
+    ),
+  passports: (token: string) =>
+    call<Passport[]>("/api/owner/passports", { headers: bearer(token) }),
+  makePassport: (token: string, wording: string) =>
+    call<Passport>("/api/owner/passports", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ agree: true, wording }),
+    }),
+  revokePassport: (token: string, code: string) =>
+    call<{ revoked: boolean }>(`/api/owner/passports/${encodeURIComponent(code)}/revoke`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  passport: (code: string) => call<PublicPassport>(`/api/passport/${encodeURIComponent(code)}`),
+  seasons: (token: string) => call<SeasonAhead[]>("/api/owner/seasons", { headers: bearer(token) }),
+  coachNotes: (token: string) => call<CoachNote[]>("/api/owner/coach", { headers: bearer(token) }),
+  coachNow: (token: string) =>
+    call<CoachNote>("/api/owner/coach/now", { method: "POST", headers: bearer(token) }),
+  checkCall: (token: string, file: Blob) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<CallCheck>("/api/owner/guardian", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  scams: (token: string) => call<ScamReportOut[]>("/api/owner/scams", { headers: bearer(token) }),
+  reportScam: (token: string, kind: ScamKind, value: string, posingAs: string) =>
+    call<ScamReportOut>("/api/owner/scams", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ kind, value, posing_as: posingAs }),
+    }),
+  scamsToReview: (token: string) =>
+    call<ScamToReview[]>("/api/platform/scams", { headers: bearer(token) }),
+  decideScam: (token: string, id: string, confirm: boolean) =>
+    call<ScamReportOut>(`/api/platform/scams/${encodeURIComponent(id)}`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ confirm }),
+    }),
+  stixReport: (token: string) => blob(token, "/api/platform/stix"),
+  customerData: (token: string, customerId: string) =>
+    blob(token, `/api/owner/customers/${encodeURIComponent(customerId)}/data`),
+  eraseCustomer: (token: string, customerId: string) =>
+    call<Erased>(`/api/owner/customers/${encodeURIComponent(customerId)}/erase`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
   ownerReviews: (token: string) =>
     call<ShopReviews>("/api/owner/reviews", { headers: bearer(token) }),
   replyToReview: (token: string, reviewId: string, text: string) =>

@@ -10,6 +10,7 @@ import { CheckoutPage } from "./pages/CheckoutPage";
 import { GroupPage } from "./pages/GroupPage";
 import { HomePage } from "./pages/HomePage";
 import { NotFoundPage, TrustPage } from "./pages/InfoPages";
+import { PassportPage } from "./pages/PassportPage";
 import { ReceiptPage } from "./pages/ReceiptPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { TrackPage } from "./pages/TrackPage";
@@ -51,6 +52,7 @@ createRoot(root).render(
             <Route path="/owner" element={<OwnerPage />} />
             <Route path="/dashboard" element={<Navigate to="/owner" replace />} />
             <Route path="/r/:code?" element={<ReceiptPage />} />
+            <Route path="/passport/:code" element={<PassportPage />} />
             <Route path="/t/:code" element={<TrackPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
