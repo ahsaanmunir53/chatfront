@@ -39,6 +39,8 @@ export default defineConfig({
       WORKER_ENABLED: "true",
       WORKER_POLL_SECONDS: "0.3",
       PUBLIC_RATE_LIMIT_PER_MINUTE: "1000",
+      // Simulated customers (feature 110) arrive and type quickly in tests.
+      SIM_PACE_SECONDS: "0.2",
     },
   },
 });

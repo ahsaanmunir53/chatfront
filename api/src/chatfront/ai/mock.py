@@ -2,9 +2,11 @@
 
 Fixtures live in ai/fixtures/*.json. Each entry names a prompt and role ("*" for any), a
 `match` substring of the last user message and the answer language `lang` (both "*" for any).
-Specific entries win over "*": a match on the text first, then on the language. In a tool
-loop, `step` is how many rounds of tool results the request already holds; an entry with tool
-calls and no step answers only the first round, so a loop always reaches a text answer.
+Specific entries win over "*": a match on the text first (one marked `exact`, on the whole
+message, before words found in it), then on the shop (`tenant`, for answers scripted for one
+shop, as the customer simulator's replay adds them), then on the language. In a tool loop,
+`step` is how many rounds of tool results the request already holds; an entry with tool calls
+and no step answers only the first round, so a loop always reaches a text answer.
 Real responses can be captured with AI_RECORD_DIR and promoted into fixtures.
 """
 
@@ -21,6 +23,7 @@ from chatfront.ai.types import ChatRequest, ChatResult, Effort, ToolCall, Usage
 from chatfront.core.errors import AppError
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+KEEP_REQUESTS = 500  # the latest requests, for tests to read; a long-running demo keeps no more
 MOCK_ENDPOINT = Endpoint("mock", "", None, "mock", Decimal(0), Decimal(0))
 
 
@@ -43,6 +46,13 @@ class Fixture:
     json: dict[str, Any] | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     step: int | None = None
+    tenant: str = "*"
+    exact: bool = False  # the whole message, not words in it
+
+    def _said(self, text: str) -> bool:
+        if self.exact:
+            return _same_words(self.match, text)
+        return self.match.lower() in text.lower()
 
     def matches(self, req: ChatRequest, last_user_text: str) -> bool:
         prompt_name = (req.prompt or "").split("@")[0]  # fixtures hold across prompt versions
@@ -50,10 +60,15 @@ class Fixture:
         return (
             self.prompt in ("*", prompt_name)
             and self.role in ("*", req.role.value)
-            and (self.match == "*" or self.match.lower() in last_user_text.lower())
+            and (self.match == "*" or self._said(last_user_text))
             and self.lang in ("*", req.lang)
+            and self.tenant in ("*", str(req.tenant_id))
             and (step is None or step == tool_rounds(req))
         )
+
+
+def _same_words(a: str, b: str) -> bool:
+    return " ".join(a.lower().split()) == " ".join(b.lower().split())
 
 
 def load_fixtures(directory: Path = FIXTURES_DIR) -> list[Fixture]:
@@ -90,7 +105,15 @@ class MockProvider:
     def find(self, req: ChatRequest) -> Fixture:
         text = _last_user_text(req)
         candidates = [f for f in self.fixtures if f.matches(req, text)]
-        candidates.sort(key=lambda f: (f.match == "*", f.step is None, f.lang == "*"))
+        candidates.sort(
+            key=lambda f: (
+                f.match == "*",
+                not f.exact,
+                f.tenant == "*",
+                f.step is None,
+                f.lang == "*",
+            )
+        )
         if not candidates:
             raise MockMiss(req)
         return candidates[0]
@@ -100,6 +123,7 @@ class MockProvider:
     ) -> ChatResult:
         del endpoint, effort, max_tokens  # same signature as the live provider; unused here
         self.requests.append(req)
+        del self.requests[:-KEEP_REQUESTS]
         fixture = self.find(req)
         content = json.dumps(fixture.json, ensure_ascii=False) if fixture.json else fixture.content
         calls = tuple(
