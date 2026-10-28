@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.books.ledger import today
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.core.models import Tenant
+from chatfront.offers import referrals
 from chatfront.offers.pricing import (
     BundleRule,
     CouponProblem,
@@ -111,6 +112,9 @@ async def _coupon(
     coupon = await find_coupon(session, code)
     if coupon is None:
         return CouponProblem.UNKNOWN
+    personal = await _personal(session, coupon, customer_id, order_id)
+    if personal is not None:
+        return personal
     others = CouponUse.order_id != order_id if order_id else true()
     uses = await session.scalar(
         select(func.count(CouponUse.id)).where(CouponUse.coupon_id == coupon.id, others)
@@ -126,6 +130,31 @@ async def _coupon(
     return coupon_off(
         coupon_rule(coupon), eligible, today(tenant), uses=int(uses or 0), used_before=used_before
     )
+
+
+async def _personal(
+    session: AsyncSession,
+    coupon: Coupon,
+    customer_id: uuid.UUID | None,
+    order_id: uuid.UUID | None,
+) -> CouponProblem | None:
+    """Codes for one person (feature 20): a thank-you code is its owner's alone; a referral
+    code is for someone else's first order."""
+    if coupon.for_customer_id is not None and coupon.for_customer_id != customer_id:
+        return CouponProblem.NOT_FOR_YOU
+    if coupon.referrer_id is not None:
+        order = await session.get(Order, order_id) if order_id else None
+        if customer_id == coupon.referrer_id or await referrals.same_person(
+            session, coupon.referrer_id, order
+        ):
+            return CouponProblem.NOT_FOR_YOU
+    if (
+        coupon.first_order_only
+        and customer_id is not None
+        and await referrals.has_ordered(session, customer_id, order_id)
+    ):
+        return CouponProblem.FIRST_ORDER_ONLY
+    return None
 
 
 async def balance(session: AsyncSession, customer_id: uuid.UUID) -> int:
@@ -225,6 +254,8 @@ async def _entries(session: AsyncSession, order: Order, reason: PointsReason) ->
 async def on_move(session: AsyncSession, tenant: Tenant, order: Order, wanted: OrderStatus) -> None:
     """Write down what an order's offers did, as it moves."""
     if wanted == OrderStatus.PLACED:
+        if not _spent(order, OfferKind.COUPON):
+            order.coupon_code = None  # a code that took nothing off was not used
         for used in _spent(order, OfferKind.COUPON):
             coupon = await find_coupon(session, str(used["label"]))
             if coupon is not None:
@@ -248,9 +279,12 @@ async def on_move(session: AsyncSession, tenant: Tenant, order: Order, wanted: O
         if wanted == OrderStatus.RETURNED:
             earned_here = await _entries(session, order, PointsReason.EARNED)
             await _points(session, order, -earned_here, PointsReason.RETURNED)
-    elif wanted == OrderStatus.DELIVERED and (loyalty := loyalty_of(tenant)) is not None:
-        goods = order.subtotal - order.offer_off
-        await _points(session, order, earned(goods, loyalty), PointsReason.EARNED)
+    elif wanted == OrderStatus.DELIVERED:
+        loyalty = loyalty_of(tenant)
+        if loyalty is not None:
+            goods = order.subtotal - order.offer_off
+            await _points(session, order, earned(goods, loyalty), PointsReason.EARNED)
+        await referrals.reward(session, tenant, order, points_on=loyalty is not None)
     await session.flush()
 
 

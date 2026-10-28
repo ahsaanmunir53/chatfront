@@ -20,6 +20,7 @@ from chatfront.catalog.models import Product
 from chatfront.core.countries import shop_money
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
+from chatfront.core.settings import Settings
 
 FONTS = Path(__file__).parents[1] / "delivery" / "fonts"
 SIZE = (1200, 630)
@@ -32,6 +33,11 @@ SAFFRON = (244, 183, 64)
 MAX_NAME_LINES = 3
 FOOTER_LINE = 40
 DESCRIPTION_CHARS = 200
+
+
+def share_url(settings: Settings, slug: str, code: str) -> str:
+    """The link to share: served by the API, which writes the preview tags."""
+    return f"{settings.public_base_url.rstrip('/')}/s/{slug}/p/{code}"
 
 
 def _rtl(text: str) -> bool:

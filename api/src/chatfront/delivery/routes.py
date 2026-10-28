@@ -19,13 +19,14 @@ from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Tenant
 from chatfront.delivery import packing, picking, shipping
+from chatfront.delivery.gift_card import card_pdf
 from chatfront.delivery.labels import LabelData, label_pdf
 from chatfront.delivery.models import PackingCheck, Shipment
 from chatfront.delivery.risk import band
 from chatfront.media import service as media_service
 from chatfront.media.models import MediaKind
 from chatfront.orders import service as orders
-from chatfront.orders.models import Order
+from chatfront.orders.models import GroupOrder, Order
 from chatfront.orders.states import OrderStatus
 from chatfront.owner.rights import Can
 from chatfront.owner.routes import ServicesDep, needs
@@ -88,6 +89,9 @@ class OrderOut(BaseModel):
     label: bool
     shipment: ShipmentOut | None
     packing: CheckOut | None = None  # the latest packing check (feature 102)
+    gift: bool = False  # a gift with a message card (feature 21)
+    group: str | None = None  # the group order it is a part of (feature 22)
+    group_member: str = ""  # a friend's part: the friend's name
 
 
 def _order_out(
@@ -95,6 +99,7 @@ def _order_out(
     name: str | None,
     shipment: Shipment | None,
     check: PackingCheck | None = None,
+    group: str | None = None,
 ) -> OrderOut:
     address = order.address or {}
     return OrderOut(
@@ -123,6 +128,9 @@ def _order_out(
         if shipment
         else None,
         packing=_check_out(check) if check else None,
+        gift=order.gift,
+        group=group,
+        group_member=order.group_member,
     )
 
 
@@ -146,18 +154,19 @@ async def list_orders(
 ) -> list[OrderOut]:
     async with services.db.tenant(session.tenant_id) as db:
         rows = await db.execute(
-            select(Order, Customer.display_name, Shipment)
+            select(Order, Customer.display_name, Shipment, GroupOrder.code)
             .join(Customer, Customer.id == Order.customer_id)
             .outerjoin(Shipment, Shipment.order_id == Order.id)
+            .outerjoin(GroupOrder, GroupOrder.id == Order.group_id)
             .where(Order.status != OrderStatus.CART)
             .order_by(Order.placed_at.desc().nulls_last())
             .limit(ORDER_LIMIT)
         )
         found = rows.all()
-        checks = await _latest_checks(db, [order.id for order, _, _ in found])
+        checks = await _latest_checks(db, [order.id for order, _, _, _ in found])
         return [
-            _order_out(order, name, shipment, checks.get(order.id))
-            for order, name, shipment in found
+            _order_out(order, name, shipment, checks.get(order.id), group)
+            for order, name, shipment, group in found
         ]
 
 
@@ -254,12 +263,19 @@ class WaitingOut(BaseModel):
     ships_from: date
 
 
+class GroupedOut(BaseModel):
+    code: str
+    group: str  # the group order still open to friends (feature 22)
+    closes_on: date
+
+
 class PickListOut(BaseModel):
     day: date
     orders: int
     pieces: int
     lines: list[PickLineOut]
     waiting: list[WaitingOut]
+    grouped: list[GroupedOut]
 
 
 async def _pick_list(services: Services, tenant_id: uuid.UUID) -> tuple[Tenant, picking.PickList]:
@@ -286,6 +302,9 @@ async def pick_list(session: ShipDep, services: ServicesDep) -> PickListOut:
             for line in picks.lines
         ],
         waiting=[WaitingOut(code=code, ships_from=day) for code, day in picks.waiting],
+        grouped=[
+            GroupedOut(code=code, group=group, closes_on=day) for code, group, day in picks.grouped
+        ],
     )
 
 
@@ -322,6 +341,22 @@ async def shipping_label(code: str, session: ShipDep, services: ServicesDep) -> 
         label_pdf(data),
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="label-{order.code}.pdf"'},
+    )
+
+
+@router.get("/api/owner/orders/{code}/gift-card.pdf")
+async def gift_card(code: str, session: ShipDep, services: ServicesDep) -> Response:
+    """The gift's message card, to fold into the parcel (feature 21)."""
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await db.get(Tenant, session.tenant_id)
+        assert tenant is not None
+        order = await shipping.order_by_code(db, code)
+    if not order.gift:
+        raise AppError("not_a_gift", "This order is not a gift", status_code=409)
+    return Response(
+        card_pdf(tenant, order),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="gift-card-{order.code}.pdf"'},
     )
 
 

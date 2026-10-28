@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from chatfront.catalog import share
 from chatfront.catalog.models import Product, ProductStatus
+from chatfront.catalog.share import share_url
 from chatfront.core.errors import NotFound
 from chatfront.core.models import Tenant
 from chatfront.core.settings import Settings
@@ -21,11 +22,6 @@ from chatfront.services import Services, get_services
 router = APIRouter()
 ServicesDep = Annotated[Services, Depends(get_services)]
 CARD_CACHE = "public, max-age=3600"
-
-
-def share_url(settings: Settings, slug: str, code: str) -> str:
-    """The link to share: served by the API, which writes the preview tags."""
-    return f"{settings.public_base_url.rstrip('/')}/s/{slug}/p/{code}"
 
 
 def card_url(settings: Settings, slug: str, product: Product) -> str:

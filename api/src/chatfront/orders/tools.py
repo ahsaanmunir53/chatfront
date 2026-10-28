@@ -71,6 +71,7 @@ class AgentContext:
     modules: frozenset[str] = frozenset()  # the tenant's switched-on modules: their tools only
     phone_hash_key: str = ""  # to know a buyer by their number (feature 34)
     trusted: bool = False  # a verified buyer (feature 38)
+    web_url: str = ""  # where the shop page is, for links code writes (feature 20)
     cards: list[Outbound] = field(default_factory=list)
     handover: str | None = None  # the reason, when the agent asked for a person
 
@@ -234,6 +235,9 @@ def _cart_view(
     }
     if cart.offers:
         view["offers"] = [_offer(ctx, offer) for offer in cart.offers]
+    if cart.gift:
+        ctx.facts.text(cart.gift_message)
+        view["gift"] = {"card": cart.gift_message, "from": cart.gift_from, "pay_by": "transfer"}
     if charge is not None:
         view["delivery"] = {
             "city": charge.city,
@@ -511,6 +515,23 @@ class Checkout(BaseModel):
     payment_method: Literal["cod", "transfer", "credit"]
 
 
+class GiftCard(BaseModel):
+    message: str = Field(default="", max_length=200, description="The card's words, as given")
+    from_name: str = Field(default="", max_length=80, description="Who it is from")
+    gift: bool = Field(default=True, description="False: it is not a gift after all")
+
+
+async def set_gift(ctx: AgentContext, params: GiftCard) -> dict[str, Any]:
+    async with ctx.db.tenant(ctx.tenant.id) as session:
+        cart = await orders.open_cart(
+            session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
+        )
+        cart.gift = params.gift
+        cart.gift_message = " ".join(params.message.split())[:200] if params.gift else ""
+        cart.gift_from = " ".join(params.from_name.split())[:80] if params.gift else ""
+    return await cart_now(ctx)
+
+
 async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
     """Show the customer a summary card. Only their tap on Place order places the order."""
     taken = accepted_methods(ctx.tenant, trusted=ctx.trusted)
@@ -520,6 +541,8 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
         )
+        if cart.gift and params.payment_method != "transfer":
+            return tool_error("gift_pays_transfer", hint="a gift is paid by transfer")
         lines = await orders.lines(session, cart)
         missing = _missing(ctx, cart, lines)
         if missing:
@@ -759,6 +782,14 @@ def order_tools() -> tuple[list[Tool], list[Tool]]:
             "The customer offers a lower price for a product.",
             Offer,
             make_offer,
+            "orders",
+        ),
+        Tool(
+            "set_gift",
+            "The order is a gift (feature 21): the words for the message card and who it is "
+            "from. The delivery details are then the recipient's, and it is paid by transfer.",
+            GiftCard,
+            set_gift,
             "orders",
         ),
         Tool(

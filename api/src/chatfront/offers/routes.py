@@ -1,11 +1,12 @@
 """Offers in the console (features 13, 19, 95): discount codes, bundles, loyalty points and the
-shop's own big days. Only people with the settings right change them, since they set prices."""
+shop's own big days; the referral programme (20), cart reminders (14) and the rates for money
+from abroad (96). Only people with the settings right change them, since they set prices."""
 
 from __future__ import annotations
 
 import re
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter
@@ -15,15 +16,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType, record
 from chatfront.catalog.models import Product, ProductStatus
+from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Tenant
-from chatfront.offers import seasons
+from chatfront.offers import referrals, seasons
 from chatfront.offers.pricing import MAX_PERCENT
 from chatfront.offers.service import LOYALTY, clean_code, loyalty_of
+from chatfront.orders import reminders
 from chatfront.orders.models import Bundle, Coupon, CouponUse
 from chatfront.owner.rights import Can
 from chatfront.owner.routes import ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession
+from chatfront.payments import fx
 from chatfront.services import Services
 
 router = APIRouter(prefix="/api/owner/offers")
@@ -31,6 +35,7 @@ SettingsDep = Annotated[OwnerSession, needs(Can.SETTINGS)]
 CODE = re.compile(r"^[A-Z0-9]{2,24}$")
 MAX_AMOUNT = 10_000_000_000
 BUNDLE_SIZE = (2, 4)
+REMINDER_DAYS = timedelta(days=30)
 
 
 class CouponIn(BaseModel):
@@ -94,12 +99,54 @@ class EventIn(BaseModel):
     date: date
 
 
+class ReferralIn(BaseModel):
+    """The referral programme (feature 20)."""
+
+    on: bool
+    friend_percent: int = Field(default=10, ge=1, le=referrals.MAX_PERCENT)
+    reward_points: int = Field(default=0, ge=0, le=1_000_000)  # when the shop gives points
+    reward_percent: int = Field(default=10, ge=1, le=referrals.MAX_PERCENT)  # else a code
+
+
+class ReferralStatsOut(BaseModel):
+    codes: int
+    friends: int
+    delivered: int
+
+
+class RemindersOut(BaseModel):
+    """Abandoned-cart reminders (feature 14), the last thirty days."""
+
+    on: bool
+    reminded: int
+    placed: int
+    value: int
+
+
+class RatesIn(BaseModel):
+    """What one unit of money from abroad is worth in the shop's money (feature 96)."""
+
+    rates: dict[str, int] = Field(default_factory=dict)  # minor units per unit
+
+    @model_validator(mode="after")
+    def known(self) -> RatesIn:
+        for code, value in self.rates.items():
+            if code not in fx.CURRENCIES or not 0 < value <= MAX_AMOUNT:
+                raise ValueError(f"no rate for {code}")
+        return self
+
+
 class OffersOut(BaseModel):
     currency: str
     coupons: list[CouponOut]
     bundles: list[BundleOut]
     loyalty: LoyaltyIn | None
     events: list[EventIn]  # the shop's own big days
+    referral: ReferralIn | None
+    referral_stats: ReferralStatsOut
+    reminders: RemindersOut
+    rates: dict[str, int]
+    currencies: list[str]
 
 
 def _actor(session: OwnerSession) -> Actor:
@@ -137,7 +184,16 @@ async def list_offers(session: SettingsDep, services: ServicesDep) -> OffersOut:
                 )
             ).all()
         )
-        coupons = list(await db.scalars(select(Coupon).order_by(Coupon.created_at.desc())))
+        coupons = list(
+            await db.scalars(
+                select(Coupon)
+                .where(Coupon.referrer_id.is_(None), Coupon.for_customer_id.is_(None))
+                .order_by(Coupon.created_at.desc())
+            )
+        )
+        found = referrals.referral_of(tenant)
+        friends = await referrals.stats(db)
+        back = await reminders.recovered(db, utcnow() - REMINDER_DAYS)
         bundles = list(await db.scalars(select(Bundle).order_by(Bundle.created_at.desc())))
         loyalty = loyalty_of(tenant)
         return OffersOut(
@@ -169,6 +225,25 @@ async def list_offers(session: SettingsDep, services: ServicesDep) -> OffersOut:
             if loyalty
             else None,
             events=[EventIn(name=e.name, date=e.day) for e in seasons.shop_events(tenant)],
+            referral=ReferralIn(
+                on=True,
+                friend_percent=found.friend_percent,
+                reward_points=found.reward_points,
+                reward_percent=found.reward_percent,
+            )
+            if found
+            else None,
+            referral_stats=ReferralStatsOut(
+                codes=friends.codes, friends=friends.friends, delivered=friends.delivered
+            ),
+            reminders=RemindersOut(
+                on=reminders.reminders_on(tenant),
+                reminded=back.reminded,
+                placed=back.placed,
+                value=back.value,
+            ),
+            rates=fx.rates(tenant),
+            currencies=list(fx.CURRENCIES),
         )
 
 
@@ -285,6 +360,30 @@ async def _profile(
 @router.put("/loyalty")
 async def set_loyalty(body: LoyaltyIn, session: SettingsDep, services: ServicesDep) -> LoyaltyIn:
     await _profile(services, session, LOYALTY, body.model_dump(), "offers.loyalty")
+    return body
+
+
+@router.put("/referral")
+async def set_referral(body: ReferralIn, session: SettingsDep, services: ServicesDep) -> ReferralIn:
+    await _profile(services, session, referrals.REFERRAL, body.model_dump(), "offers.referral")
+    return body
+
+
+class SwitchIn(BaseModel):
+    on: bool
+
+
+@router.put("/cart-reminders")
+async def set_cart_reminders(
+    body: SwitchIn, session: SettingsDep, services: ServicesDep
+) -> SwitchIn:
+    await _profile(services, session, reminders.SETTING, body.on, "offers.cart_reminders")
+    return body
+
+
+@router.put("/rates")
+async def set_rates(body: RatesIn, session: SettingsDep, services: ServicesDep) -> RatesIn:
+    await _profile(services, session, fx.RATES, body.rates, "payments.rates")
     return body
 
 

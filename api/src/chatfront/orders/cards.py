@@ -98,6 +98,7 @@ class CardMaker:
                     self.lang,
                     address=f"{address.get('address', '')}, {address.get('city', '')}",
                 ),
+                *self.gift(order),
                 *self.preorder(items, extras.ships_from),
                 *self.cutoff(extras.before),
                 t("order.pay_cod_advance", self.lang, advance=self.money(advance))
@@ -112,6 +113,17 @@ class CardMaker:
                 Button(button_id(action, "no"), t("order.not_yet", self.lang)),
             ),
         )
+
+    def gift(self, order: Order) -> list[str]:
+        """A gift's card (feature 21), as the recipient will read it."""
+        if not order.gift:
+            return []
+        lines = [t("order.gift", self.lang)]
+        if order.gift_message:
+            lines.append(t("order.gift_card", self.lang, message=order.gift_message))
+        if order.gift_from:
+            lines.append(t("order.gift_from", self.lang, name=order.gift_from))
+        return lines
 
     def preorder(self, items: Sequence[OrderItem], ships_from: date | None) -> list[str]:
         """A line saying the order waits for its pre-order pieces (feature 16)."""

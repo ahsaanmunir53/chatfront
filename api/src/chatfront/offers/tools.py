@@ -9,6 +9,9 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from chatfront.ai.tools import Tool
+from chatfront.channels.types import OutText
+from chatfront.core.i18n import t
+from chatfront.offers import referrals
 from chatfront.offers import service as offers
 from chatfront.orders import service as orders
 from chatfront.orders.tools import AgentContext, cart_now, tool_error
@@ -58,6 +61,34 @@ async def use_points(ctx: AgentContext, params: UsePoints) -> dict[str, Any]:
     return await cart_now(ctx)
 
 
+class NoInput(BaseModel):
+    pass
+
+
+async def referral_link(ctx: AgentContext, params: NoInput) -> dict[str, Any]:
+    """The customer's own link for friends (feature 20), sent as code's own message."""
+    del params
+    referral = referrals.referral_of(ctx.tenant)
+    if referral is None:
+        return tool_error("no_referrals_here")
+    async with ctx.db.tenant(ctx.tenant.id) as session:
+        coupon = await referrals.code_for(session, ctx.tenant, referral, ctx.customer_id)
+    link = referrals.link(ctx.web_url, ctx.tenant.slug, coupon.code)
+    ctx.facts.count(referral.friend_percent)
+    ctx.cards.append(
+        OutText(
+            t(
+                "referral.your_link",
+                ctx.lang,
+                link=link,
+                code=coupon.code,
+                percent=referral.friend_percent,
+            )
+        )
+    )
+    return {"ok": True, "link_sent": True, "friend_percent": referral.friend_percent}
+
+
 def offer_tools() -> list[Tool]:
     return [
         Tool(
@@ -72,6 +103,14 @@ def offer_tools() -> list[Tool]:
             "Spend the customer's loyalty points on this cart, or stop spending them.",
             UsePoints,
             use_points,
+            "orders",
+        ),
+        Tool(
+            "referral_link",
+            "The customer wants to share the shop with a friend: send them their own link, "
+            "which gives a friend a discount on a first order.",
+            NoInput,
+            referral_link,
             "orders",
         ),
     ]

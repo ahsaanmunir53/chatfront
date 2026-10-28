@@ -26,7 +26,7 @@ from chatfront.offers import service as offers
 from chatfront.offers.pricing import CouponProblem
 from chatfront.orders import bargain
 from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
-from chatfront.orders.models import Order, OrderItem, PriceOffer
+from chatfront.orders.models import GroupOrder, Order, OrderItem, PriceOffer
 from chatfront.orders.states import CLOSED, HOLDS_STOCK, SHIPPING, OrderStatus, check_move
 from chatfront.payments import refunds
 from chatfront.shield.autonomy import ASK_DISCOUNT_OVER, Action, Level, level
@@ -100,6 +100,12 @@ async def delivery_quote(session: AsyncSession, order: Order) -> Quote | None:
     city = (order.address or {}).get("city")
     if not city:
         return None
+    if order.group_id is not None:  # a friend's part rides with the organiser's (feature 22)
+        organiser = await session.scalar(
+            select(GroupOrder.organiser_id).where(GroupOrder.id == order.group_id)
+        )
+        if organiser is not None and organiser != order.customer_id:
+            return Quote(str(city), 0, free=False)
     tenant = await session.get(Tenant, order.tenant_id)
     assert tenant is not None
     weight = 0

@@ -76,6 +76,28 @@ async def identify(
     )
 
 
+async def _by_hash(
+    session: AsyncSession, tenant_id: uuid.UUID, channel: Channel, external_hash: str
+) -> Customer | None:
+    return await session.scalar(
+        select(Customer)
+        .join(CustomerIdentity, CustomerIdentity.customer_id == Customer.id)
+        .where(
+            CustomerIdentity.tenant_id == tenant_id,
+            CustomerIdentity.channel == channel,
+            CustomerIdentity.external_hash == external_hash,
+        )
+    )
+
+
+async def find_sender(
+    session: AsyncSession, tenant_id: uuid.UUID, channel: Channel, sender_id: str, keys: Keys
+) -> Customer | None:
+    """The customer behind a channel sender, when there is one; never makes one."""
+    external_hash = hash_phone(f"{channel}:{sender_id}", keys.phone_hash_key)
+    return await _by_hash(session, tenant_id, channel, external_hash)
+
+
 async def identify_sender(
     session: AsyncSession,
     tenant_id: uuid.UUID,
@@ -87,15 +109,7 @@ async def identify_sender(
     """Find or create the customer behind a channel sender, without storing the id in clear."""
     external_hash = hash_phone(f"{channel}:{sender_id}", keys.phone_hash_key)
     await session.execute(select(func.pg_advisory_xact_lock(_lock_key(external_hash))))
-    customer = await session.scalar(
-        select(Customer)
-        .join(CustomerIdentity, CustomerIdentity.customer_id == Customer.id)
-        .where(
-            CustomerIdentity.tenant_id == tenant_id,
-            CustomerIdentity.channel == channel,
-            CustomerIdentity.external_hash == external_hash,
-        )
-    )
+    customer = await _by_hash(session, tenant_id, channel, external_hash)
     if customer is not None:
         return customer
     phone_hash = None

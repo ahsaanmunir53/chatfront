@@ -114,6 +114,8 @@ class CouponProblem(StrEnum):
     USED_UP = "used_up"
     ALREADY_USED = "already_used"
     BELOW_MINIMUM = "below_minimum"
+    NOT_FOR_YOU = "not_for_you"  # a customer's own referral code, or another's thank-you
+    FIRST_ORDER_ONLY = "first_order_only"  # a friend's code, on a second order
 
 
 def coupon_off(

@@ -28,7 +28,7 @@ from chatfront.catalog.models import Product, Variant
 from chatfront.channels.language import staff_language
 from chatfront.channels.notify import tell_owner
 from chatfront.channels.types import OutText
-from chatfront.core.clock import utcnow
+from chatfront.core.clock import local_today, utcnow
 from chatfront.core.countries import shop_money
 from chatfront.core.i18n import t
 from chatfront.core.models import Staff, StaffRole, Tenant
@@ -36,7 +36,7 @@ from chatfront.core.provisioning import owner_of
 from chatfront.delivery.labels import TIMES, ShopPdf, named
 from chatfront.delivery.shipping import to_collect
 from chatfront.jobs.queue import JobContext, enqueue
-from chatfront.orders.models import Order, OrderItem
+from chatfront.orders.models import GroupOrder, Order, OrderItem
 from chatfront.orders.states import OrderStatus
 from chatfront.stock import notices
 
@@ -79,6 +79,7 @@ class Slip:
     order: Order
     items: list[OrderItem]
     collect: int  # what the rider collects; 0 when paid
+    group: str | None = None  # the group order whose parts ship together (feature 22)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +88,8 @@ class PickList:
     lines: list[PickLine]
     slips: list[Slip]
     waiting: list[tuple[str, date]]  # orders whose pre-order has not come: (code, ships from)
+    # Parts of a group order still open to friends (feature 22): (code, group, closes on).
+    grouped: list[tuple[str, str, date]] = field(default_factory=list)
 
     @property
     def pieces(self) -> int:
@@ -137,9 +140,19 @@ def _waits_until(
     return max(later) if later else None
 
 
+async def _groups(session: AsyncSession, orders: list[Order]) -> dict[uuid.UUID, GroupOrder]:
+    ids = {order.group_id for order in orders if order.group_id}
+    if not ids:
+        return {}
+    found = await session.scalars(select(GroupOrder).where(GroupOrder.id.in_(ids)))
+    return {group.id: group for group in found}
+
+
 async def build(session: AsyncSession, tenant: Tenant) -> PickList:
     day = today(tenant)
     orders = await _ready(session)
+    groups = await _groups(session, orders)
+    grouped: list[tuple[str, str, date]] = []
     items = await _items(session, orders)
     ship_days = await _ship_days(session, [i for found in items.values() for i in found])
     lines: dict[uuid.UUID, PickLine] = {}
@@ -148,10 +161,14 @@ async def build(session: AsyncSession, tenant: Tenant) -> PickList:
     waiting: list[tuple[str, date]] = []
     for order in orders:
         mine = items.get(order.id, [])
+        group = groups.get(order.group_id) if order.group_id else None
+        if group is not None and group.closed_at is None and group.closes_at > utcnow():
+            grouped.append((order.code, group.code, local_today(tenant.timezone, group.closes_at)))
+            continue
         if (until := _waits_until(mine, ship_days, day)) is not None:
             waiting.append((order.code, until))
             continue
-        slips.append(Slip(order, mine, to_collect(order)))
+        slips.append(Slip(order, mine, to_collect(order), group.code if group else None))
         for item in mine:
             line = lines.setdefault(item.variant_id, PickLine(named(item)))
             line.quantity += item.quantity
@@ -163,7 +180,7 @@ async def build(session: AsyncSession, tenant: Tenant) -> PickList:
         stock = (variant.stock or 0) if variant else 0
         lines[variant_id].short = max(needed - stock, 0)
     ordered = sorted(lines.values(), key=lambda line: line.name.casefold())
-    return PickList(day, ordered, slips, waiting)
+    return PickList(day, ordered, slips, waiting, grouped)
 
 
 # -- the list in a chat ----------------------------------------------------------------------
@@ -175,7 +192,7 @@ def is_ask(words: str) -> bool:
 
 
 def text(picks: PickList, lang: str) -> str:
-    if not picks.lines and not picks.waiting:
+    if not picks.lines and not picks.waiting and not picks.grouped:
         return t("pick.none", lang)
     out = [t("pick.title", lang, orders=len(picks.slips), pieces=picks.pieces)]
     for line in picks.lines[:LINES_SHOWN]:
@@ -188,6 +205,11 @@ def text(picks: PickList, lang: str) -> str:
     if picks.waiting:
         codes = ", ".join(f"{code} ({day.isoformat()})" for code, day in picks.waiting)
         out.append(t("pick.waiting", lang, count=len(picks.waiting), orders=codes))
+    if picks.grouped:
+        codes = ", ".join(
+            f"{code} ({group}, {day.isoformat()})" for code, group, day in picks.grouped
+        )
+        out.append(t("pick.grouped", lang, count=len(picks.grouped), orders=codes))
     if picks.lines:
         out.append(t("pick.slips_hint", lang))
     return "\n".join(out)
@@ -240,6 +262,10 @@ def _list_page(pdf: ShopPdf, tenant: Tenant, picks: PickList) -> None:
         pdf.rule()
         codes = ", ".join(f"{code} (from {day.isoformat()})" for code, day in picks.waiting)
         pdf.text_line(f"Waiting for pre-order stock: {codes}", 9)
+    if picks.grouped:
+        pdf.rule()
+        codes = ", ".join(f"{code} ({group}, closes {day})" for code, group, day in picks.grouped)
+        pdf.text_line(f"Group orders still open to friends: {codes}", 9)
 
 
 def _slip(pdf: ShopPdf, tenant: Tenant, slip: Slip) -> None:
@@ -260,6 +286,10 @@ def _slip(pdf: ShopPdf, tenant: Tenant, slip: Slip) -> None:
         f"Collect on delivery: {shop_money(tenant, slip.collect, 'en')}" if slip.collect else "Paid"
     )
     pdf.text_line(pay, 10, bold=True)
+    if order.gift:
+        pdf.text_line("GIFT: put the message card in. No prices or bill inside.", 10, bold=True)
+    if slip.group:
+        pdf.text_line(f"Group order {slip.group}: pack with its other parts.", 10, bold=True)
     pdf.ln(1)
     for item in slip.items:
         if pdf.get_y() > pdf.h - A4_MARGIN - 2 * SLIP_LINE:  # a long order runs on

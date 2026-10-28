@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType
@@ -33,18 +33,21 @@ from chatfront.delivery.address import Address
 from chatfront.delivery.risk import assess
 from chatfront.offers import service as offers
 from chatfront.offers.pricing import Line
+from chatfront.orders import groups
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.delivery import weight_of
-from chatfront.orders.models import Order
+from chatfront.orders.models import GroupOrder, Order
 from chatfront.orders.states import OrderStatus
 from chatfront.orders.tools import accepted_methods
 from chatfront.payments.due import start_payment
+from chatfront.shield import consent
 
 if TYPE_CHECKING:
     from chatfront.services import Services
 
 MAX_LINES = 30
+GIFT_MESSAGE = 200
 WEB_METHODS = ("cod", "transfer")  # the khata needs a verified buyer, known in a chat
 
 
@@ -74,14 +77,41 @@ class DetailsIn(BaseModel):
     landmark: str = Field(default="", max_length=120)
 
 
+class GiftIn(BaseModel):
+    """A gift (feature 21): the details are the recipient's; the card carries the message."""
+
+    message: str = Field(default="", max_length=GIFT_MESSAGE)
+    from_name: str = Field(default="", max_length=80)
+
+
+class JoinIn(BaseModel):
+    """A friend's part of a group order (feature 22): it goes to the organiser's address."""
+
+    code: str = Field(min_length=3, max_length=12)
+    name: str = Field(min_length=2, max_length=80)
+
+
 class CheckoutIn(BaseModel):
     lines: list[LineIn] = Field(min_length=1, max_length=MAX_LINES)
-    details: DetailsIn
+    details: DetailsIn | None = None
+    join: JoinIn | None = None
+    start_group: int | None = Field(default=None, description="Days the group stays open")
+    gift: GiftIn | None = None
     payment_method: Literal["cod", "transfer"]
     coupon: str | None = Field(default=None, max_length=24)
     # assistant: a cart an outside AI assistant put together (feature 66)
     source: Literal["shop_page", "facebook", "instagram", "assistant"] = "shop_page"
     lang: str | None = Field(default=None, max_length=16)
+
+    @model_validator(mode="after")
+    def _one_address(self) -> CheckoutIn:
+        if (self.details is None) == (self.join is None):
+            raise ValueError("give delivery details, or join a group order")
+        if self.join is not None and self.start_group is not None:
+            raise ValueError("a friend's part cannot start a group of its own")
+        if self.start_group is not None and self.start_group not in groups.DAYS:
+            raise ValueError(f"a group stays open for {groups.DAYS} days")
+        return self
 
 
 class PlacedOut(BaseModel):
@@ -91,6 +121,7 @@ class PlacedOut(BaseModel):
     due_now: int | None
     payment_method: str
     message: str  # what to pay now and how, also sent to the buyer's web chat
+    group: str | None = None  # the group order this part belongs to, or the one it started
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,44 +193,64 @@ async def _fill_cart(
         await orders.set_quantity(session, cart, variant_id, min(quantity, orders.MAX_QUANTITY))
 
 
-async def _place(
-    services: Services, tenant: Tenant, token: str, body: CheckoutIn
-) -> tuple[Order, uuid.UUID]:
-    account = await channels.route(services.db, Channel.WEBCHAT, tenant.slug)
-    assert account is not None
+async def _deliver_to(session: AsyncSession, cart: Order, body: CheckoutIn) -> GroupOrder | None:
+    """The address: the buyer's own, or the group organiser's for a friend's part."""
+    if body.join is not None:
+        if body.payment_method != "transfer":
+            raise AppError("group_pays_transfer", "Each part of a group order is paid by transfer")
+        return await groups.join(session, cart, body.join.code, body.join.name)
     details = body.details
+    assert details is not None
     address = Address(
         details.address, house=details.address, area=details.area, landmark=details.landmark
     )
+    await orders.set_address(
+        session, cart, city=details.city, address=address, name=details.name, phone=details.phone
+    )
+    if orders.needs_pin(cart):
+        raise AppError("address_vague", "Add the area and a house number or a landmark")
+    if not (cart.address or {}).get("phone_valid"):
+        raise AppError("phone_invalid", "That phone number does not look right")
+    return None
+
+
+def _wrap_gift(cart: Order, gift: GiftIn | None, method: str) -> None:
+    if gift is None:
+        return
+    if method != "transfer":  # the one receiving a gift does not pay for it at the door
+        raise AppError("gift_pays_transfer", "A gift is paid by transfer before it ships")
+    cart.gift = True
+    cart.gift_message = " ".join(gift.message.split())[:GIFT_MESSAGE]
+    cart.gift_from = " ".join(gift.from_name.split())[:80]
+
+
+async def _place(
+    services: Services, tenant: Tenant, token: str, body: CheckoutIn
+) -> tuple[Order, uuid.UUID, str | None]:
+    account = await channels.route(services.db, Channel.WEBCHAT, tenant.slug)
+    assert account is not None
+    name = body.details.name if body.details else body.join.name if body.join else ""
     async with services.db.tenant(tenant.id) as session:
         items = await load_items(session)
         customer = await channels.identify_sender(
-            session, tenant.id, Channel.WEBCHAT, token, services.keys, details.name
+            session, tenant.id, Channel.WEBCHAT, token, services.keys, name
         )
         chat = await channels.open_conversation(session, tenant.id, customer.id, account.id)
         cart = await orders.open_cart(session, tenant, customer.id, conversation_id=chat.id)
         cart.coupon_code = offers.clean_code(body.coupon) if body.coupon else None
         await _fill_cart(session, tenant, cart, items, body)
-        await orders.set_address(
-            session,
-            cart,
-            city=details.city,
-            address=address,
-            name=details.name,
-            phone=details.phone,
-        )
-        if orders.needs_pin(cart):
-            raise AppError("address_vague", "Add the area and a house number or a landmark")
-        if not (cart.address or {}).get("phone_valid"):
-            raise AppError("phone_invalid", "That phone number does not look right")
+        group = await _deliver_to(session, cart, body)
         if body.payment_method not in web_methods(tenant):
             raise AppError("payment_method_not_taken", "This shop does not take that payment")
+        _wrap_gift(cart, body.gift, body.payment_method)
         actor = Actor(ActorType.CUSTOMER, str(customer.id))
         cart.payment_method, cart.source = body.payment_method, body.source
         await assess(session, cart, phone_proven=False, phone_hash_key=services.keys.phone_hash_key)
         await orders.move(session, cart, OrderStatus.PLACED, actor)
         await start_payment(session, tenant, cart, actor)
-        return cart, chat.id
+        if body.start_group is not None:
+            group = await groups.start(session, cart, body.start_group)
+        return cart, chat.id, group.code if group else None
 
 
 async def place_from_page(
@@ -208,13 +259,19 @@ async def place_from_page(
     """Place the order and send its payment instructions to the buyer's web chat."""
     lang = load_registry().ui_language(body.lang or tenant.default_lang).tag
     try:
-        order, chat_id = await _place(services, tenant, token, body)
+        order, chat_id, group = await _place(services, tenant, token, body)
     except OutOfStock as exc:
         raise AppError(
             "cart_problem", f"Only {exc.available} of {exc.name} left", status_code=409
         ) from exc
     message = CardMaker(tenant, lang).placed(order)
     await send_to(services, tenant.id, chat_id, OutText(message), lang)
+    async with services.db.tenant(tenant.id) as session:
+        ask = await consent.ask_offers(session, order.customer_id)
+    if ask:  # once, after their first order (feature 108)
+        await send_to(
+            services, tenant.id, chat_id, consent.offers_question(lang, tenant.name), lang
+        )
     return PlacedOut(
         code=order.code,
         status=order.status,
@@ -222,4 +279,5 @@ async def place_from_page(
         due_now=order.due_now,
         payment_method=order.payment_method or body.payment_method,
         message=message,
+        group=group,
     )
