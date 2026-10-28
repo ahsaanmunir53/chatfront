@@ -1,0 +1,29 @@
+{
+  "replay": {
+    "pass_rate": 1.0,
+    "passed": 100,
+    "total": 100,
+    "by_kind": {
+      "add": "18/18",
+      "cancel": "6/6",
+      "checkout": "14/14",
+      "find": "18/18",
+      "handover": "6/6",
+      "injection": "4/4",
+      "list": "8/8",
+      "offer": "10/10",
+      "status": "6/6",
+      "update": "6/6",
+      "view": "4/4"
+    },
+    "by_language": {
+      "en": "20/20",
+      "pa-Arab": "7/7",
+      "ps": "7/7",
+      "sd": "6/6",
+      "ur": "20/20",
+      "ur-Latn": "40/40"
+    },
+    "date": "2026-10-28"
+  }
+}

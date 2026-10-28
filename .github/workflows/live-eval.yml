@@ -13,6 +13,9 @@ on:
       lang:
         description: "Only this language tag, e.g. ur-Latn (empty for every Tier 1 language)"
         required: false
+      kind:
+        description: "Only this kind of agent conversation, e.g. offer (empty for all 100)"
+        required: false
 
 permissions:
   contents: read
@@ -44,3 +47,46 @@ jobs:
         with:
           name: eval-results
           path: i18n/eval-results.json
+
+  # The order agent's 100 conversations with the real model choosing the tool calls.
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Create the owner role and the evaluation database
+        run: |
+          psql postgresql://postgres:postgres@localhost:5432/postgres \
+            -c "CREATE ROLE chatfront_owner LOGIN PASSWORD 'owner' CREATEROLE" \
+            -c "CREATE DATABASE chatfront_eval OWNER chatfront_owner"
+      - run: uv sync --frozen
+      - name: Order agent evaluation against the real model
+        env:
+          DATABASE_URL: postgresql+asyncpg://chatfront_owner:owner@localhost:5432/chatfront_eval
+          AI_MODE: auto
+          BASETEN_API_KEY: ${{ secrets.BASETEN_API_KEY }}
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+          MODAL_GLIMMER_BASE_URL: ${{ secrets.MODAL_GLIMMER_BASE_URL }}
+          MODAL_GLIMMER_API_KEY: ${{ secrets.MODAL_GLIMMER_API_KEY }}
+          ONLY_KIND: ${{ inputs.kind }}
+        run: |
+          uv run alembic upgrade head
+          uv run python -m chatfront.seed
+          uv run python -m chatfront.eval.agent --live --write --markdown \
+            ${ONLY_KIND:+--kind "$ONLY_KIND"} | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-eval-results
+          path: api/src/chatfront/eval/data/agent/results.json

@@ -30,11 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Create the owner role and test database
+      - name: Create the owner role, the test database and the evaluation database
         run: |
           psql postgresql://postgres:postgres@localhost:5432/postgres \
             -c "CREATE ROLE chatfront_owner LOGIN PASSWORD 'owner' CREATEROLE" \
-            -c "CREATE DATABASE chatfront_test OWNER chatfront_owner"
+            -c "CREATE DATABASE chatfront_test OWNER chatfront_owner" \
+            -c "CREATE DATABASE chatfront_eval OWNER chatfront_owner"
       - run: uv sync --frozen
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
@@ -44,6 +45,16 @@ jobs:
         run: uv run pytest --cov --cov-report=term
         env:
           TEST_DATABASE_URL: ${{ env.OWNER_URL }}/chatfront_test
+      # The 100 scripted conversations through the whole app; the pass rate goes to the run's
+      # summary page, and anything short of 100/100 fails the build.
+      - name: Order agent evaluation set (replayed)
+        env:
+          DATABASE_URL: ${{ env.OWNER_URL }}/chatfront_eval
+          AI_MODE: mock
+        run: |
+          uv run alembic upgrade head
+          uv run python -m chatfront.seed
+          uv run python -m chatfront.eval.agent --markdown | tee -a "$GITHUB_STEP_SUMMARY"
 
   web:
     runs-on: ubuntu-latest
