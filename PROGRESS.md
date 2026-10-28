@@ -619,6 +619,55 @@ Decisions:
 
 Not verified yet: the packing check on the real model (needs a model key).
 
+## Done on 28 October: data and growth (57, 59, 116, 66)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 962 passed, 94.78% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 70 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Ask your data (57): the owner or staff ask the shop's records in the chat ("sab se zyada kya
+  bika pichle mahine?", "aaj kitni sale hui?", "order kahan se aaye?"). The model only fills a
+  fixed menu (what to count, split by what, over which days); code runs the query inside the
+  shop's rows and writes every number. Common questions in English and Roman Urdu are read by
+  code with no model, so it works today. Profit needs the books right; the rest needs orders.
+- Customers (59): what each buyer spent on orders they kept, their last order and a group
+  (new, came back, loyal, gone quiet), with a filter and a summary above the list. A greeting
+  the owner writes (it starts from the next big day's, such as Eid) goes only to the buyers
+  whose chat is open, at most once a week each; for the rest the console gives a link that
+  opens the owner's own WhatsApp with the greeting written.
+- Share cards (116): a share link for every product and a Share button on the shop page. The
+  link's page carries Open Graph and X tags pointing at a 1200 by 630 card drawn by code
+  (photo, name, price, shop; right to left for Urdu and Arabic) and sends people on to the
+  product on the shop page, or to the shop page when the product has been taken down.
+- MCP endpoint (66): `/mcp/<shop>` with five read-only tools (shop details, search, a product,
+  pricing a cart, starting a checkout). start_checkout returns a checkout link with the cart
+  filled in; the person places the order and the shop sees it came from an AI assistant. The
+  trust page shows the address.
+- Migration 0020: when each customer was last greeted.
+- The customers list moved from the shield's routes to its own module (`crm/`).
+- Copy buttons now say "Copied" only when the browser really copied (one helper for all four).
+
+Decisions:
+
+- No marketing messages: greetings go only inside the 24-hour window, and never as templates.
+  Everything else is the owner's own WhatsApp, sent by the owner.
+- An order counts in answers once it is paid or confirmed; one still waiting for its advance
+  does not.
+- The MCP tools only read. An assistant cannot place an order, change a cart in the shop or
+  see any buyer's details; the person finishes on the shop's own checkout page.
+- The share card is drawn by code, not by a model, so it needs no key and costs nothing.
+
+Not verified yet: free-worded questions on the real model (needs a model key); how WhatsApp
+and X show the card for a deployed link (needs the deploy).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -667,7 +716,7 @@ Proposed order, the Meta platform first since it is what is judged:
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88. Done on 28 October.
 5. Shield: 37, 40, 43, 45, 46. Done on 28 October.
 6. Packing and books: 102, 103, 51. Done on 28 October.
-7. Data and growth: 57, 59, 116, 66.
+7. Data and growth: 57, 59, 116, 66. Done on 28 October.
 8. Demo engineering: 110, 114, 115.
 
 ## Plan for 117 to 120
@@ -912,3 +961,5 @@ stays the same.
   database of its own (CI uses `chatfront_eval`) keeps it apart from dev data. Each
   conversation's shop copy is deleted when it ends. The cases live in `cases.json`; a new
   one must pass the replay before it goes in.
+- Every "Try as the owner" makes a demo copy; after many browser test runs `chatfront_e2e`
+  reaches the copy limit and the owner tests fail. Drop and recreate that database.

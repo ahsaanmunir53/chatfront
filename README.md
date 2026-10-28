@@ -118,6 +118,9 @@ api/src/chatfront/
   templates/  business-type JSON
   payments/   screenshot checks, SMS parsers and webhook, matching, receipts, watcher
   delivery/   addresses and pins, COD risk, parcels, shipping labels and their fonts
+  insights/   questions about the shop's records, answered by code
+  crm/        buyers' worth, groups and greetings
+  mcp/        the MCP endpoint for outside AI assistants
   eval/       evaluation sets: languages, and the order agent's 100 conversations
 i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page with cart and checkout, try-it chat, start page, owner console
@@ -129,6 +132,12 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, data and growth:** the owner asks the shop's records in the chat ("sab se
+  zyada kya bika pichle mahine?") and code answers from the shop's own rows; the customers
+  list with what each buyer spent, who came back and who went quiet, and a greeting (Eid, or
+  a thank-you) sent only to the buyers whose chat is open; a share link for every product
+  whose preview on WhatsApp or X is a card drawn by code; and an MCP endpoint per shop, so
+  any AI assistant can look up products, price a cart and hand its person a checkout link.
 - **28 October, packing and books:** the day's pick list, added up across orders waiting to
   be packed and printed with a packing slip per order, in the console, in the chat and to the
   packers each morning; a photo of the packed parcel checked against the order before it is
@@ -224,6 +233,19 @@ Developer Hackathon. The commit history shows the order.
   with the shop page, try-it chat and trust page in English, Urdu and Roman Urdu; CI.
 
 The table in [FEATURES.md](FEATURES.md) tracks all 122 features and what state each is in.
+
+## For AI assistants
+
+Every shop has an MCP endpoint at `https://<api>/mcp/<shop>` (Streamable HTTP, JSON-RPC 2.0;
+the shop's trust page shows its address). Its five tools only read: `shop_info`,
+`search_products`, `get_product`, `quote_cart` and `start_checkout`. The last returns a link
+to the shop's checkout page with the cart filled in; the person places the order there, and
+the shop sees that it came from an AI assistant.
+
+```
+curl -s https://<api>/mcp/gulmohar-lawn -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search_products","arguments":{"query":"lawn suit"}}}'
+```
 
 ## Model API upgrade path
 
