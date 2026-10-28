@@ -183,8 +183,7 @@ class MetaMessagingAdapter:
         raise AppError("unsupported_message", f"{self.channel} cannot send this message")
 
     async def send(self, account: AccountRef, to: str, message: Outbound) -> str:
-        if not account.access_token:
-            raise AppError(f"{self.channel}_token_missing", f"No {self.channel} token is set")
+        headers = self._bearer(account)
         body: dict[str, Any] = {"recipient": {"id": to}, "message": self._message(message)}
         if self.channel is Channel.MESSENGER:
             body["messaging_type"] = "RESPONSE"
@@ -194,13 +193,61 @@ class MetaMessagingAdapter:
             f"{self.base}/{account.external_id}/messages",
             service=self.channel,
             json=body,
-            headers={"Authorization": f"Bearer {account.access_token}"},
+            headers=headers,
             retries=0,
         )
         message_id = response.json().get("message_id")
         if not isinstance(message_id, str):
             raise AppError(f"{self.channel}_bad_response", "No message id came back")
         return message_id
+
+    def _bearer(self, account: AccountRef) -> dict[str, str]:
+        if not account.access_token:
+            raise AppError(f"{self.channel}_token_missing", f"No {self.channel} token is set")
+        return {"Authorization": f"Bearer {account.access_token}"}
+
+    async def private_reply(
+        self, account: AccountRef, comment_id: str, text: str
+    ) -> tuple[str, str]:
+        """The one DM Meta allows to the person who wrote a comment, within 7 days of it
+        (feature 77). Returns their id on this channel and the message id."""
+        response = await request(
+            self.http,
+            "POST",
+            f"{self.base}/{account.external_id}/messages",
+            service=self.channel,
+            json={
+                "recipient": {"comment_id": comment_id},
+                "message": {"text": _clip_bytes(text, self.text_limit_bytes)},
+            },
+            headers=self._bearer(account),
+            retries=0,
+        )
+        data = response.json()
+        recipient, message_id = data.get("recipient_id"), data.get("message_id")
+        if not isinstance(recipient, str) or not isinstance(message_id, str):
+            raise AppError(f"{self.channel}_bad_response", "No recipient or message id came back")
+        return recipient, message_id
+
+    async def post_info(self, account: AccountRef, media_id: str) -> tuple[str | None, str | None]:
+        """A post's caption and link, so the owner sees which post it is and code can find the
+        product it names."""
+        instagram = self.channel is Channel.INSTAGRAM
+        response = await request(
+            self.http,
+            "GET",
+            f"{self.base}/{media_id}",
+            service=self.channel,
+            params={"fields": "caption,permalink" if instagram else "message,permalink_url"},
+            headers=self._bearer(account),
+        )
+        data = response.json()
+        caption = data.get("caption" if instagram else "message")
+        link = data.get("permalink" if instagram else "permalink_url")
+        return (
+            caption if isinstance(caption, str) else None,
+            link if isinstance(link, str) else None,
+        )
 
     async def download_media(self, account: AccountRef, media_ref: str) -> bytes:
         """Attachment links are signed CDN URLs, so no token is sent with them."""

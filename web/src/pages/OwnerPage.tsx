@@ -12,6 +12,7 @@ import { DashboardPanel } from "../components/Dashboard";
 import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
+import { PostsPanel } from "../components/Posts";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
 import { Alerts, StockPanel, useNotices } from "../components/Stock";
 import { ActivityPanel, TeamPanel } from "../components/Team";
@@ -368,6 +369,7 @@ function Console({
       {can("books") && (
         <BooksPanel me={me} token={token} books={books.books} onChange={books.refresh} />
       )}
+      {can("chats") && <PostsPanel token={token} products={products ?? []} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <SettingsPanel token={token} />}

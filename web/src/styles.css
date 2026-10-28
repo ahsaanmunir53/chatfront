@@ -2877,6 +2877,135 @@ button {
   font-size: 14px;
 }
 
+.product:target {
+  outline: 3px solid var(--saffron);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+
+/* Comments on posts (feature 77): a post waiting for its product gets the chili edge. ---- */
+
+.posts {
+  margin-top: 36px;
+}
+
+.posts-lede,
+.posts-empty {
+  max-width: 68ch;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.post-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.post-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-inline-start: 5px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.post-item.is-waiting {
+  border-inline-start-color: var(--chili);
+}
+
+.post-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.post-head strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.post-waiting {
+  color: var(--chili);
+  font-weight: 600;
+}
+
+.post-caption {
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.post-product {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 15px;
+}
+
+.post-product select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+}
+
+.post-found {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.post-comments summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.post-comments ul {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-comments li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.post-status {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.post-status.is-sent {
+  color: var(--stamp);
+}
+
+.post-status.is-failed,
+.post-status.is-waiting {
+  color: var(--chili);
+}
+
 /* Payments in the console --------------------------------------------------------------- */
 
 .pay-review {

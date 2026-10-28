@@ -151,6 +151,28 @@ export type InboxItem = {
   last: { by: "customer" | "agent" | "staff"; kind: string; text: string | null; at: string } | null;
   window_open: boolean;
 };
+export type SocialPost = {
+  id: string;
+  channel: string;
+  permalink: string | null;
+  caption: string | null;
+  product_id: string | null;
+  product_name: string | null;
+  linked_by: "caption" | "owner" | null;
+  waiting: number;
+  answered: number;
+};
+export type PostComment = {
+  id: string;
+  channel: string;
+  text: string;
+  status: "new" | "waiting" | "sent" | "skipped" | "failed";
+  reason: string | null;
+  product_name: string | null;
+  post_id: string | null;
+  commented_at: string;
+};
+export type Posts = { posts: SocialPost[]; comments: PostComment[] };
 export type InboxShow = "all" | "waiting" | "mine";
 export type Inbox = {
   items: InboxItem[];
@@ -578,6 +600,13 @@ export const api = {
       method: "POST",
       headers: bearer(token),
       body: JSON.stringify({ staff_id: staffId }),
+    }),
+  posts: (token: string) => call<Posts>("/api/owner/posts", { headers: bearer(token) }),
+  setPostProduct: (token: string, postId: string, productId: string | null) =>
+    call<{ answering: number }>(`/api/owner/posts/${encodeURIComponent(postId)}/product`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ product_id: productId }),
     }),
   chatMessages: (token: string, conversationId: string) =>
     call<ConsoleMessage[]>(

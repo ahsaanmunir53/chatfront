@@ -104,7 +104,7 @@ function ProductCard({
   const price = formatMoney(product.price, country, lang);
   const ask = t("catalog.ask_text", { product: text.name });
   return (
-    <li className={`product ${product.inStock ? "" : "is-sold-out"}`}>
+    <li id={`p-${product.key}`} className={`product ${product.inStock ? "" : "is-sold-out"}`}>
       <div className={`product-tile tone-${templateTone(template)}`}>
         {product.imageUrl ? (
           <img src={product.imageUrl} alt="" loading="lazy" />
@@ -198,6 +198,13 @@ function CartBar({ slug }: { slug: string }) {
 function Catalog({ slug, profile }: { slug: string; profile: Profile }) {
   const { t } = useLang();
   const products = useProducts(slug);
+  // A link from a private reply to a comment (#p-<code>) lands on that product.
+  useEffect(() => {
+    const target = window.location.hash.slice(1);
+    if (products && target.startsWith("p-")) {
+      document.getElementById(target)?.scrollIntoView({ block: "center" });
+    }
+  }, [products]);
   return (
     <section className="catalog" aria-labelledby="catalog-title" aria-busy={!products}>
       <h2 id="catalog-title" className="section-title">

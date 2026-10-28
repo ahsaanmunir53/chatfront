@@ -184,3 +184,72 @@ class Handover(Base):
         ForeignKey("staff.id", ondelete="SET NULL")
     )
     created_at: Mapped[datetime] = created_at_column()
+
+
+class SocialPost(Base):
+    """An Instagram post or reel, or a Facebook Page post, that customers comment on, and the
+    product it shows (feature 77): read from the caption or chosen by the owner."""
+
+    __tablename__ = "social_posts"
+    __table_args__ = (UniqueConstraint("tenant_id", "channel", "media_id"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    channel: Mapped[str] = mapped_column(String(20))
+    media_id: Mapped[str] = mapped_column(String(80))
+    permalink: Mapped[str | None] = mapped_column(String(300))
+    caption: Mapped[str | None] = mapped_column(Text)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("products.id", ondelete="SET NULL")
+    )
+    linked_by: Mapped[str | None] = mapped_column(String(10))  # caption or owner
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class CommentStatus(StrEnum):
+    NEW = "new"
+    WAITING = "waiting"  # for the owner to say which product the post shows
+    SENT = "sent"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+
+class PostComment(Base):
+    """A comment under one of the shop's posts, and what was done about it. One private reply
+    at most, within 7 days, only when it asks about price, stock or ordering."""
+
+    __tablename__ = "post_comments"
+    __table_args__ = (
+        UniqueConstraint("channel", "comment_id"),
+        Index("ix_post_comments_tenant_status", "tenant_id", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    channel_account_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("channel_accounts.id", ondelete="CASCADE")
+    )
+    post_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("social_posts.id", ondelete="SET NULL"), index=True
+    )
+    channel: Mapped[str] = mapped_column(String(20))
+    comment_id: Mapped[str] = mapped_column(String(80))
+    author_hash: Mapped[str] = mapped_column(String(64))
+    text: Mapped[str] = mapped_column(Text)
+    lang: Mapped[str | None] = mapped_column(String(LANG_TAG))
+    status: Mapped[str] = mapped_column(String(10), default=CommentStatus.NEW)
+    reason: Mapped[str | None] = mapped_column(String(30))
+    product_id: Mapped[uuid.UUID | None] = mapped_column(  # the product the reply showed
+        ForeignKey("products.id", ondelete="SET NULL")
+    )
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL")
+    )
+    message_id: Mapped[str | None] = mapped_column(String(160))
+    commented_at: Mapped[datetime]
+    replied_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()

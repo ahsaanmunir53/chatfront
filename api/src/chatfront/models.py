@@ -11,6 +11,8 @@ from chatfront.channels.models import (
     Handover,
     IdentityLink,
     Message,
+    PostComment,
+    SocialPost,
 )
 from chatfront.core.db import Base
 from chatfront.core.models import Customer, Staff, Tenant, TenantModule
@@ -46,10 +48,12 @@ __all__ = [
     "Payment",
     "PaymentClaim",
     "PendingAction",
+    "PostComment",
     "PriceOffer",
     "Product",
     "Receipt",
     "Shipment",
+    "SocialPost",
     "Staff",
     "StockBatch",
     "StockMovement",

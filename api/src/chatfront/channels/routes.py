@@ -16,6 +16,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
+from chatfront.channels import comments
 from chatfront.channels import service as channels
 from chatfront.channels.base import verify_meta_signature
 from chatfront.channels.models import (
@@ -98,6 +99,10 @@ async def meta_webhook(
             continue
         await channels.accept(services.db, account, message, services.keys)
     await channels.apply_statuses(services.db, statuses)
+    for comment in comments.parse(payload):  # feature 77
+        account = await channels.route(services.db, comment.channel, comment.account_external_id)
+        if account is not None:
+            await comments.accept(services.db, account, comment, services.keys.phone_hash_key)
     return {"ok": True}
 
 

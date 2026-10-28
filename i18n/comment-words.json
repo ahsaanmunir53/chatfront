@@ -1,0 +1,18 @@
+{
+  "_about": "Words that make a comment under a post a question about price, stock or ordering (feature 77). A comment gets a private reply only when one of these words or phrases is in it. Single words match whole words; phrases (with a space) match anywhere. Lower case; Arabic-script words as typed. Model-drafted; a native speaker should review each list.",
+  "words": [
+    "price", "prices", "pp", "pls price", "prc", "rate", "rates", "cost", "how much", "available",
+    "availability", "stock", "size", "sizes", "colour", "colours", "color", "colors", "order",
+    "buy", "dm", "inbox", "details", "detail", "link", "delivery", "cod",
+    "kitne", "kitnay", "kitna", "kitni", "qeemat", "keemat", "qimat", "milega", "milegi", "mile",
+    "chahiye", "chahye", "chaiye", "mangwana", "rate?", "price?",
+    "قیمت", "کتنے", "کتنا", "کتنی", "ریٹ", "پرائس", "دستیاب", "چاہیے", "آرڈر", "سائز", "کلر",
+    "ڈیلیوری", "ملے", "ملے گا", "ملے گی",
+    "کنے", "کنا", "کنی", "چاہیدا", "چاہیدی",
+    "بیه", "څو", "څومره", "شته",
+    "ڪيترو", "ڪيترا", "ڪيتري", "قيمت", "گهرجي",
+    "कितने", "कितना", "कीमत", "दाम", "रेट",
+    "দাম", "কত",
+    "بكم", "السعر", "سعر", "متوفر", "كم سعر"
+  ]
+}

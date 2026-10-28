@@ -21,6 +21,7 @@ from chatfront.catalog.stock import LOW_STOCK_JOB
 from chatfront.catalog.stock import alert_job as low_stock_alert
 from chatfront.catalog.translations import translate_product
 from chatfront.channels.base import ChannelAdapter
+from chatfront.channels.comments import COMMENT_JOB, reply_to_comment
 from chatfront.channels.conversation import Responder, handle_reply
 from chatfront.channels.handover import resume_button
 from chatfront.channels.messaging import instagram_adapter, messenger_adapter
@@ -117,6 +118,7 @@ def build_registries() -> Registries:
     }
     growth.periodic.append(Periodic("stock-mornings", expiry.EVERY, expiry.DAILY_JOB))
     registries.jobs.register(REPLY_JOB)(handle_reply)
+    registries.jobs.register(COMMENT_JOB)(reply_to_comment)
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
     registries.jobs.register(REMOVE_EXPIRED_JOB)(remove_expired_shops)
