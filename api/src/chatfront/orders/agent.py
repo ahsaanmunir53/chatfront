@@ -24,9 +24,10 @@ from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest
 from chatfront.audit.service import AGENT, Actor, ActorType, record
 from chatfront.books.ledger import today
+from chatfront.catalog import sales
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import CatalogItem, OutOfStock, load_items
-from chatfront.channels import answers, identity
+from chatfront.channels import answers, identity, mentions
 from chatfront.channels.codes import link_code_of
 from chatfront.channels.conversation import (
     CHANNEL_NAMES,
@@ -52,6 +53,7 @@ from chatfront.delivery import pins
 from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
 from chatfront.offers import seasons
+from chatfront.orders import live_claims
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.catalog_cart import take_catalog_cart
@@ -134,6 +136,13 @@ class OrderAgent:
             offers = consent.said(turn.message.body)
         if offers is not None:
             return await self._offers(turn, offers, via="button" if tapped else "chat")
+        live = await self._live_sale(turn, tapped)
+        if live is not None:
+            return live
+        if (turn.message.payload or {}).get("attachment_type") == "story_mention":
+            return await mentions.thank(
+                self.services, turn.tenant, turn.conversation.customer_id, turn.lang
+            )
         button = actions.parse_button(tapped)
         if button is not None:
             return await self._tap(turn, *button)
@@ -471,6 +480,29 @@ class OrderAgent:
         if ask:
             placed.append(consent.offers_question(lang, tenant.name))
         return placed
+
+    async def _live_sale(self, turn: Turn, tapped: str | None) -> list[Outbound] | None:
+        """A number written, or a colour tapped, to take a piece in a live sale (feature 8);
+        None when the message is not one."""
+        chosen = live_claims.parse_button(tapped)
+        number = chosen[0] if chosen else None
+        if number is None and turn.message.kind == Kind.TEXT:
+            number = sales.claim_number(turn.message.body)
+        if number is None:
+            return None
+        async with self.services.db.tenant(turn.tenant.id) as session:
+            replies = await live_claims.claim(
+                session,
+                turn.tenant,
+                turn.conversation.customer_id,
+                turn.conversation.id,
+                number,
+                turn.lang,
+                chosen[1] if chosen else None,
+            )
+        if replies is None and chosen is not None:
+            return [OutText(t("sale.over", turn.lang))]
+        return replies
 
     async def _offers(self, turn: Turn, yes: bool, *, via: str) -> list[Outbound]:
         """A customer's yes or no to offers (feature 108), kept with their words."""

@@ -10,6 +10,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.channels import leads
 from chatfront.channels.base import AccountRef, ChannelAdapter, check_sendable
 from chatfront.channels.codes import link_code_of
 from chatfront.channels.language import note_language
@@ -221,6 +222,16 @@ async def accept(
         )
         if message_id is None:
             return None
+        if conversation.party == Party.CUSTOMER:  # a story, a mention or an ad (78, 81)
+            await leads.note(
+                session,
+                account.tenant_id,
+                customer.id,
+                conversation.id,
+                msg.channel,
+                payload,
+                body,
+            )
         conversation.last_inbound_at = max(msg.sent_at, conversation.last_inbound_at or msg.sent_at)
         customer.lang = conversation.lang_choice or conversation.lang or customer.lang
         await enqueue(
