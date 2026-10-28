@@ -12,9 +12,10 @@ from sqlalchemy import select
 from chatfront.channels import service as channels
 from chatfront.channels.base import WindowClosed
 from chatfront.channels.models import Channel, ChannelAccount, Conversation
-from chatfront.channels.types import Outbound
+from chatfront.channels.types import Outbound, to_record
 from chatfront.core.errors import AppError
 from chatfront.core.models import Customer, Staff
+from chatfront.push.alerts import queue_alert
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -80,5 +81,9 @@ async def owner_chat(services: Services, tenant_id: uuid.UUID, owner: Staff) -> 
 async def tell_owner(
     services: Services, tenant_id: uuid.UUID, owner: Staff, message: Outbound, lang: str
 ) -> bool:
+    """To the person's chat with the shop on a messaging app, and as an alert on each device
+    where they turned alerts on (feature 115). True when it reached them either way."""
+    alerted = await queue_alert(services, tenant_id, owner.id, to_record(message)[0], lang)
     chat = await owner_chat(services, tenant_id, owner)
-    return chat is not None and await send_to(services, tenant_id, chat, message, lang)
+    sent = chat is not None and await send_to(services, tenant_id, chat, message, lang)
+    return sent or alerted

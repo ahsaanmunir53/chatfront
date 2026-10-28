@@ -1,6 +1,7 @@
 // Chatfront service worker: the app shell works offline; shop data and chats always come
-// from the network, so nothing a shop changes is ever served stale.
-const CACHE = "chatfront-shell-v2";
+// from the network, so nothing a shop changes is ever served stale. It also shows the shop's
+// alerts (feature 115) when the app is closed.
+const CACHE = "chatfront-shell-v3";
 // Paths are relative to where the app is served ("/" or "/chatfront/").
 const BASE = new URL(self.registration.scope).pathname;
 const SHELL = [BASE, `${BASE}manifest.webmanifest`, `${BASE}icons/icon-192.png`];
@@ -44,4 +45,34 @@ self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
     event.respondWith(fetch(event.request).catch(() => caches.match(BASE)));
   }
+});
+
+// An alert from the shop: a payment to check, a customer who wants a person, low stock.
+self.addEventListener("push", (event) => {
+  const alert = event.data ? event.data.json() : {};
+  const icon = `${BASE}icons/icon-192.png`;
+  event.waitUntil(
+    self.registration.showNotification(alert.title || "Chatfront", {
+      body: alert.body || "",
+      lang: alert.lang,
+      dir: alert.dir || "auto",
+      tag: alert.tag,
+      renotify: Boolean(alert.tag),
+      icon,
+      badge: icon,
+      data: { url: alert.url || `${BASE}owner` },
+    }),
+  );
+});
+
+// Tapping the alert opens the console, or brings an open one forward.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || `${BASE}owner`;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((open) => {
+      const tab = open.find((client) => client.url.startsWith(url));
+      return tab ? tab.focus() : self.clients.openWindow(url);
+    }),
+  );
 });
