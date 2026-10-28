@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from chatfront.bookings.routes import router as bookings_router
 from chatfront.books.routes import router as books_router
 from chatfront.catalog.import_routes import router as imports_router
 from chatfront.catalog.meta_routes import router as catalog_sync_router
@@ -27,10 +28,12 @@ from chatfront.core.logging import setup_logging
 from chatfront.core.settings import Settings, get_settings
 from chatfront.crm.broadcast_routes import router as broadcasts_router
 from chatfront.crm.routes import router as crm_router
+from chatfront.delivery.courier_routes import router as couriers_router
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.mcp.routes import router as mcp_router
 from chatfront.offers.routes import router as offers_router
 from chatfront.orders.checkout_routes import router as checkout_router
+from chatfront.orders.custom_routes import router as custom_router
 from chatfront.orders.group_routes import router as groups_router
 from chatfront.orders.return_routes import router as returns_router
 from chatfront.orders.waitlist_routes import router as waitlist_router
@@ -125,6 +128,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(stock_router)
     app.include_router(payments_router)
     app.include_router(delivery_router)
+    app.include_router(couriers_router)
+    app.include_router(bookings_router)
+    app.include_router(custom_router)
     app.include_router(refunds_router)
     app.include_router(returns_router)
     app.include_router(offers_router)

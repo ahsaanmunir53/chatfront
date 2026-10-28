@@ -12,6 +12,8 @@ from fastapi import Request
 from chatfront.ai.client import AiClient
 from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
+from chatfront.bookings import service as bookings
+from chatfront.bookings.tools import booking_tools
 from chatfront.books.reminders import EVERY as REMINDERS_EVERY
 from chatfront.books.reminders import KIND as reminder_kind
 from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
@@ -35,16 +37,17 @@ from chatfront.core.db import Database
 from chatfront.core.ratelimit import RateLimiter
 from chatfront.core.settings import Settings
 from chatfront.crm import broadcasts
-from chatfront.delivery import packing, picking
+from chatfront.delivery import courier_service, packing, picking, proof
 from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.offers import referrals
 from chatfront.offers.tools import offer_tools
-from chatfront.orders import live_claims
+from chatfront.orders import custom, live_claims, unboxing
 from chatfront.orders import reminders as cart_reminders
 from chatfront.orders.agent import OrderAgent
+from chatfront.orders.custom import custom_tools
 from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.returns import KIND as return_kind
@@ -117,7 +120,15 @@ def build_registries() -> Registries:
     catalog_tools, orders_tools = order_tools()
     registries.modules.modules["catalog"].tools.extend([*catalog_tools, *size_tools()])
     registries.modules.modules["orders"].tools.extend(
-        [*orders_tools, *return_tools(), *offer_tools(), *waitlist_tools(), *review_tools()]
+        [
+            *orders_tools,
+            *return_tools(),
+            *offer_tools(),
+            *waitlist_tools(),
+            *review_tools(),
+            *booking_tools(),
+            *custom_tools(),
+        ]
     )
     registries.approvals[RETURN] = return_kind
     registries.approvals[answers.ANSWER] = answers.KIND
@@ -157,6 +168,23 @@ def build_registries() -> Registries:
     catalog = registries.modules.modules["catalog"]
     catalog.jobs[sales.JOB] = live_claims.release_job
     catalog.periodic.append(Periodic("sale-holds", sales.EVERY, sales.JOB))
+    orders_module = registries.modules.modules["orders"]
+    orders_module.jobs |= {
+        bookings.REMIND_JOB: bookings.remind_job,
+        custom.SKETCH_JOB: custom.sketch_job,
+        unboxing.JOB: unboxing.check_job,
+    }
+    orders_module.periodic.append(
+        Periodic("booking-reminders", bookings.EVERY, bookings.REMIND_JOB)
+    )
+    delivery_module = registries.modules.modules["delivery"]
+    delivery_module.jobs |= {
+        courier_service.TRACK_JOB: courier_service.track_job,
+        proof.READ_JOB: proof.read_job,
+    }
+    delivery_module.periodic.append(
+        Periodic("courier-tracking", courier_service.EVERY, courier_service.TRACK_JOB)
+    )
     delivery = registries.modules.modules["delivery"]
     delivery.jobs |= {picking.DAILY_JOB: picking.daily_job, picking.SEND_JOB: picking.send_job}
     delivery.periodic.append(Periodic("pick-lists", picking.EVERY, picking.DAILY_JOB))
