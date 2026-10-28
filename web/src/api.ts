@@ -291,6 +291,52 @@ export type Batch = {
   profit: number | null;
 };
 export type DiscardReason = "expired" | "damaged" | "lost";
+export type DashboardDays = 1 | 7 | 30;
+export type Usage = { calls: number; failed: number; tokens: number; cost_millipaisa: number };
+export type Dashboard = {
+  period: { days: DashboardDays; start: string; end: string };
+  orders: {
+    placed: number;
+    value: number;
+    open: Record<string, number>;
+    closed: Record<string, number>;
+    sources: Record<string, number>;
+  } | null;
+  money: {
+    received: number;
+    payments: number;
+    awaiting: number;
+    awaiting_orders: number;
+    to_review: number;
+    at_doors: number;
+  } | null;
+  fraud: {
+    screenshots: number;
+    flagged: number;
+    reused: number;
+    rejected: number;
+    risky_orders: number;
+    advances: number;
+  } | null;
+  books: {
+    sales: number;
+    expenses: number;
+    cash_profit: number;
+    goods_profit: number;
+    write_offs: number;
+    udhaar_owed: number;
+  } | null;
+  ai:
+    | (Usage & {
+        live: boolean;
+        per_order_millipaisa: number | null;
+        efforts: Record<string, number>;
+        jobs: (Usage & { job: string })[];
+      })
+    | null;
+  daily: { day: string; orders: number; sales: number | null }[] | null;
+  costs: (Usage & { code: string; status: string; total: number; placed_at: string })[] | null;
+};
 export type ProductProfit = {
   product_id: string;
   name: string;
@@ -603,6 +649,8 @@ export const api = {
       { method: "POST", headers: bearer(token), body: JSON.stringify({ reason }) },
     ),
   profit: (token: string) => call<ProductProfit[]>("/api/owner/profit", { headers: bearer(token) }),
+  dashboard: (token: string, days: DashboardDays) =>
+    call<Dashboard>(`/api/owner/dashboard?days=${days}`, { headers: bearer(token) }),
   saveWording: (
     token: string,
     productId: string,

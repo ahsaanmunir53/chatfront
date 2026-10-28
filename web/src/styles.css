@@ -3959,3 +3959,340 @@ button {
     background: var(--chili);
   }
 }
+
+/* The dashboard (features 74, 112, 113): one period switch above everything it scopes, the
+   orders count as the page's single hero figure, a column chart drawn like ballpoint ticks on
+   the ledger, and the rest as ledger cards. While a new period loads, the last one stays,
+   faded, so nothing jumps. ------------------------------------------------------------- */
+
+.dashboard {
+  margin: 0 0 28px;
+  --chart-ink: #3f57ad;
+  --effort-low: #a3b2e8;
+  --effort-medium: #7086d4;
+  --effort-high: #3f57ad;
+  --effort-xhigh: #1a2c66;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard {
+    --chart-ink: #6f88e0;
+    --effort-low: #4a63c0;
+    --effort-medium: #7a91e0;
+    --effort-high: #a9baf0;
+    --effort-xhigh: #dbe3ff;
+  }
+}
+
+.dash-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+
+.dash-head .section-title {
+  margin: 0;
+}
+
+.dash-body {
+  display: grid;
+  gap: 16px;
+  transition: opacity 0.15s ease;
+}
+
+.dash-body.is-loading {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-body {
+    transition: none;
+  }
+}
+
+.dash-lead {
+  display: grid;
+  gap: 12px 24px;
+  align-items: end;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+@media (min-width: 860px) {
+  .dash-lead {
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr);
+  }
+}
+
+.dash-hero {
+  display: grid;
+  margin: 0;
+  align-self: center;
+}
+
+.dash-hero-number {
+  font-size: clamp(52px, 8vw, 76px);
+  font-weight: 700;
+  font-stretch: 88%;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.dash-hero-label {
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.dash-hero-worth {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.dash-chart {
+  min-width: 0;
+  margin: 0;
+}
+
+.dash-chart .pay-block-title {
+  margin-bottom: 8px;
+}
+
+.dash-plot {
+  position: relative;
+}
+
+.dash-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.dash-grid line,
+.dash-base {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.dash-base {
+  stroke: var(--line);
+}
+
+.dash-grid text,
+.dash-axis {
+  fill: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-bar {
+  fill: var(--chart-ink);
+}
+
+.dash-bar.is-focus {
+  fill: color-mix(in srgb, var(--chart-ink) 78%, var(--card));
+}
+
+.dash-hit {
+  fill: transparent;
+  cursor: default;
+}
+
+.dash-hit:focus-visible {
+  outline: none;
+  stroke: var(--focus);
+  stroke-width: 2;
+}
+
+.dash-tip {
+  position: absolute;
+  top: 0;
+  display: grid;
+  gap: 1px;
+  min-width: 7.5em;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(15 30 74 / 0.12);
+  font-size: 13px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+[dir="rtl"] .dash-tip {
+  transform: translateX(50%);
+}
+
+.dash-tip strong {
+  font-size: 15px;
+}
+
+.dash-tip span {
+  color: var(--muted);
+}
+
+.dash-table {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.dash-table summary {
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dash-table .daybook {
+  margin: 8px 0 0;
+}
+
+.dash-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.dash-rows {
+  display: grid;
+  margin: 0;
+}
+
+.dash-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.dash-rows div:first-child {
+  border-top: 0;
+}
+
+.dash-rows dt {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.dash-rows dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dash-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dash-sources strong {
+  color: var(--text);
+}
+
+.dash-effort {
+  margin-top: 12px;
+}
+
+.dash-effort-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.dash-effort-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.dash-effort-bar span {
+  min-width: 4px;
+}
+
+.effort-low {
+  background: var(--effort-low);
+}
+
+.effort-medium {
+  background: var(--effort-medium);
+}
+
+.effort-high {
+  background: var(--effort-high);
+}
+
+.effort-xhigh {
+  background: var(--effort-xhigh);
+}
+
+.dash-effort-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 13px;
+  list-style: none;
+}
+
+.dash-effort-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dash-costs .daybook {
+  margin: 0;
+}
+
+.dash-model {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .dash-model {
+    grid-template-columns: minmax(230px, 1fr) minmax(0, 2.2fr);
+  }
+}
+
+.dash-costs thead th:first-child {
+  text-align: start;
+}
+
+.dash-status {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+@media (max-width: 559px) {
+  .dash-costs .daybook {
+    display: block;
+    overflow-x: auto;
+  }
+}

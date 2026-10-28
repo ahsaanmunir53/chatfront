@@ -8,6 +8,7 @@ import { ApiError, api } from "../api";
 import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { ChatView } from "../components/ChatView";
+import { DashboardPanel } from "../components/Dashboard";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
@@ -254,9 +255,9 @@ function Products({
   );
 }
 
-/** The signed-in console: what waits for an answer, the assistant and products, orders,
- * stock, payments and the books, then customers, the team, settings and the activity log; each
- * person sees the parts their role allows (feature 42). */
+/** The signed-in console: what waits for an answer, the day at a glance, the assistant and
+ * products, orders, stock, payments and the books, then customers, the team, settings and the
+ * activity log; each person sees the parts their role allows (feature 42). */
 function Console({
   me,
   token,
@@ -326,6 +327,7 @@ function Console({
       {can("payments") && (
         <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
       )}
+      <DashboardPanel me={me} token={token} />
       <div className="console-switch" role="tablist" aria-label={t("console.title")}>
         {(["chat", "products"] as const).map((name) => (
           <button
