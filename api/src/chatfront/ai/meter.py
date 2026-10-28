@@ -92,6 +92,29 @@ async def by_effort(session: AsyncSession, start: datetime, end: datetime) -> di
     return {str(effort): int(count) for effort, count in rows.all()}
 
 
+@dataclass(frozen=True, slots=True)
+class Served:
+    """Calls one endpoint answered, and calls it failed (the next in line then tried)."""
+
+    answered: int
+    failed: int
+
+
+async def by_endpoint(session: AsyncSession, start: datetime, end: datetime) -> dict[str, Served]:
+    """Which endpoint answered (feature 114), most used first."""
+    rows = await session.execute(
+        select(
+            AiCall.provider,
+            func.count(AiCall.id).filter(AiCall.ok.is_(True)),
+            func.count(AiCall.id).filter(AiCall.ok.is_(False)),
+        )
+        .where(_between(start, end))
+        .group_by(AiCall.provider)
+    )
+    found = {str(name): Served(int(ok), int(bad)) for name, ok, bad in rows.all()}
+    return dict(sorted(found.items(), key=lambda item: (-item[1].answered, item[0])))
+
+
 async def by_job(session: AsyncSession, start: datetime, end: datetime) -> dict[str, Usage]:
     """Usage per job (the prompt's name, whatever its version), largest cost first."""
     rows = await session.execute(

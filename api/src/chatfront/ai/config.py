@@ -1,8 +1,11 @@
 """Which endpoint serves which role, how hard it reasons for each job, and what it costs.
 
-Spark Open fails over Baseten -> Fireworks (both bill per token). Glimmer runs on our own
-Modal deployment; the watcher and simulator fall back to Spark Open when Modal is absent.
-The Meta Model API sits first in every chain only when META_MODEL_API_ENABLED is set.
+Spark Open fails over Baseten -> Modal -> Fireworks (feature 114). Baseten and Fireworks bill
+per token; a Modal deployment bills GPU time from credits, so its calls count no token cost.
+Spark Open needs a node of eight large GPUs, so its Modal endpoint is optional and only set
+while one runs. Glimmer runs on our own Modal deployment (deploy/modal_glimmer.py); the
+watcher and simulator fall back to Spark Open when Modal is absent. The Meta Model API sits
+first in every chain only when META_MODEL_API_ENABLED is set.
 """
 
 from __future__ import annotations
@@ -55,6 +58,7 @@ JOB_ROUTES: dict[str, tuple[Effort, int]] = {
     "owner_message": (Effort.LOW, 4096),
     "onboarding": (Effort.LOW, 4096),
     "handover_summary": (Effort.LOW, 2048),
+    "customer_sim": (Effort.LOW, 2048),
     "translate": (Effort.LOW, 2048),
     "translate_product": (Effort.LOW, 4096),
     "map_columns": (Effort.LOW, 2048),
@@ -110,6 +114,17 @@ def spark_endpoints(settings: Settings) -> list[Endpoint]:
                 *SPARK_OPEN_PRICE,
             )
         )
+    if settings.modal_spark_base_url:
+        endpoints.append(
+            Endpoint(
+                "modal",
+                settings.modal_spark_base_url,
+                _secret(settings.modal_spark_api_key),
+                settings.spark_model_modal,
+                Decimal(0),
+                Decimal(0),
+            )
+        )
     if key := _secret(settings.fireworks_api_key):
         endpoints.append(
             Endpoint(
@@ -129,7 +144,7 @@ def glimmer_endpoints(settings: Settings) -> list[Endpoint]:
     # Glimmer runs on Modal GPU time paid from credits, not per token.
     return [
         Endpoint(
-            "modal",
+            "modal-glimmer",
             settings.modal_glimmer_base_url,
             _secret(settings.modal_glimmer_api_key),
             settings.glimmer_model,

@@ -1,6 +1,7 @@
 import json
 import uuid
 from dataclasses import replace
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ from chatfront.ai.config import (
     route,
 )
 from chatfront.ai.factory import build_ai_client
+from chatfront.ai.health import MAX_DRILL, REST, Health, Why
 from chatfront.ai.mock import Fixture, MockMiss, MockProvider, load_fixtures, tool_rounds
 from chatfront.ai.prompts import PROMPTS_DIR, load_prompt
 from chatfront.ai.provider import OpenAICompatibleProvider, build_payload, parse_response
@@ -110,9 +112,23 @@ class TestConfig:
         )
         roles = build_roles(settings)
         assert [e.name for e in roles[Role.CHAT].endpoints] == ["meta", "baseten", "fireworks"]
-        assert [e.name for e in roles[Role.WATCHER].endpoints][:2] == ["modal", "meta"]
+        assert [e.name for e in roles[Role.WATCHER].endpoints][:2] == ["modal-glimmer", "meta"]
         assert roles[Role.CHAT].effort is Effort.LOW
         assert roles[Role.VISION].effort is Effort.MEDIUM
+
+    def test_spark_fails_over_baseten_modal_fireworks(self) -> None:
+        settings = Settings(
+            baseten_api_key=SecretStr("b"),
+            fireworks_api_key=SecretStr("f"),
+            modal_spark_base_url="https://spark.modal.test/v1",
+            modal_glimmer_base_url="https://glimmer.modal.test/v1",
+        )
+        roles = build_roles(settings)
+        chain = roles[Role.CHAT].endpoints
+        assert [e.name for e in chain] == ["baseten", "modal", "fireworks"]
+        assert (chain[1].model, chain[1].usd_per_m_input) == ("muse-spark-open", Decimal(0))
+        watcher = [e.name for e in roles[Role.WATCHER].endpoints]
+        assert watcher == ["modal-glimmer", "baseten", "modal", "fireworks"]
 
     def test_baseten_uses_the_hackathon_model_unless_configured(self) -> None:
         default = build_roles(Settings(baseten_api_key=SecretStr("b")))
@@ -341,6 +357,80 @@ class TestClient:
         line = json.loads((tmp_path / "recorded.jsonl").read_text().splitlines()[0])
         assert line["match"] == "aap ki dukaan kab khulti hai"
         assert line["content"] == "ji"
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = datetime(2026, 10, 28, 9, tzinfo=UTC)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+
+MODAL = Endpoint("modal", "https://m.test/v1", "km", "muse-spark-open", Decimal(0), Decimal(0))
+
+
+class TestHealth:
+    """Failover (feature 114): a failing endpoint rests, a drill takes one out."""
+
+    def test_two_failures_in_a_row_send_an_endpoint_to_the_back_for_a_minute(self) -> None:
+        clock = Clock()
+        health = Health(clock)
+        chain = (BASETEN, MODAL, FIREWORKS)
+        health.failed("baseten", "503")
+        assert health.order(chain) == [BASETEN, MODAL, FIREWORKS]
+        health.failed("baseten", "503 again")
+        assert health.order(chain) == [MODAL, FIREWORKS, BASETEN]
+        [baseten, *_] = health.status(chain)
+        assert (baseten.ready, baseten.why, baseten.last_error) == (False, Why.FAILING, "503 again")
+        clock.now += REST
+        assert health.order(chain) == [BASETEN, MODAL, FIREWORKS]
+
+    def test_one_good_answer_ends_the_rest(self) -> None:
+        health = Health(Clock())
+        for _ in range(3):
+            health.failed("modal", "timeout")
+        health.answered("modal")
+        assert health.order((BASETEN, MODAL)) == [BASETEN, MODAL]
+        assert health.status((MODAL,))[0].failures == 0
+
+    def test_a_drill_leaves_an_endpoint_out_until_it_ends(self) -> None:
+        clock = Clock()
+        health = Health(clock)
+        until = health.drill("baseten", 90)
+        assert until == clock.now + MAX_DRILL  # at most half an hour
+        health.failed("baseten", "x")
+        health.failed("baseten", "x")
+        assert health.order((BASETEN, FIREWORKS)) == [FIREWORKS]
+        health.answered("baseten")  # an answer does not end a drill
+        assert health.status((BASETEN,))[0].why == Why.DRILL
+        assert health.drill("baseten", 0) is None
+        assert health.order((BASETEN, FIREWORKS)) == [BASETEN, FIREWORKS]
+        health.drill("fireworks", 5)
+        clock.now += timedelta(minutes=5)
+        assert health.order((FIREWORKS,)) == [FIREWORKS]
+
+    @respx.mock
+    async def test_the_client_stops_waiting_on_a_failing_endpoint(self) -> None:
+        down = respx.post("https://b.test/v1/chat/completions").mock(
+            return_value=httpx.Response(503)
+        )
+        respx.post("https://m.test/v1/chat/completions").mock(
+            return_value=httpx.Response(200, json=ok_body("from modal"))
+        )
+        client, meter = client_for(BASETEN, MODAL, FIREWORKS)
+        for _ in range(3):
+            assert (await client.complete(chat())).content == "from modal"
+        assert down.call_count == 4  # two calls with one retry each, then it rests
+        assert [r.provider for r in meter.records if r.ok] == ["modal"] * 3
+        assert meter.records[-1].cost_millipaisa == 0  # GPU time from credits, not tokens
+
+    async def test_every_endpoint_out_for_a_drill(self) -> None:
+        client, _ = client_for(BASETEN)
+        client.health.drill("baseten", 5)
+        with pytest.raises(ModelUnavailable, match="drill"):
+            await client.complete(chat())
+        assert [e.name for e in client.endpoints()] == ["baseten"]
 
 
 def test_factory_never_mocks_in_production() -> None:

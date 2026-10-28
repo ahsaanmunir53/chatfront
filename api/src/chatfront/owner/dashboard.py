@@ -107,10 +107,17 @@ class JobOut(UsageOut):
     job: str
 
 
+class EndpointOut(BaseModel):
+    name: str  # baseten, modal, fireworks, modal-glimmer, meta or mock
+    answered: int
+    failed: int  # failed calls; the next endpoint in line then answered or failed too
+
+
 class AiOut(UsageOut):
     live: bool  # a real model answers; otherwise recorded answers, which cost nothing
     per_order_millipaisa: int | None  # the period's model spend per order placed
     efforts: dict[str, int]  # calls per reasoning setting (feature 113)
+    endpoints: list[EndpointOut]  # which endpoint answered (feature 114)
     jobs: list[JobOut]
 
 
@@ -293,6 +300,10 @@ async def _ai(
         live=live,
         per_order_millipaisa=used.cost_millipaisa // placed if placed else None,
         efforts=await meter.by_effort(session, since, until),
+        endpoints=[
+            EndpointOut(name=name, answered=served.answered, failed=served.failed)
+            for name, served in (await meter.by_endpoint(session, since, until)).items()
+        ],
         jobs=[JobOut(job=job, **_usage(usage).model_dump()) for job, usage in jobs.items()],
     )
 

@@ -21,6 +21,14 @@ const PERIOD_KEY: Record<DashboardDays, Key> = {
 };
 const TO_PACK = ["placed", "paid", "confirmed"];
 const EFFORTS = ["low", "medium", "high", "xhigh"] as const;
+// The endpoints in the failover chain (feature 114), by the names their companies use.
+const ENDPOINT_NAMES: Record<string, string> = {
+  baseten: "Baseten",
+  modal: "Modal",
+  fireworks: "Fireworks",
+  "modal-glimmer": "Modal (Muse Glimmer)",
+  meta: "Meta Model API",
+};
 // The model's costs are counted in Pakistani rupees, whatever the shop's own currency.
 const COST_COUNTRY = "PK";
 
@@ -218,6 +226,35 @@ function EffortBar({ efforts }: { efforts: Record<string, number> }) {
   );
 }
 
+type Endpoints = NonNullable<Dashboard["ai"]>["endpoints"];
+
+/** Which endpoint answered the model's calls, and how many failed there first. */
+function EndpointList({ me, endpoints }: { me: OwnerMe; endpoints: Endpoints }) {
+  const { t, count } = useFormats(me);
+  if (endpoints.length === 0) return null;
+  return (
+    <div className="dash-effort">
+      <p className="dash-effort-title">{t("console.dash_endpoints")}</p>
+      <ul className="dash-effort-key">
+        {endpoints.map((endpoint) => (
+          <li key={endpoint.name}>
+            {endpoint.name === "mock"
+              ? t("console.dash_endpoint_mock")
+              : (ENDPOINT_NAMES[endpoint.name] ?? endpoint.name)}
+            <strong>{count(endpoint.answered)}</strong>
+            {endpoint.failed > 0 && (
+              <span className="pay-note">
+                {t("console.dash_endpoint_failed", { count: endpoint.failed })}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="pay-note">{t("console.dash_endpoints_note")}</p>
+    </div>
+  );
+}
+
 function ModelCard({ me, ai }: { me: OwnerMe; ai: NonNullable<Dashboard["ai"]> }) {
   const { t, cost, count, compact } = useFormats(me);
   const rows: Row[] = [
@@ -238,6 +275,7 @@ function ModelCard({ me, ai }: { me: OwnerMe; ai: NonNullable<Dashboard["ai"]> }
         <>
           {!ai.live && <p className="pay-note">{t("console.dash_mock")}</p>}
           <EffortBar efforts={ai.efforts} />
+          <EndpointList me={me} endpoints={ai.endpoints} />
         </>
       }
     />

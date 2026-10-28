@@ -55,14 +55,22 @@ async def _chat(db: Database, tenant_id: uuid.UUID, customer_id: uuid.UUID) -> u
 
 
 async def _call(
-    db: Database, tenant_id: uuid.UUID, ref: tuple[str, str], at: datetime, cost: int
+    db: Database,
+    tenant_id: uuid.UUID,
+    ref: tuple[str, str],
+    at: datetime,
+    cost: int,
+    *,
+    provider: str = "baseten",
+    ok: bool = True,
 ) -> None:
     async with db.tenant(tenant_id) as session:
         session.add(
             AiCall(
                 tenant_id=tenant_id,
                 role="chat",
-                provider="baseten",
+                provider=provider,
+                ok=ok,
                 model="m",
                 prompt="order_agent@v7",
                 input_tokens=100,
@@ -119,3 +127,20 @@ async def test_an_order_costs_its_chat_since_the_last_order_and_its_own_calls(
     assert (total.calls, total.tokens, total.cost_millipaisa) == (4, 480, 15_000)
     assert list(jobs) == ["order_agent"]
     assert efforts == {"low": 4}
+
+
+async def test_the_meter_says_which_endpoint_answered(clean_db: Database) -> None:
+    tenant = await make_tenant(clean_db)
+    start = utcnow() - timedelta(hours=1)
+    talk = ("conversation", str(uuid.uuid4()))
+    for provider, ok in [("baseten", False), ("fireworks", True), ("baseten", True)] + [
+        ("modal", True)
+    ] * 2:
+        await _call(clean_db, tenant.id, talk, start, 0, provider=provider, ok=ok)
+    async with clean_db.tenant(tenant.id) as session:
+        served = await meter.by_endpoint(session, start - timedelta(minutes=1), utcnow())
+    assert served == {
+        "modal": meter.Served(2, 0),
+        "baseten": meter.Served(1, 1),
+        "fireworks": meter.Served(1, 0),
+    }

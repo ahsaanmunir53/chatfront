@@ -14,6 +14,7 @@ from typing import TypeVar
 from pydantic import BaseModel, ValidationError
 
 from chatfront.ai.config import Endpoint, RoleConfig, cost_millipaisa, route
+from chatfront.ai.health import Health
 from chatfront.ai.mock import MOCK_ENDPOINT
 from chatfront.ai.provider import Provider
 from chatfront.ai.types import ChatMessage, ChatRequest, ChatResult, JsonSchema, Role, ToolCall
@@ -64,8 +65,10 @@ class AiClient:
         use_mock: bool,
         usd_to_pkr: Decimal,
         record_dir: Path | None = None,
+        health: Health | None = None,
     ) -> None:
         self.roles = roles
+        self.health = health or Health()
         self.live = live
         self.mock = mock
         self.meter = meter
@@ -83,6 +86,14 @@ class AiClient:
             return "mock"
         return "live" if any(config.endpoints for config in self.roles.values()) else "no keys"
 
+    def endpoints(self) -> list[Endpoint]:
+        """Every endpoint in any role's chain, once each, in the order first met."""
+        found: dict[str, Endpoint] = {}
+        for config in self.roles.values():
+            for endpoint in config.endpoints:
+                found.setdefault(endpoint.name, endpoint)
+        return list(found.values())
+
     async def complete(self, req: ChatRequest) -> ChatResult:
         config = self.roles[req.role]
         routed_effort, routed_tokens = route(config, req.prompt)
@@ -95,15 +106,20 @@ class AiClient:
             return result
         if not config.endpoints:
             raise ModelUnavailable(req.role, "no endpoint has a key")
+        chain = self.health.order(config.endpoints)
+        if not chain:
+            raise ModelUnavailable(req.role, "every endpoint is out for a drill")
         last_error = "unknown"
-        for endpoint in config.endpoints:
+        for endpoint in chain:
             try:
                 result = await self.live.complete(endpoint, req, effort, max_tokens)
             except AppError as exc:  # upstream failures and unreadable answers alike
                 last_error = exc.message
+                self.health.failed(endpoint.name, exc.message)
                 await self._meter(req, endpoint, None, exc.message)
                 log.warning("%s failed for %s, trying the next endpoint", endpoint.name, req.role)
                 continue
+            self.health.answered(endpoint.name)
             await self._meter(req, endpoint, result, None)
             self._record(req, result)
             return result

@@ -9,6 +9,7 @@ import io
 import json
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -18,6 +19,9 @@ from asgi_lifespan import LifespanManager
 from PIL import Image
 from sqlalchemy import select, update
 
+from chatfront.ai.config import Endpoint, RoleConfig
+from chatfront.ai.health import Health
+from chatfront.ai.types import Effort, Role
 from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import verify_chain
 from chatfront.channels.models import Conversation, Direction, Message
@@ -40,7 +44,7 @@ async def _messages(db: Database) -> list[Message]:
 async def test_health_and_shop(app: tuple[httpx.AsyncClient, Services]) -> None:
     client, _ = app
     health = await client.get("/health")
-    assert health.json() == {"ok": True, "models": "mock"}
+    assert health.json() == {"ok": True, "models": "mock", "endpoints": []}
     shop = (await client.get(f"/api/shops/{SHOP}")).json()
     assert shop["name"] == "Gulmohar Lawn House"
     assert shop["city"] == "Lahore"
@@ -273,6 +277,40 @@ async def test_rate_limit(seeded: Database) -> None:
                 (await client.post(f"/api/shops/{SHOP}/chat/session")).status_code for _ in range(3)
             ]
     assert codes == [200, 200, 429]
+
+
+async def test_an_outage_drill_moves_calls_to_the_next_endpoint(
+    app: tuple[httpx.AsyncClient, Services], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Failover shown live (feature 114): the drill takes Baseten out for some minutes."""
+    client, services = app
+    chain = (
+        Endpoint("baseten", "https://b.test/v1", "k", "spark", Decimal(1), Decimal(1)),
+        Endpoint("fireworks", "https://f.test/v1", "k", "spark", Decimal(1), Decimal(1)),
+    )
+    roles = {role: RoleConfig(chain, Effort.LOW, 1000) for role in Role}
+    monkeypatch.setattr(services.ai, "roles", roles)
+    monkeypatch.setattr(services.ai, "health", Health())
+    secret = {"X-Cron-Secret": "test-cron-secret"}
+    assert (await client.get("/internal/ai")).status_code == 403
+    assert (await client.get("/health")).json()["endpoints"] == ["baseten", "fireworks"]
+    states = (await client.get("/internal/ai", headers=secret)).json()
+    assert [(s["name"], s["ready"]) for s in states] == [("baseten", True), ("fireworks", True)]
+    drill = {"endpoint": "baseten", "minutes": 5}
+    states = (await client.post("/internal/ai/drill", json=drill, headers=secret)).json()
+    assert (states[0]["ready"], states[0]["why"]) == (False, "drill")
+    assert services.ai.health.order(chain) == [chain[1]]
+    back = {"endpoint": "baseten", "minutes": 0}
+    states = (await client.post("/internal/ai/drill", json=back, headers=secret)).json()
+    assert states[0]["ready"] is True
+    unknown = {"endpoint": "nope", "minutes": 5}
+    assert (
+        await client.post("/internal/ai/drill", json=unknown, headers=secret)
+    ).status_code == 404
+    too_long = {"endpoint": "baseten", "minutes": 31}
+    assert (
+        await client.post("/internal/ai/drill", json=too_long, headers=secret)
+    ).status_code == 422
 
 
 async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -> None:

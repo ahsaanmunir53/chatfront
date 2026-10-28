@@ -56,6 +56,7 @@ async def test_the_owner_sees_orders_money_fraud_books_and_model_cost(
     assert ai["live"] is False  # recorded answers in tests, which cost nothing
     assert ai["calls"] >= 6
     assert ai["efforts"] == {"low": ai["calls"]}  # the order agent is light (feature 113)
+    assert ai["endpoints"] == [{"name": "mock", "answered": ai["calls"], "failed": 0}]
     assert [job["job"] for job in ai["jobs"]] == ["order_agent"]
     [cost] = shown["costs"]
     assert cost["calls"] == ai["calls"]
