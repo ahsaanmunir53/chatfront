@@ -129,6 +129,13 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, selling more:** bundles the owner sets in the console, suggested when a piece
+  goes in the cart and taken off by code; discount codes with their own rules, typed at the
+  shop page checkout or given in chat, and loyalty points earned on delivery and spent on
+  later orders; pre-orders that take stock at packing and a waitlist that messages customers
+  when stock comes back; a countdown on the shop page to the last day to order before Eid,
+  Diwali or the shop's own big days, and to the end of a sale; and answers the owner gave in
+  a handed-over chat, reused by the assistant only after the owner approves them.
 - **28 October, payments and returns:** refunds owed on their own (a paid order cancelled, a
   piece returned, money beyond the order's cost) and closed with the owner's transfer
   screenshot, checked by code, or on the owner's word, with a signed refund receipt; "I sent

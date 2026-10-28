@@ -400,6 +400,65 @@ What it delivered:
 Not verified yet: reading refund screenshots and the agent's two new tools on the real model
 (they need a model key); a real reverse pickup with a courier.
 
+## Done on 28 October: selling more (13, 16, 19, 95, 91)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 795 passed, 94.75% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 60 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Bundles and upsell (13): bundles set in the console (two to four products on sale, a
+  saving less than the set costs). When a piece goes in the cart the assistant is told what
+  goes well with it: its bundle partners with the saving, then what customers bought with it
+  in the last 120 days, two at most.
+- Codes and points (19): discount codes in the console with a percent or an amount, smallest
+  order, first and last day, most uses, once per customer and whether the shop page shows
+  them; checked by code with a reason when one does not apply, at the shop page checkout and
+  in chat. Loyalty points earned on delivery, spent in chat up to a share of the order.
+- Pre-order and waitlist (16): the owner puts a product on pre-order in words with a ship
+  date and a limit; the shop page and the assistant say when it ships; the waitlist messages
+  each waiting customer when stock comes back.
+- Big-day countdown (95): a calendar of big days per country and the shop's own days; the
+  last day to order works out from the ride to the customer's city; the shop page counts
+  down to it and to the end of each sale shown on the page; the order card says whether the
+  order arrives in time.
+- Approved answers (91): the owner's reply in a handed-over chat becomes an answer the
+  assistant may reuse only after the owner approves it; removable in the console.
+- Migration 0016: bundles, coupons, coupon uses, loyalty entries, waitlist entries, saved
+  answers; offer columns on orders; pre-order dates and limits on products.
+
+Decisions:
+
+- Offers apply only to lines at the catalog price; a bargained line keeps its agreed price
+  and gets no bundle or code. Order of work: bundles (the biggest saving first, a piece in one
+  set only), then one code on what is left at the catalog price, then points, capped at the
+  shop's share (20% by default). An exchange order gets no offers.
+- Points are earned when an order is delivered, so a cancelled order never earns them; a
+  cancelled order gives spent points back, a returned one also takes earned points back. A
+  cancelled order frees its code use.
+- A pre-ordered line takes stock when the order is packed. The pre-order limit counts placed
+  orders not yet packed (carts hold nothing); an order ships from its latest ship date.
+- Waitlist messages go only inside the 24-hour window; outside it the entry is marked missed,
+  since no approved template covers it yet.
+- Calendar dates that follow the moon (Eid, Ramadan) are marked expected and the page says
+  so. Last day to order = the day, less one day to arrive early, the ride (one day in the
+  shop's city, three elsewhere, or the shop's own delivery days) and one day to dispatch.
+  The page shows a countdown from three weeks out.
+- Approved answers need the settings right, as they speak for the shop; the agent reads the
+  newest 20.
+- The demo clothing shop comes with one bundle, the WELCOME10 code shown on its page, and
+  points on.
+
+Not verified yet: the suggestions, codes, points, waitlist and approved answers in chat on
+the real model (they need a model key); waitlist messages on a real WhatsApp number.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -443,7 +502,7 @@ Proposed order, the Meta platform first since it is what is judged:
 1. Meta channels: 76 (one inbox with staff assign), 77 (comment-to-DM), 79 (one customer
    across channels), 6 (WhatsApp catalog and Instagram shop sync). Done on 27 October.
 2. Payments and returns: 28, 29, 100, 92. Done on 28 October.
-3. Selling more: 13, 16, 19, 95, 91.
+3. Selling more: 13, 16, 19, 95, 91. Done on 28 October.
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88.
 5. Shield: 37, 40, 43, 45, 46.
 6. Packing and books: 102, 103, 51.
