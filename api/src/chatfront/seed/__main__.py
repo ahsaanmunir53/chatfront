@@ -12,14 +12,20 @@ import logging
 
 from sqlalchemy import func, select
 
-from chatfront.catalog.demo import add_demo_products
+from chatfront.catalog.demo import add_demo_offers, add_demo_products, demo_loyalty
 from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
 from chatfront.core.models import Tenant, Tier
 from chatfront.core.provisioning import NewShop, create_shop
 from chatfront.core.settings import get_settings
-from chatfront.models import Product  # all models, so foreign keys resolve when run alone
+from chatfront.models import (  # all models, so foreign keys resolve when run alone
+    Bundle,
+    Coupon,
+    Product,
+)
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.offers.service import LOYALTY
+from chatfront.stock.batches import shop_today
 from chatfront.templates import all_templates
 
 log = logging.getLogger(__name__)
@@ -37,6 +43,7 @@ PLATFORM = NewShop(
     profile={},
     is_platform=True,
 )
+DEMO_COUNTRY = "PK"  # the demo shops are Pakistani, as a new shop is by default
 
 
 def demo_shops() -> list[NewShop]:
@@ -51,7 +58,11 @@ def demo_shops() -> list[NewShop]:
                 tier=demo.tier,
                 owner_name="Demo owner",
                 owner_email=f"owner@{demo.slug}.demo",
-                profile={"city": demo.city, "tagline": demo.tagline.model_dump(by_alias=True)},
+                profile={
+                    "city": demo.city,
+                    "tagline": demo.tagline.model_dump(by_alias=True),
+                    **demo_loyalty(template.id, get_pack(DEMO_COUNTRY).minor_digits),
+                },
                 is_demo=True,
             )
         )
@@ -66,6 +77,23 @@ async def _stock_if_empty(db: Database, tenant: Tenant) -> None:
         await add_demo_products(db, tenant.id, tenant.template, digits)
 
 
+async def _offers_if_none(db: Database, tenant: Tenant) -> None:
+    """Demo shops made before offers existed get the template's (features 13 and 19)."""
+    digits = get_pack(tenant.country).minor_digits
+    async with db.tenant(tenant.id) as session:
+        found = await session.scalar(select(func.count()).select_from(Coupon))
+        found = (found or 0) + (await session.scalar(select(func.count()).select_from(Bundle)) or 0)
+        if not found:
+            await add_demo_offers(
+                session, tenant.id, tenant.template, digits, await shop_today(session, tenant.id)
+            )
+        stored = await session.get(Tenant, tenant.id)
+        assert stored is not None
+        loyalty = demo_loyalty(tenant.template, digits)
+        if loyalty and LOYALTY not in (stored.profile or {}):
+            stored.profile = {**(stored.profile or {}), **loyalty}
+
+
 async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
     """Make whatever is missing; returns the slugs of the shops it created."""
     created = []
@@ -77,6 +105,7 @@ async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
             created.append(shop.slug)
         if shop.is_demo:
             await _stock_if_empty(db, tenant)
+            await _offers_if_none(db, tenant)
     return created
 
 

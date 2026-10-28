@@ -118,6 +118,15 @@
       "ur": "لان، شیفون اور کھدر کے سوٹ، پورے پاکستان میں ڈیلیوری",
       "ur-Latn": "Lawn, chiffon aur khaddar ke suit, poore Pakistan mein delivery"
     },
+    "offers": {
+      "bundles": [
+        {"name": "Winter suit with dupatta", "products": ["Khaddar 2-piece, stitched", "Embroidered chiffon dupatta"], "off": 450}
+      ],
+      "coupons": [
+        {"code": "WELCOME10", "percent": 10, "min_subtotal": 3000, "days": 30, "show_on_page": true}
+      ],
+      "loyalty": {"earn_per": 100, "point_value": 1, "max_share": 20}
+    },
     "products": [
       {
         "name": "Printed lawn 3-piece",

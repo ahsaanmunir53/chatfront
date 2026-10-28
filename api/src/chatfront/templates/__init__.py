@@ -86,6 +86,45 @@ class DemoProduct(BaseModel):
     variants: list[DemoVariant] = Field(default_factory=lambda: [DemoVariant()])
 
 
+class DemoBundle(BaseModel):
+    """Products sold together for less (feature 13); money in major units."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    products: list[str] = Field(min_length=2, max_length=4)  # demo product names
+    off: int = Field(gt=0)
+
+
+class DemoCoupon(BaseModel):
+    """A discount code (feature 19); money in major units, `days` from when the shop is made."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    percent: int | None = Field(default=None, ge=1, le=90)
+    amount: int | None = Field(default=None, gt=0)
+    min_subtotal: int = Field(default=0, ge=0)
+    days: int | None = Field(default=None, ge=1)
+    show_on_page: bool = False
+
+
+class DemoLoyalty(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    earn_per: int = Field(gt=0)  # spent for one point, major units
+    point_value: int = Field(gt=0)  # a point's worth, major units
+    max_share: int = Field(default=20, ge=1, le=100)
+
+
+class DemoOffers(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    bundles: list[DemoBundle] = Field(default_factory=list)
+    coupons: list[DemoCoupon] = Field(default_factory=list)
+    loyalty: DemoLoyalty | None = None
+
+
 class DemoShop(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -95,6 +134,7 @@ class DemoShop(BaseModel):
     city: str
     tagline: Text3
     products: list[DemoProduct] = Field(default_factory=list)
+    offers: DemoOffers = Field(default_factory=DemoOffers)
 
 
 class BusinessTemplate(BaseModel):

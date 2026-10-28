@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, timedelta
+from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import SYSTEM
+from chatfront.catalog.models import Product
 from chatfront.catalog.service import ProductInput, VariantInput, create_product
 from chatfront.core.db import Database
 from chatfront.core.money import Minor
+from chatfront.offers.service import LOYALTY
+from chatfront.orders.models import Bundle, Coupon
 from chatfront.stock import batches
 from chatfront.templates import DemoProduct, get_template
 
@@ -48,4 +56,59 @@ async def add_demo_products(
                 continue
             for variant in item.variants:
                 await batches.opening(session, variant, product.cost * 10**digits, today)
+        await add_demo_offers(session, tenant_id, template_id, digits, today)
     return len(products)
+
+
+async def add_demo_offers(
+    session: AsyncSession, tenant_id: uuid.UUID, template_id: str, digits: int, today: date
+) -> None:
+    """The template's synthetic bundles and coupons (features 13 and 19), on its products;
+    ones the shop already has are left as they are."""
+    offers = get_template(template_id).demo.offers
+    scale = 10**digits
+    names = {p.name: p.id for p in await session.scalars(select(Product))}
+    have = set(await session.scalars(select(Bundle.name)))
+    codes = set(await session.scalars(select(Coupon.code)))
+    for bundle in offers.bundles:
+        if bundle.name in have:
+            continue
+        session.add(
+            Bundle(
+                tenant_id=tenant_id,
+                name=bundle.name,
+                product_ids=[str(names[name]) for name in bundle.products],
+                off=bundle.off * scale,
+            )
+        )
+    for coupon in offers.coupons:
+        if coupon.code in codes:
+            continue
+        session.add(
+            Coupon(
+                tenant_id=tenant_id,
+                code=coupon.code,
+                percent=coupon.percent,
+                amount=coupon.amount * scale if coupon.amount else None,
+                min_subtotal=coupon.min_subtotal * scale,
+                ends_on=today + timedelta(days=coupon.days) if coupon.days else None,
+                show_on_page=coupon.show_on_page,
+            )
+        )
+    await session.flush()
+
+
+def demo_loyalty(template_id: str, digits: int) -> dict[str, Any]:
+    """The template's points, as a shop profile keeps them; empty when it gives none."""
+    loyalty = get_template(template_id).demo.offers.loyalty
+    if loyalty is None:
+        return {}
+    scale = 10**digits
+    return {
+        LOYALTY: {
+            "on": True,
+            "earn_per": loyalty.earn_per * scale,
+            "point_value": loyalty.point_value * scale,
+            "max_share": loyalty.max_share,
+        }
+    }
