@@ -106,7 +106,8 @@ class CheckoutIn(BaseModel):
     details: DetailsIn
     payment_method: Literal["cod", "transfer"]
     coupon: str | None = Field(default=None, max_length=24)
-    source: Literal["shop_page", "facebook", "instagram"] = "shop_page"
+    # assistant: a cart an outside AI assistant put together (feature 66)
+    source: Literal["shop_page", "facebook", "instagram", "assistant"] = "shop_page"
     lang: str | None = Field(default=None, max_length=16)
 
 

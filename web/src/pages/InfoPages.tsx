@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
+import { useCopy } from "../clipboard";
+import { API_BASE } from "../config";
 import type { TrustInfo, TrustStats } from "../api";
 import { Avatar } from "../components/Avatar";
 import { ShieldIcon } from "../components/Icons";
@@ -75,7 +77,30 @@ export function TrustPage() {
       </section>
       <TrustNumbers slug={slug} />
       <ShopReviewsSection slug={slug} />
+      <AssistantAccess slug={slug} />
     </Page>
+  );
+}
+
+/** The shop's address for AI assistants that speak MCP (feature 66): they can look up its
+ * products and start a checkout, which the person places themselves. */
+function AssistantAccess({ slug }: { slug: string }) {
+  const { t } = useLang();
+  const { copied, copy } = useCopy();
+  const url = `${API_BASE || window.location.origin}/mcp/${slug}`;
+  return (
+    <section aria-labelledby="mcp-heading" className="plain-section assistant-access">
+      <h2 id="mcp-heading" className="section-title">
+        {t("mcp.title")}
+      </h2>
+      <p className="lede">{t("mcp.lede")}</p>
+      <p className="mcp-url">
+        <code dir="ltr">{url}</code>
+        <button type="button" className="action" onClick={() => void copy(url)}>
+          {copied ? t("mcp.copied") : t("mcp.copy")}
+        </button>
+      </p>
+    </section>
   );
 }
 

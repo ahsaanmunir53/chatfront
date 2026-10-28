@@ -54,8 +54,11 @@ export function parseProducts(param: string | null): CartLine[] {
 }
 
 /** Where a checkout link came from, as the API names it. */
-export function sourceOf(cartOrigin: string | null): "shop_page" | "facebook" | "instagram" {
-  return cartOrigin === "facebook" || cartOrigin === "instagram" ? cartOrigin : "shop_page";
+const ORIGINS = ["facebook", "instagram", "assistant"] as const;
+type Origin = (typeof ORIGINS)[number];
+
+export function sourceOf(cartOrigin: string | null): "shop_page" | Origin {
+  return ORIGINS.find((origin) => origin === cartOrigin) ?? "shop_page";
 }
 
 export function useCart(slug: string) {
