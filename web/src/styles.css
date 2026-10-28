@@ -3215,6 +3215,59 @@ button {
   word-break: break-all;
 }
 
+/* The wallets read for the shop's country, and the yes to share unread shapes (73) ----- */
+
+.pay-wallets {
+  margin: 14px 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.pay-wallets li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.pay-share {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.pay-share input {
+  margin-top: 3px;
+}
+
+.sms-format-table {
+  width: 100%;
+  margin: 10px 0 18px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.sms-format-table th,
+.sms-format-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+}
+
+.sms-sample code {
+  flex-basis: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--paper);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Money and goods coming back: refunds with their proof, swaps and returns ------------- */
 
 .refund-columns {

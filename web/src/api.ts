@@ -747,14 +747,41 @@ export type PaymentDone = {
   receipt_code: string | null;
   created_at: string;
 };
+export type PaymentWallet = {
+  name: string;
+  kind: "wallet" | "bank";
+  read: boolean;
+  checked: boolean;
+};
 export type Payments = {
   forwarding: boolean;
   currency: string;
+  wallets: PaymentWallet[];
+  share_unread: boolean;
+  unread_kept: number;
   reviews: PaymentReview[];
   waiting: PaymentWaiting[];
   recent: PaymentDone[];
 };
 export type Forwarding = { url: string; header: string; secret: string };
+export type SmsParserOut = {
+  parser: string;
+  provider: string;
+  country: string;
+  currency: string;
+  verified: boolean;
+  credits: number;
+  last_seen: string | null;
+};
+export type SmsSampleOut = {
+  id: string;
+  country: string;
+  sender: string;
+  text: string;
+  seen: number;
+  last_seen_at: string;
+};
+export type SmsFormats = { parsers: SmsParserOut[]; unread: SmsSampleOut[] };
 export type ReceiptCheck = {
   payload: ReceiptPayload;
   signature: string;
@@ -1319,6 +1346,19 @@ export const api = {
       `/api/owner/payments/${encodeURIComponent(claimId)}/${answer}`,
       { method: "POST", headers: bearer(token) },
     ),
+  shareUnreadSms: (token: string, share: boolean) =>
+    call<{ share: boolean }>("/api/owner/sms-samples", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ share }),
+    }),
+  smsFormats: (token: string) =>
+    call<SmsFormats>("/api/platform/sms-formats", { headers: bearer(token) }),
+  smsFormatHandled: (token: string, id: string) =>
+    call<{ handled: boolean }>(`/api/platform/sms-formats/${encodeURIComponent(id)}/handled`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
   setUpForwarding: (token: string) =>
     call<Forwarding>("/api/owner/sms-forwarding", { method: "POST", headers: bearer(token) }),
   orders: (token: string) => call<OwnerOrder[]>("/api/owner/orders", { headers: bearer(token) }),

@@ -1,7 +1,9 @@
 // The owner's side of payments: payments to check with the evidence and Approve and Reject
 // (feature 25), orders waiting for money, money received with its signed receipt, and the
-// one-time setup of SMS forwarding (feature 24).
+// one-time setup of SMS forwarding (feature 24), with the wallets read for the shop's country
+// and the owner's yes to sharing the shape of messages no parser read (feature 73).
 import { useCallback, useState } from "react";
+import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useCopy } from "../clipboard";
@@ -139,15 +141,68 @@ export function PaymentReviews({
   );
 }
 
-function SmsForwarding({
+function Wallets({
   token,
-  on,
+  data,
   onChange,
 }: {
   token: string;
-  on: boolean;
+  data: Payments;
   onChange: () => void;
 }) {
+  const { t } = useLang();
+  const [failed, setFailed] = useState(false);
+
+  async function share(event: ChangeEvent<HTMLInputElement>) {
+    setFailed(false);
+    try {
+      await api.shareUnreadSms(token, event.target.checked);
+      onChange();
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  return (
+    <>
+      {data.wallets.length > 0 && (
+        <ul className="pay-wallets" aria-label={t("console.sms_wallets")}>
+          {data.wallets.map((wallet) => (
+            <li key={wallet.name}>
+              <span dir="auto">{wallet.name}</span>
+              <span className="pay-note">
+                {!wallet.read
+                  ? t("console.sms_wallet_unread")
+                  : wallet.checked
+                    ? t("console.sms_wallet_checked")
+                    : t("console.sms_wallet_unchecked")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <label className="pay-share">
+        <input type="checkbox" checked={data.share_unread} onChange={(e) => void share(e)} />
+        {t("console.sms_share")}
+      </label>
+      {data.share_unread && (
+        <p className="pay-note">{t("console.sms_share_kept", { count: data.unread_kept })}</p>
+      )}
+      {failed && <p role="alert">{t("console.offers_failed")}</p>}
+    </>
+  );
+}
+
+function SmsForwarding({
+  token,
+  data,
+  onChange,
+}: {
+  token: string;
+  data: Payments;
+  onChange: () => void;
+}) {
+  const on = data.forwarding;
   const { t } = useLang();
   const [made, setMade] = useState<Forwarding | null>(null);
   const { copied, copy, reset } = useCopy();
@@ -179,6 +234,7 @@ function SmsForwarding({
           {on ? t("console.sms_new") : t("console.sms_setup")}
         </button>
       )}
+      <Wallets token={token} data={data} onChange={onChange} />
     </div>
   );
 }
@@ -257,7 +313,7 @@ export function PaymentsPanel({
             ))}
           </ul>
         </div>
-        <SmsForwarding token={token} on={data.forwarding} onChange={onChange} />
+        <SmsForwarding token={token} data={data} onChange={onChange} />
       </div>
     </section>
   );

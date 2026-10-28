@@ -9,6 +9,7 @@ import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BookingsPanel } from "../components/Bookings";
 import { BooksAheadPanel } from "../components/BooksAhead";
 import { CoachPanel } from "../components/Coach";
+import { SmsFormatsPanel } from "../components/SmsFormats";
 import { ScamReviewPanel, ScamsPanel } from "../components/Scams";
 import { StaffPayPanel } from "../components/StaffPay";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
@@ -429,6 +430,7 @@ function Console({
       {can("trust") && <FraudReportsPanel token={token} />}
       {me.is_platform && can("trust") && <FraudReviewPanel token={token} />}
       {me.is_platform && can("trust") && <ScamReviewPanel token={token} />}
+      {me.is_platform && can("trust") && <SmsFormatsPanel token={token} />}
       {can("trust") && !me.is_platform && <ScamsPanel token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("team") && <StaffPayPanel me={me} token={token} />}
