@@ -17,6 +17,7 @@ from pathlib import Path
 
 import segno
 from fpdf import FPDF
+from fpdf.enums import TextEmphasis
 
 from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.models import Tenant
@@ -77,10 +78,13 @@ def _shop(data: LabelData) -> _Party:
     )
 
 
-class _Label(FPDF):
-    def __init__(self) -> None:
-        super().__init__(orientation="P", unit="mm", format=SIZE)
-        self.set_margins(MARGIN, MARGIN, MARGIN)
+class ShopPdf(FPDF):
+    """A page with the bundled Noto fonts and text shaping, so names in any of the shop's
+    scripts print; labels and packing slips both use it."""
+
+    def __init__(self, size: tuple[float, float] | str, margin: float) -> None:
+        super().__init__(orientation="P", unit="mm", format=size)
+        self.set_margins(margin, margin, margin)
         self.set_auto_page_break(False)
         self.add_font("Sans", "", FONTS / "NotoSans-Regular.ttf")
         self.add_font("Sans", "B", FONTS / "NotoSans-Bold.ttf")
@@ -94,9 +98,17 @@ class _Label(FPDF):
         self.set_draw_color(*_RULE)
         self.set_creator("Chatfront")
 
+    def set_font(
+        self, family: str | None = None, style: str | TextEmphasis = "", size: float = 0
+    ) -> None:
+        super().set_font(family, style, size)
+        # A line drawn in a fallback font (Urdu, Hindi, Bengali) leaves that font set on the
+        # page, so the next line must name its own font again or it prints with none.
+        self.current_font_is_set_on_page = False
+
     @property
     def inner(self) -> float:
-        return SIZE[0] - 2 * MARGIN
+        return float(self.epw)
 
     def text_line(self, text: str, size: float, *, bold: bool = False, width: float = 0) -> None:
         self.set_font("Sans", "B" if bold else "", size)
@@ -108,8 +120,14 @@ class _Label(FPDF):
 
     def rule(self, gap: float = 1.8) -> None:
         self.ln(gap)
-        self.line(MARGIN, self.get_y(), SIZE[0] - MARGIN, self.get_y())
+        self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(gap)
+
+
+def named(item: OrderItem) -> str:
+    """An order line as packers and riders read it: the name and its colour or size."""
+    options = " ".join(str(v) for v in item.options.values())
+    return f"{item.name} ({options})" if options else item.name
 
 
 def _qr_png(url: str) -> io.BytesIO:
@@ -132,7 +150,7 @@ def _codes(data: LabelData) -> tuple[tuple[str, str], tuple[str, str]]:
 
 
 def label_pdf(data: LabelData) -> bytes:
-    pdf = _Label()
+    pdf = ShopPdf(SIZE, MARGIN)
     pdf.add_page()
     returning = data.return_code is not None
     customer, shop = _customer(data), _shop(data)
@@ -180,9 +198,7 @@ def label_pdf(data: LabelData) -> bytes:
     # What is inside.
     pdf.caption("ITEMS COMING BACK" if returning else "ITEMS")
     for item in data.items[:MAX_ITEMS]:
-        options = " ".join(str(v) for v in item.options.values())
-        named = f"{item.name} ({options})" if options else item.name
-        pdf.text_line(f"{item.quantity} {TIMES} {named}", 8.5)
+        pdf.text_line(f"{item.quantity} {TIMES} {named(item)}", 8.5)
     if len(data.items) > MAX_ITEMS:
         pdf.text_line(f"+ {len(data.items) - MAX_ITEMS} more", 8.5)
     if data.courier or data.tracking_number:
