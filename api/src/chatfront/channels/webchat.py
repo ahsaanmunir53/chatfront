@@ -6,13 +6,21 @@ no 24-hour window, because the shop owns it.
 
 from __future__ import annotations
 
-from typing import Any
+import hashlib
+import uuid
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
+from chatfront.channels import service as channels
 from chatfront.channels.base import AccountRef
-from chatfront.channels.models import Channel
-from chatfront.channels.types import Capability, Inbound, Outbound, StatusUpdate
+from chatfront.channels.models import Channel, ChannelAccount
+from chatfront.channels.types import Capability, Inbound, Kind, Outbound, StatusUpdate
+from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError
 from chatfront.core.ids import new_id
+
+if TYPE_CHECKING:
+    from chatfront.services import Services
 
 
 class WebChatAdapter:
@@ -33,3 +41,39 @@ class WebChatAdapter:
     async def download_media(self, account: AccountRef, media_ref: str) -> bytes:
         del account, media_ref
         raise AppError("not_supported", "Web chat uploads are stored directly")
+
+
+@dataclass(frozen=True, slots=True)
+class ChatIdentity:
+    """Who writes in the web chat: a visitor by their session token, or signed-in staff."""
+
+    sender_id: str
+    staff_id: uuid.UUID | None
+
+
+async def accept_web(
+    services: Services,
+    account: ChannelAccount,
+    identity: ChatIdentity,
+    client_id: uuid.UUID,
+    *,
+    kind: Kind,
+    text: str | None,
+    payload: dict[str, Any] | None = None,
+    media_id: uuid.UUID | None = None,
+) -> uuid.UUID | None:
+    """Store a message typed into the web chat and queue its reply; None for a repeat."""
+    tag = hashlib.sha256(identity.sender_id.encode()).hexdigest()[:12]
+    message = Inbound(
+        channel=Channel.WEBCHAT,
+        account_external_id=account.external_id,
+        sender_id=identity.sender_id,
+        message_id=f"web:{tag}:{client_id}",
+        sent_at=utcnow(),
+        kind=kind,
+        text=text,
+        payload=payload or {},
+        staff_id=identity.staff_id,
+        media_id=media_id,
+    )
+    return await channels.accept(services.db, account, message, services.keys)

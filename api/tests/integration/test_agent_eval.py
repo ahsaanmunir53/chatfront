@@ -7,7 +7,8 @@ import httpx
 import pytest
 
 from chatfront.eval import agent
-from chatfront.eval.agent import evaluate, load_cases
+from chatfront.eval.agent import evaluate
+from chatfront.eval.cases import load_cases
 from chatfront.services import Services
 
 

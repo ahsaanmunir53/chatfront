@@ -16,19 +16,8 @@ from chatfront.catalog.service import CatalogItem
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.models import Tenant
 from chatfront.eval import agent
-from chatfront.eval.agent import (
-    Call,
-    Case,
-    Outcome,
-    Shop,
-    Step,
-    Summary,
-    check_calls,
-    load_cases,
-    report,
-    satisfies,
-    write_results,
-)
+from chatfront.eval.agent import Outcome, Summary, report, write_results
+from chatfront.eval.cases import Call, Case, Shop, Step, check_calls, load_cases, satisfies
 from chatfront.services import build_registries
 from chatfront.templates import get_template
 

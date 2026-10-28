@@ -15,9 +15,8 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Literal
 
-from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +26,7 @@ from chatfront.channels import service as channels
 from chatfront.channels.models import Channel
 from chatfront.channels.notify import send_to
 from chatfront.channels.types import OutText
-from chatfront.core.errors import AppError, NotFound
+from chatfront.core.errors import AppError
 from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
 from chatfront.delivery.address import Address
@@ -36,30 +35,22 @@ from chatfront.offers import service as offers
 from chatfront.offers.pricing import Line
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
-from chatfront.orders.delivery import quote, rates_for, weight_of
+from chatfront.orders.delivery import weight_of
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
 from chatfront.orders.tools import accepted_methods
 from chatfront.payments.due import start_payment
-from chatfront.services import Services, get_services
 
-router = APIRouter(prefix="/api/shops/{slug}/checkout")
-ServicesDep = Annotated[Services, Depends(get_services)]
+if TYPE_CHECKING:
+    from chatfront.services import Services
 
 MAX_LINES = 30
 WEB_METHODS = ("cod", "transfer")  # the khata needs a verified buyer, known in a chat
-ChatToken = Annotated[str, Header(alias="X-Chat-Token", min_length=20, max_length=100)]
 
 
 class LineIn(BaseModel):
     item: str = Field(min_length=1, max_length=40, description="A variant's catalog id")
     quantity: int = Field(ge=1, le=orders.MAX_QUANTITY)
-
-
-class QuoteIn(BaseModel):
-    lines: list[LineIn] = Field(min_length=1, max_length=MAX_LINES)
-    city: str | None = Field(default=None, max_length=60)
-    coupon: str | None = Field(default=None, max_length=24)
 
 
 class LineOut(BaseModel):
@@ -72,24 +63,6 @@ class LineOut(BaseModel):
     problem: Literal["not_found", "sold_out", "not_enough"] | None = None
     left: int | None = None  # pieces in stock, when fewer than asked
     ships_from: date | None = None  # a pre-order line (feature 16)
-
-
-class OfferOut(BaseModel):
-    kind: str  # bundle or coupon
-    label: str
-    amount: int
-
-
-class QuoteOut(BaseModel):
-    lines: list[LineOut]
-    subtotal: int
-    delivery: int | None  # None: no city yet, or the shop confirms the charge itself
-    free_delivery: bool
-    offers: list[OfferOut]  # bundles and the coupon, already taken off the total
-    coupon_problem: str | None  # why the coupon given does not apply
-    total: int
-    methods: list[str]
-    currency: str
 
 
 class DetailsIn(BaseModel):
@@ -161,53 +134,8 @@ def price_lines(tenant: Tenant, items: Sequence[CatalogItem], lines: Sequence[Li
     return Priced(out, subtotal, weight, for_offers)
 
 
-async def _shop(services: Services, slug: str) -> Tenant:
-    account = await channels.route(services.db, Channel.WEBCHAT, slug)
-    if account is None:
-        raise NotFound("shop")
-    async with services.db.tenant(account.tenant_id) as session:
-        tenant = await session.get(Tenant, account.tenant_id)
-    if tenant is None or tenant.is_platform:
-        raise NotFound("shop")
-    return tenant
-
-
-def _limit(services: Services, request: Request, slug: str) -> None:
-    client = request.client.host if request.client else "unknown"
-    services.limiter.check(f"checkout:{slug}:{client}")
-
-
-def _methods(tenant: Tenant) -> list[str]:
+def web_methods(tenant: Tenant) -> list[str]:
     return [m for m in accepted_methods(tenant) if m in WEB_METHODS]
-
-
-@router.post("/quote")
-async def checkout_quote(
-    slug: str, body: QuoteIn, request: Request, services: ServicesDep
-) -> QuoteOut:
-    _limit(services, request, slug)
-    tenant = await _shop(services, slug)
-    async with services.db.tenant(tenant.id) as session:
-        items = await load_items(session)
-        priced = price_lines(tenant, items, body.lines)
-        found = await offers.price(session, tenant, priced.for_offers, coupon=body.coupon)
-    charge = (
-        quote(rates_for(tenant), body.city.strip(), priced.weight_g, priced.subtotal)
-        if body.city and body.city.strip()
-        else None
-    )
-    fee = charge.fee if charge else None
-    return QuoteOut(
-        lines=priced.lines,
-        subtotal=priced.subtotal,
-        delivery=fee,
-        free_delivery=bool(charge and charge.free),
-        offers=[OfferOut(kind=o.kind, label=o.label, amount=o.amount) for o in found.offers],
-        coupon_problem=found.coupon_problem,
-        total=max(priced.subtotal + (fee or 0) - found.off, 0),
-        methods=_methods(tenant),
-        currency=tenant.currency,
-    )
 
 
 async def _fill_cart(
@@ -264,7 +192,7 @@ async def _place(
             raise AppError("address_vague", "Add the area and a house number or a landmark")
         if not (cart.address or {}).get("phone_valid"):
             raise AppError("phone_invalid", "That phone number does not look right")
-        if body.payment_method not in _methods(tenant):
+        if body.payment_method not in web_methods(tenant):
             raise AppError("payment_method_not_taken", "This shop does not take that payment")
         actor = Actor(ActorType.CUSTOMER, str(customer.id))
         cart.payment_method, cart.source = body.payment_method, body.source
@@ -295,12 +223,3 @@ async def place_from_page(
         payment_method=order.payment_method or body.payment_method,
         message=message,
     )
-
-
-@router.post("")
-async def checkout(
-    slug: str, body: CheckoutIn, request: Request, services: ServicesDep, token: ChatToken
-) -> PlacedOut:
-    """Place the order from the page. Nothing is kept unless every check passes."""
-    _limit(services, request, slug)
-    return await place_from_page(services, await _shop(services, slug), token, body)

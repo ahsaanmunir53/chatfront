@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import secrets
 import uuid
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any
 
@@ -26,8 +24,8 @@ from chatfront.channels.models import (
     CustomerIdentity,
     Message,
 )
-from chatfront.channels.types import Inbound, Kind
-from chatfront.core.clock import utcnow
+from chatfront.channels.types import Kind
+from chatfront.channels.webchat import ChatIdentity, accept_web
 from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.phone import hash_phone
 from chatfront.media import service as media_service
@@ -155,12 +153,6 @@ def _client_id(message: Message) -> uuid.UUID | None:
         return None
 
 
-@dataclass(frozen=True, slots=True)
-class ChatIdentity:
-    sender_id: str
-    staff_id: uuid.UUID | None
-
-
 ChatToken = Annotated[str | None, Header(alias="X-Chat-Token", max_length=100)]
 Authorization = Annotated[str | None, Header(max_length=600)]
 
@@ -192,34 +184,6 @@ def _identity(
     if chat_token is None or len(chat_token) < 20:
         raise AppError("no_chat_token", "Start a chat first")
     return ChatIdentity(chat_token, None)
-
-
-async def accept_web(
-    services: Services,
-    account: ChannelAccount,
-    identity: ChatIdentity,
-    client_id: uuid.UUID,
-    *,
-    kind: Kind,
-    text: str | None,
-    payload: dict[str, Any] | None = None,
-    media_id: uuid.UUID | None = None,
-) -> uuid.UUID | None:
-    """Store a message typed into the web chat and queue its reply; None for a repeat."""
-    tag = hashlib.sha256(identity.sender_id.encode()).hexdigest()[:12]
-    message = Inbound(
-        channel=Channel.WEBCHAT,
-        account_external_id=account.external_id,
-        sender_id=identity.sender_id,
-        message_id=f"web:{tag}:{client_id}",
-        sent_at=utcnow(),
-        kind=kind,
-        text=text,
-        payload=payload or {},
-        staff_id=identity.staff_id,
-        media_id=media_id,
-    )
-    return await channels.accept(services.db, account, message, services.keys)
 
 
 @router.post("/api/shops/{slug}/chat/session")
