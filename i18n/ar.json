@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "المورد",
   "console.suppliers_unit": "للقطعة",
   "console.suppliers_when": "آخر شراء",
-  "console.suppliers_cheapest": "الأرخص"
+  "console.suppliers_cheapest": "الأرخص",
+  "console.price_check_title": "الأسعار في أماكن أخرى",
+  "console.price_check_lede": "أصناف مشابهة في متاجر أخرى على Chatfront بعملتك: كم متجراً، وأدنى سعر لديهم وأوسطه وأعلاه. هذا ليس السوق كله: البحث عن بائعين آخرين على الويب يحتاج إلى Meta Model API، وهو غير مفعّل هنا.",
+  "console.price_check_run": "تحقق من الأسعار",
+  "console.price_check_none": "لا يبيع أي متجر آخر على Chatfront هذا الصنف بعد.",
+  "console.price_check_shops": "{count, plural, zero {لا متاجر} one {متجر واحد} two {متجران} few {# متاجر} many {# متجراً} other {# متجر}}",
+  "console.price_check_range": "من {lowest} إلى {highest}، الأوسط {middle}",
+  "console.price_check_below": "سعرك أقل",
+  "console.price_check_within": "سعرك ضمن نطاقهم",
+  "console.price_check_above": "سعرك أعلى",
+  "console.price_check_item": "الصنف",
+  "console.price_check_yours": "سعرك",
+  "console.price_check_others": "متاجر أخرى"
 }

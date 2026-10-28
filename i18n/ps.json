@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "عرضه کوونکی",
   "console.suppliers_unit": "هره دانه",
   "console.suppliers_when": "وروستی پېر",
-  "console.suppliers_cheapest": "تر ټولو ارزان"
+  "console.suppliers_cheapest": "تر ټولو ارزان",
+  "console.price_check_title": "په نورو ځایونو کې بیې",
+  "console.price_check_lede": "ستاسو په پیسو کې د Chatfront په نورو دوکانونو کې ورته شیان: څو دوکانونه، او د دوی ټیټه، منځنۍ او لوړه بیه. دا ټول بازار نه دی: په ویب کې د نورو پلورونکو لټون Meta Model API ته اړتیا لري، چې دلته نه دی.",
+  "console.price_check_run": "بیې وګورئ",
+  "console.price_check_none": "په Chatfront کې لا بل دوکان دا نه پلوري.",
+  "console.price_check_shops": "{count, plural, one {# دوکان} other {# دوکانونه}}",
+  "console.price_check_range": "له {lowest} تر {highest}، منځنۍ {middle}",
+  "console.price_check_below": "ستاسو ټیټه ده",
+  "console.price_check_within": "ستاسو د دوی په منځ کې ده",
+  "console.price_check_above": "ستاسو لوړه ده",
+  "console.price_check_item": "شی",
+  "console.price_check_yours": "ستاسو بیه",
+  "console.price_check_others": "نور دوکانونه"
 }

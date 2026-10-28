@@ -786,6 +786,16 @@ export type SupplierReorder = {
   link: string | null;
 };
 export type Suppliers = { compared: SupplierItem[]; reorders: SupplierReorder[] };
+export type PriceElsewhere = {
+  product_id: string;
+  name: string;
+  price: number;
+  shops: number;
+  lowest: number | null;
+  middle: number | null;
+  highest: number | null;
+  place: "below" | "within" | "above" | null;
+};
 export type SmsParserOut = {
   parser: string;
   provider: string;
@@ -1719,6 +1729,8 @@ export const api = {
   },
   batches: (token: string) => call<Batch[]>("/api/owner/batches", { headers: bearer(token) }),
   suppliers: (token: string) => call<Suppliers>("/api/owner/suppliers", { headers: bearer(token) }),
+  priceCheck: (token: string) =>
+    call<PriceElsewhere[]>("/api/owner/price-check", { headers: bearer(token) }),
   setExpiry: (token: string, batchId: string, expiresOn: string) =>
     call<{ expires_on: string }>(`/api/owner/batches/${encodeURIComponent(batchId)}/expiry`, {
       method: "POST",

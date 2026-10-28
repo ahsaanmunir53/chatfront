@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "سپلائر",
   "console.suppliers_unit": "فی پیس",
   "console.suppliers_when": "آخری خریداری",
-  "console.suppliers_cheapest": "سب توں سستا"
+  "console.suppliers_cheapest": "سب توں سستا",
+  "console.price_check_title": "دوجی تھاں قیمتاں",
+  "console.price_check_lede": "تہاڈی کرنسی وچ Chatfront دیاں دوجیاں دکاناں اُتے ملدیاں جلدیاں چیزاں: کِنیاں دکاناں، تے اوہناں دی سب توں گھٹ، وچکارلی تے سب توں ودھ قیمت۔ ایہہ پوری منڈی نئیں: ویب اُتے دوجے ویچن والیاں نوں لبھن لئی Meta Model API چاہیدی اے، جو ایتھے نئیں۔",
+  "console.price_check_run": "قیمتاں ویکھو",
+  "console.price_check_none": "Chatfront اُتے حالے کوئی ہور دکان ایہہ نئیں ویچدی۔",
+  "console.price_check_shops": "{count, plural, one {# دکان} other {# دکاناں}}",
+  "console.price_check_range": "{lowest} توں {highest}، وچکارلی {middle}",
+  "console.price_check_below": "تہاڈی گھٹ اے",
+  "console.price_check_within": "تہاڈی اوہناں دے وچکار اے",
+  "console.price_check_above": "تہاڈی ودھ اے",
+  "console.price_check_item": "چیز",
+  "console.price_check_yours": "تہاڈی قیمت",
+  "console.price_check_others": "دوجیاں دکاناں"
 }

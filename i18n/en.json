@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "Supplier",
   "console.suppliers_unit": "A piece",
   "console.suppliers_when": "Last bought",
-  "console.suppliers_cheapest": "Cheapest"
+  "console.suppliers_cheapest": "Cheapest",
+  "console.price_check_title": "Prices elsewhere",
+  "console.price_check_lede": "Similar items at other shops on Chatfront in your currency: how many shops, and their lowest, middle and highest price. It is not the whole market: searching other sellers on the web needs the Meta Model API, which is not on here.",
+  "console.price_check_run": "Check prices",
+  "console.price_check_none": "No other shop on Chatfront sells this yet.",
+  "console.price_check_shops": "{count, plural, one {# shop} other {# shops}}",
+  "console.price_check_range": "{lowest} to {highest}, middle {middle}",
+  "console.price_check_below": "Yours is lower",
+  "console.price_check_within": "Yours is in their range",
+  "console.price_check_above": "Yours is higher",
+  "console.price_check_item": "Item",
+  "console.price_check_yours": "Your price",
+  "console.price_check_others": "Other shops"
 }

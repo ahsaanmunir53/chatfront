@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "সাপ্লায়ার",
   "console.suppliers_unit": "প্রতি পিস",
   "console.suppliers_when": "শেষ কেনা",
-  "console.suppliers_cheapest": "সবচেয়ে সস্তা"
+  "console.suppliers_cheapest": "সবচেয়ে সস্তা",
+  "console.price_check_title": "অন্য জায়গায় দাম",
+  "console.price_check_lede": "আপনার মুদ্রায় Chatfront-এর অন্য দোকানে একই ধরনের জিনিস: কতগুলো দোকান, আর তাদের সর্বনিম্ন, মাঝামাঝি ও সর্বোচ্চ দাম। এটি পুরো বাজার নয়: ওয়েবে অন্য বিক্রেতাদের খুঁজতে Meta Model API লাগে, যা এখানে চালু নেই।",
+  "console.price_check_run": "দাম দেখুন",
+  "console.price_check_none": "Chatfront-এ এখনো অন্য কোনো দোকান এটি বিক্রি করে না।",
+  "console.price_check_shops": "{count, plural, one {# টি দোকান} other {# টি দোকান}}",
+  "console.price_check_range": "{lowest} থেকে {highest}, মাঝামাঝি {middle}",
+  "console.price_check_below": "আপনারটা কম",
+  "console.price_check_within": "আপনারটা তাদের সীমার মধ্যে",
+  "console.price_check_above": "আপনারটা বেশি",
+  "console.price_check_item": "জিনিস",
+  "console.price_check_yours": "আপনার দাম",
+  "console.price_check_others": "অন্য দোকান"
 }

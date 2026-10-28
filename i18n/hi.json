@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "सप्लायर",
   "console.suppliers_unit": "प्रति पीस",
   "console.suppliers_when": "आखिरी खरीद",
-  "console.suppliers_cheapest": "सबसे सस्ता"
+  "console.suppliers_cheapest": "सबसे सस्ता",
+  "console.price_check_title": "दूसरी जगह कीमतें",
+  "console.price_check_lede": "आपकी मुद्रा में Chatfront की दूसरी दुकानों पर मिलती-जुलती चीज़ें: कितनी दुकानें, और उनकी सबसे कम, बीच की और सबसे ज़्यादा कीमत। यह पूरा बाज़ार नहीं है: वेब पर दूसरे विक्रेताओं को खोजने के लिए Meta Model API चाहिए, जो यहाँ चालू नहीं है।",
+  "console.price_check_run": "कीमतें देखें",
+  "console.price_check_none": "Chatfront पर अभी कोई और दुकान यह नहीं बेचती।",
+  "console.price_check_shops": "{count, plural, one {# दुकान} other {# दुकानें}}",
+  "console.price_check_range": "{lowest} से {highest}, बीच में {middle}",
+  "console.price_check_below": "आपकी कम है",
+  "console.price_check_within": "आपकी उनकी सीमा में है",
+  "console.price_check_above": "आपकी ज़्यादा है",
+  "console.price_check_item": "चीज़",
+  "console.price_check_yours": "आपकी कीमत",
+  "console.price_check_others": "दूसरी दुकानें"
 }

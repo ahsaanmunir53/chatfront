@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "سپلائر",
   "console.suppliers_unit": "في پيس",
   "console.suppliers_when": "آخري خريداري",
-  "console.suppliers_cheapest": "سڀ کان سستو"
+  "console.suppliers_cheapest": "سڀ کان سستو",
+  "console.price_check_title": "ٻين هنڌن تي قيمتون",
+  "console.price_check_lede": "توهان جي ڪرنسي ۾ Chatfront جي ٻين دڪانن تي ملندڙ جلندڙ شيون: ڪيترا دڪان، ۽ انهن جي سڀ کان گهٽ، وچين ۽ سڀ کان وڌيڪ قيمت. هي سڄي مارڪيٽ ناهي: ويب تي ٻين وڪڻندڙن کي ڳولڻ لاءِ Meta Model API گهرجي، جيڪا هتي ناهي.",
+  "console.price_check_run": "قيمتون ڏسو",
+  "console.price_check_none": "Chatfront تي اڃا ٻيو ڪو دڪان هي نٿو وڪڻي.",
+  "console.price_check_shops": "{count, plural, one {# دڪان} other {# دڪان}}",
+  "console.price_check_range": "{lowest} کان {highest}، وچين {middle}",
+  "console.price_check_below": "توهان جي گهٽ آهي",
+  "console.price_check_within": "توهان جي انهن جي وچ ۾ آهي",
+  "console.price_check_above": "توهان جي وڌيڪ آهي",
+  "console.price_check_item": "شيءِ",
+  "console.price_check_yours": "توهان جي قيمت",
+  "console.price_check_others": "ٻيا دڪان"
 }

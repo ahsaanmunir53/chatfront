@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "سپلائر",
   "console.suppliers_unit": "فی پیس",
   "console.suppliers_when": "آخری خریداری",
-  "console.suppliers_cheapest": "سب سے سستا"
+  "console.suppliers_cheapest": "سب سے سستا",
+  "console.price_check_title": "دوسری جگہ قیمتیں",
+  "console.price_check_lede": "آپ کی کرنسی میں Chatfront کی دوسری دکانوں پر ملتی جلتی چیزیں: کتنی دکانیں، اور ان کی سب سے کم، درمیانی اور سب سے زیادہ قیمت۔ یہ پوری مارکیٹ نہیں: ویب پر دوسرے بیچنے والوں کو ڈھونڈنے کے لیے Meta Model API چاہیے، جو یہاں نہیں ہے۔",
+  "console.price_check_run": "قیمتیں دیکھیں",
+  "console.price_check_none": "Chatfront پر ابھی کوئی اور دکان یہ نہیں بیچتی۔",
+  "console.price_check_shops": "{count, plural, one {# دکان} other {# دکانیں}}",
+  "console.price_check_range": "{lowest} سے {highest}، درمیانی {middle}",
+  "console.price_check_below": "آپ کی کم ہے",
+  "console.price_check_within": "آپ کی ان کے بیچ میں ہے",
+  "console.price_check_above": "آپ کی زیادہ ہے",
+  "console.price_check_item": "چیز",
+  "console.price_check_yours": "آپ کی قیمت",
+  "console.price_check_others": "دوسری دکانیں"
 }

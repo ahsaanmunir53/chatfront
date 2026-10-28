@@ -1857,5 +1857,17 @@
   "console.suppliers_supplier": "Supplier",
   "console.suppliers_unit": "Fi piece",
   "console.suppliers_when": "Aakhri khareedari",
-  "console.suppliers_cheapest": "Sab se sasta"
+  "console.suppliers_cheapest": "Sab se sasta",
+  "console.price_check_title": "Doosri jagah qeematein",
+  "console.price_check_lede": "Aap ki currency mein Chatfront ki doosri dukaanon par milti julti cheezein: kitni dukaanein, aur un ki sab se kam, darmiyani aur sab se zyada qeemat. Yeh poori market nahin: web par doosre bechne walon ko dhoondne ke liye Meta Model API chahiye, jo yahan nahin hai.",
+  "console.price_check_run": "Qeematein dekhein",
+  "console.price_check_none": "Chatfront par abhi koi aur dukaan yeh nahin bechti.",
+  "console.price_check_shops": "{count, plural, one {# dukaan} other {# dukaanein}}",
+  "console.price_check_range": "{lowest} se {highest}, darmiyani {middle}",
+  "console.price_check_below": "Aap ki kam hai",
+  "console.price_check_within": "Aap ki un ke beech mein hai",
+  "console.price_check_above": "Aap ki zyada hai",
+  "console.price_check_item": "Cheez",
+  "console.price_check_yours": "Aap ki qeemat",
+  "console.price_check_others": "Doosri dukaanein"
 }
