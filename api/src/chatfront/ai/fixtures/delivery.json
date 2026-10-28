@@ -1,0 +1,28 @@
+[
+  {
+    "prompt": "delivery_proof",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "parcel_visible": true,
+      "handed_over": null,
+      "codes_seen": [],
+      "damage_seen": false,
+      "notes": "[mock] The model keys are not set yet, so this photo was not read."
+    }
+  },
+  {
+    "prompt": "unboxing_check",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "seal_intact_at_start": null,
+      "filmed_without_cut": null,
+      "item_matches_catalog": null,
+      "item_matches_packed": null,
+      "damage_seen": false,
+      "damage": "",
+      "notes": "[mock] The model keys are not set yet, so this video was not watched."
+    }
+  }
+]

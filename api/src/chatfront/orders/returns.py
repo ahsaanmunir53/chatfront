@@ -35,7 +35,9 @@ from chatfront.core.i18n import t
 from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
 from chatfront.delivery.models import Shipment
+from chatfront.jobs.queue import enqueue
 from chatfront.orders import service as orders
+from chatfront.orders import unboxing
 from chatfront.orders.models import Order, OrderItem, ReturnKind, ReturnRequest, ReturnStatus
 from chatfront.orders.states import OrderStatus, can_move
 from chatfront.orders.tools import AgentContext, tool_error
@@ -206,14 +208,16 @@ async def _pick(
     return picked
 
 
-async def _photo(session: AsyncSession, conversation_id: uuid.UUID) -> uuid.UUID | None:
-    """The customer's latest photo in this chat, from the last two days."""
+async def _photo(
+    session: AsyncSession, conversation_id: uuid.UUID, kind: Kind = Kind.IMAGE
+) -> uuid.UUID | None:
+    """The customer's latest photo (or video) in this chat, from the last two days."""
     found: uuid.UUID | None = await session.scalar(
         select(Message.media_id)
         .where(
             Message.conversation_id == conversation_id,
             Message.direction == Direction.IN,
-            Message.kind == Kind.IMAGE,
+            Message.kind == kind,
             Message.media_id.is_not(None),
             Message.created_at > utcnow() - PHOTO_WITHIN,
         )
@@ -269,6 +273,12 @@ async def ask_return(ctx: AgentContext, params: ReturnAsk) -> dict[str, Any]:
         if isinstance(picked, dict):
             return picked
         request = await _store(session, ctx, order, params, picked, photo)
+        video = await _photo(session, ctx.conversation_id, Kind.VIDEO)
+        if video is not None and params.reason_code in FAULTS:  # watched for the owner (36)
+            request.video_media_id = video
+            await enqueue(
+                session, unboxing.JOB, {"return_id": str(request.id)}, tenant_id=ctx.tenant.id
+            )
     return {
         "ok": True,
         "return_code": request.code,

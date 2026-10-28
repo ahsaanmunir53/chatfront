@@ -46,6 +46,10 @@ class ReturnOut(BaseModel):
     approval_id: uuid.UUID | None  # Approve and Reject, while the owner has not answered
     exchange_order_code: str | None
     created_at: datetime
+    # The unboxing video's advice, from code (feature 36): supports_claim, against_claim or
+    # unclear; and what the model saw in it.
+    advice: str | None = None
+    unboxing: dict[str, Any] | None = None
 
 
 @router.get("")
@@ -86,6 +90,8 @@ async def list_returns(session: OrdersDep, services: ServicesDep) -> list[Return
                     kind=request.kind,
                     reason_code=request.reason_code,
                     reason=request.reason,
+                    advice=request.advice,
+                    unboxing=request.unboxing,
                     lines=await returns.shown_lines(db, request),
                     photo_url=(
                         await services.storage.signed_url(photo.storage_key, ttl) if photo else None
