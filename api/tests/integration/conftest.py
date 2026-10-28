@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ from chatfront.core.models import Tenant
 from chatfront.core.settings import Settings, get_settings
 from chatfront.main import create_app
 from chatfront.modules.registry import core_modules
+from chatfront.payments.sms import PARSERS
 from chatfront.seed.__main__ import seed
 from chatfront.services import Services
 
@@ -66,3 +68,9 @@ async def app(seeded: Database) -> AsyncIterator[tuple[httpx.AsyncClient, Servic
         transport = httpx.ASGITransport(app=manager.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
             yield client, application.state.services
+
+
+@pytest.fixture
+def verified(monkeypatch: pytest.MonkeyPatch) -> None:
+    """As if a real JazzCash message had passed the parser's test."""
+    monkeypatch.setitem(PARSERS, "pk.jazzcash", replace(PARSERS["pk.jazzcash"], verified=True))

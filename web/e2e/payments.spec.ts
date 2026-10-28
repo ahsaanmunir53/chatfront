@@ -11,11 +11,11 @@ const SCREENSHOT = {
   ),
 };
 
-test("a customer pays by transfer, the owner approves, and the signed receipt checks out", async ({
+test("a customer pays by transfer, the owner approves, then cancels and refunds, with receipts", async ({
   browser,
   page,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   // The owner: a copy of the demo grocery, signed in.
   await page.goto("/s/barkat-kiryana");
   await page.getByRole("button", { name: "Try as the owner" }).click();
@@ -72,5 +72,32 @@ test("a customer pays by transfer, the owner approves, and the signed receipt ch
   await expect(customer.getByRole("heading", { level: 1 })).toContainText("Barkat");
   await expect(customer.locator(".slip-order")).toContainText(code);
   await expect(customer.getByText("Confirmed by the shop owner")).toBeVisible();
+
+  // The owner cancels the paid order: the money is owed back, and recorded on the owner's word.
+  const orders = page.getByRole("region", { name: /^Orders/ });
+  await orders
+    .locator("li.order-row")
+    .filter({ hasText: code })
+    .getByRole("button", { name: "Cancel order" })
+    .click();
+  const refunds = page.getByRole("region", { name: /Money to send back/ });
+  await expect(refunds).toContainText(code, { timeout: 15_000 });
+  await expect(refunds).toContainText("Order cancelled after payment");
+  await refunds.getByRole("button", { name: "Record anyway" }).click();
+  await expect(refunds.getByRole("status")).toContainText(`Sent back for order ${code}`, {
+    timeout: 15_000,
+  });
+  await expect(refunds).toContainText("On your word");
+
+  // The customer gets the refund's own signed receipt.
+  await customer.goBack();
+  const back = customer.locator(".bubble-out").filter({ hasText: "sent back to you" }).last();
+  await expect(back).toBeVisible({ timeout: 20_000 });
+  await back.getByRole("link", { name: /\/r\// }).click();
+  await expect(customer.getByRole("status").filter({ hasText: "Signature checked" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(customer.getByText("Amount sent back")).toBeVisible();
+  await expect(customer.getByText("Order cancelled after payment")).toBeVisible();
   await customerContext.close();
 });

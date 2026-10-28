@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -259,7 +260,9 @@ class TestSignals:
         [
             ({"status": "pending"}, "not_successful"),
             ({"edits_seen": ["digits not aligned"]}, "looks_edited"),
-            ({"amount": 2500.0}, "amount_differs"),
+            ({"amount": 2500.0}, "more_than_due"),
+            ({"amount": 1000.0}, "part_payment"),
+            ({"amount": 0.0}, "amount_differs"),
             ({"amount": None}, "amount_unreadable"),
             ({"transaction_id": None}, "no_transaction_id"),
             ({"payee_account": "0311 7654321"}, "other_receiver"),
@@ -269,6 +272,11 @@ class TestSignals:
     )
     def test_each_sign_of_trouble(self, extra: dict[str, object], code: str) -> None:
         assert [s.code for s in signals(_reading(**extra), EXPECTED)] == [code]
+
+    def test_paying_the_round_price_is_not_paying_too_much(self) -> None:
+        rounded = replace(EXPECTED, rounding=300)  # Rs 3 off made the amount unique
+        assert [s.code for s in signals(_reading(amount=2500.0), rounded)] == ["amount_differs"]
+        assert [s.code for s in signals(_reading(amount=2501.0), rounded)] == ["more_than_due"]
 
     def test_times_without_a_zone_are_the_shops_and_nonsense_is_ignored(self) -> None:
         moment = when("2026-10-27T17:02:00", "Asia/Karachi")
