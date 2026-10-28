@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chatfront.audit.service import Actor, ActorType
+from chatfront.audit.service import Actor, ActorType, record
 from chatfront.books import ledger
 from chatfront.books.models import Category, EntryKind
 from chatfront.channels.language import chat_language
@@ -98,8 +98,10 @@ async def move(
     *,
     courier: str = "",
     tracking: str = "",
+    charge: int | None = None,
 ) -> Moved:
-    """The owner moves an order on. Stock comes back on a return or a cancellation."""
+    """The owner moves an order on. Stock comes back on a return or a cancellation. A
+    dispatch may carry what the courier charged (feature 51)."""
     if wanted not in OWNER_MOVES:
         raise AppError("invalid_transition", "Not a move the owner makes", status_code=409)
     async with services.db.tenant(tenant_id) as session:
@@ -114,6 +116,8 @@ async def move(
         if wanted in (OrderStatus.DELIVERED, OrderStatus.RETURNED):
             await buyers.review(session, tenant, order.customer_id, actor)
         _stamp(shipment, wanted, courier=courier, tracking=tracking)
+        if wanted == OrderStatus.DISPATCHED and charge is not None:
+            shipment.courier_charge = charge
         lang = await chat_language(session, tenant, order.conversation_id)
         tell = _update(tenant, order, shipment, wanted, lang, services.settings)
     if tell and order.conversation_id:
@@ -151,6 +155,24 @@ def _stamp(shipment: Shipment, wanted: OrderStatus, *, courier: str, tracking: s
         shipment.delivered_at = now
     elif wanted == OrderStatus.RETURNED:
         shipment.returned_at = now
+
+
+async def set_charges(
+    session: AsyncSession, order: Order, there: int | None, back: int | None, actor: Actor
+) -> Shipment:
+    """What the courier charged for this parcel, out and back, as the owner enters it; None
+    leaves a charge not entered."""
+    shipment = await shipment_for(session, order)
+    shipment.courier_charge, shipment.return_charge = there, back
+    await record(
+        session,
+        order.tenant_id,
+        actor,
+        "shipment.charges",
+        entity=("order", str(order.id)),
+        data={"there": there, "back": back},
+    )
+    return shipment
 
 
 def track_url(web_url: str, shipment: Shipment) -> str:

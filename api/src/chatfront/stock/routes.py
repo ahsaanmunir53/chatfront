@@ -112,8 +112,15 @@ class ProductProfit(BaseModel):
     sold: int
     revenue: int
     cost: int
-    profit: int
+    profit: int  # goods: what sold against what those units cost
     cost_unknown: int
+    # Feature 51: delivery charges paid, courier charges, what came-back parcels cost, and
+    # the profit after all of them; parcels with no courier charge entered are counted apart.
+    delivery_fees: int
+    courier: int
+    returns: int
+    parcels_unknown: int
+    true_profit: int
 
 
 def _actor(session: OwnerSession) -> Actor:
@@ -381,17 +388,23 @@ async def notice_tap(
 
 @router.get("/profit")
 async def product_profit(session: BooksDep, services: ServicesDep) -> list[ProductProfit]:
-    """Goods profit per product: what sold against what those units cost."""
+    """Profit per product: goods against what those units cost, then after delivery and
+    returns."""
     async with services.db.tenant(session.tenant_id) as db:
         return [
             ProductProfit(
-                product_id=product.id,
-                name=product.name,
-                sold=sold.units,
-                revenue=sold.revenue,
-                cost=sold.cost,
-                profit=sold.known_revenue - sold.cost,
-                cost_unknown=sold.unknown,
+                product_id=row.product.id,
+                name=row.product.name,
+                sold=row.sold.units,
+                revenue=row.sold.revenue,
+                cost=row.sold.cost,
+                profit=row.sold.known_revenue - row.sold.cost,
+                cost_unknown=row.sold.unknown,
+                delivery_fees=row.delivery.fees,
+                courier=row.delivery.courier,
+                returns=row.delivery.returns,
+                parcels_unknown=row.delivery.unknown,
+                true_profit=row.profit,
             )
-            for product, sold in await profit.by_product(db)
+            for row in await profit.true_by_product(db)
         ]
