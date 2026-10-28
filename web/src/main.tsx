@@ -10,6 +10,7 @@ import { CheckoutPage } from "./pages/CheckoutPage";
 import { HomePage } from "./pages/HomePage";
 import { NotFoundPage, TrustPage } from "./pages/InfoPages";
 import { ReceiptPage } from "./pages/ReceiptPage";
+import { ReviewPage } from "./pages/ReviewPage";
 import { TrackPage } from "./pages/TrackPage";
 import { OwnerPage } from "./pages/OwnerPage";
 import { ShopPage } from "./pages/ShopPage";
@@ -43,6 +44,7 @@ createRoot(root).render(
             <Route path="/s/:slug/chat" element={<ChatPage />} />
             <Route path="/s/:slug/checkout" element={<CheckoutPage />} />
             <Route path="/s/:slug/trust" element={<TrustPage />} />
+            <Route path="/s/:slug/review/:code" element={<ReviewPage />} />
             <Route path="/start" element={<StartPage />} />
             <Route path="/owner" element={<OwnerPage />} />
             <Route path="/dashboard" element={<Navigate to="/owner" replace />} />

@@ -200,6 +200,7 @@ export type OwnerMe = {
   languages: string[];
   role: string;
   rights: string[];
+  is_platform?: boolean;
 };
 export type OwnerProduct = {
   id: string;
@@ -610,6 +611,64 @@ export type OwnerCustomer = {
   delivered: number;
   returned: number;
   owes: number;
+  reported: FraudStatus | null;
+  listed_by: number;
+};
+/** Fraud reports and the shared list (feature 37). */
+export type FraudReason = "fake_payment" | "refused_cod" | "scam" | "abuse";
+export type FraudStatus = "pending" | "confirmed" | "rejected" | "withdrawn";
+export type FraudReport = {
+  id: string;
+  customer_id: string | null;
+  name: string | null;
+  reason: FraudReason;
+  note: string;
+  status: FraudStatus;
+  review_note: string | null;
+  created_at: string;
+};
+export type FraudToReview = {
+  id: string;
+  shop: string;
+  reason: FraudReason;
+  note: string;
+  evidence: {
+    orders?: { code: string; status: string; total: number; method: string | null }[];
+    rejected_payments?: number;
+    signals?: string[];
+  };
+  others: number;
+  created_at: string;
+};
+export type FraudReview = {
+  pending: FraudToReview[];
+  listed: { id: string; ref: string; reasons: FraudReason[]; shops: number; listed_at: string }[];
+};
+/** Reviews from verified buyers (feature 46) and the trust page's numbers (feature 45). */
+export type ShopReview = {
+  id: string;
+  rating: number;
+  text: string;
+  name: string | null;
+  items: string[];
+  reply: string | null;
+  created_at: string;
+};
+export type ShopReviews = { average: number | null; count: number; reviews: ShopReview[] };
+export type ReviewForm = {
+  shop: string;
+  code: string;
+  items: string[];
+  delivered: boolean;
+  review: ShopReview | null;
+};
+export type TrustStats = {
+  since: string;
+  delivered: number;
+  return_rate: number | null;
+  reply_minutes: number | null;
+  rating: number | null;
+  reviews: number;
 };
 export type ShopSettings = {
   autonomy: Record<string, string>;
@@ -1096,5 +1155,56 @@ export const api = {
       method: "PUT",
       headers: bearer(token),
       body: JSON.stringify({ charts }),
+    }),
+  reportFraud: (token: string, customerId: string, reason: FraudReason, note: string) =>
+    call<FraudReport>(`/api/owner/customers/${encodeURIComponent(customerId)}/fraud`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ reason, note }),
+    }),
+  fraudReports: (token: string) =>
+    call<FraudReport[]>("/api/owner/fraud-reports", { headers: bearer(token) }),
+  withdrawReport: (token: string, reportId: string) =>
+    call<{ status: string }>(`/api/owner/fraud-reports/${encodeURIComponent(reportId)}/withdraw`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  fraudReview: (token: string) =>
+    call<FraudReview>("/api/platform/fraud", { headers: bearer(token) }),
+  decideReport: (token: string, reportId: string, confirm: boolean, note: string) =>
+    call<{ status: string }>(`/api/platform/fraud/reports/${encodeURIComponent(reportId)}`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ confirm, note }),
+    }),
+  unlist: (token: string, entryId: string, reason: string) =>
+    call<{ status: string }>(`/api/platform/fraud/list/${encodeURIComponent(entryId)}/remove`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ reason }),
+    }),
+  shopReviews: (slug: string) => call<ShopReviews>(`${shopPath(slug)}/reviews`),
+  trustStats: (slug: string) => call<TrustStats>(`${shopPath(slug)}/trust/stats`),
+  reviewForm: (slug: string, code: string, signature: string) =>
+    call<ReviewForm>(
+      `${shopPath(slug)}/review/${encodeURIComponent(code)}?s=${encodeURIComponent(signature)}`,
+    ),
+  sendReview: (
+    slug: string,
+    code: string,
+    signature: string,
+    review: { rating: number; text: string; lang: string },
+  ) =>
+    call<ReviewForm>(
+      `${shopPath(slug)}/review/${encodeURIComponent(code)}?s=${encodeURIComponent(signature)}`,
+      { method: "POST", body: JSON.stringify(review) },
+    ),
+  ownerReviews: (token: string) =>
+    call<ShopReviews>("/api/owner/reviews", { headers: bearer(token) }),
+  replyToReview: (token: string, reviewId: string, text: string) =>
+    call<{ reply: string }>(`/api/owner/reviews/${encodeURIComponent(reviewId)}/reply`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ text }),
     }),
 };

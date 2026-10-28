@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { api } from "../api";
 import type { Approval, OwnerCustomer, OwnerMe, ShopSettings } from "../api";
 import type { Key } from "../i18n";
+import { FraudBadges, ReportFraud } from "./Fraud";
 import { useLang } from "../lang";
 import { usePolled } from "../usePolled";
 import { formatMoney } from "../money";
@@ -130,6 +131,7 @@ export function CustomersPanel({ me, token }: { me: OwnerMe; token: string }) {
                     returned: person.returned,
                   })}
                 </span>
+                <FraudBadges person={person} />
                 {person.owes > 0 && (
                   <span className="pay-note">
                     {t("console.customers_owes", {
@@ -144,6 +146,7 @@ export function CustomersPanel({ me, token }: { me: OwnerMe; token: string }) {
                       : t("console.customers_verify")}
                   </button>
                 )}
+                {canTrust && <ReportFraud token={token} person={person} onDone={load} />}
               </li>
             ))}
           </ul>

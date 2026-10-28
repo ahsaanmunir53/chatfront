@@ -7,6 +7,7 @@ import { bundledProducts, fromApi, productText } from "../catalog";
 import type { ShopProduct } from "../catalog";
 import { Avatar, initials, templateTone } from "../components/Avatar";
 import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
+import { ShopReviewsSection } from "../components/Reviews";
 import { Page, Problem } from "../components/Shell";
 import { SizeChartTable } from "../components/SizeChart";
 import { demoShop } from "../demo";
@@ -432,6 +433,7 @@ export function ShopPage() {
 
       <Countdowns list={countdowns} country={profile.country} />
       <Catalog slug={slug} profile={profile} />
+      <ShopReviewsSection slug={slug} />
       <CartBar slug={slug} />
 
       {copyable && <TryAsOwner slug={slug} />}

@@ -10,6 +10,7 @@ import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { DashboardPanel } from "../components/Dashboard";
+import { FraudReportsPanel, FraudReviewPanel } from "../components/Fraud";
 import { ImportsPanel } from "../components/Imports";
 import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
@@ -17,6 +18,7 @@ import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Paymen
 import { AnswersPanel } from "../components/Answers";
 import { OffersPanel } from "../components/Offers";
 import { RefundsPanel, ReturnsPanel } from "../components/Returns";
+import { ReviewsPanel } from "../components/Reviews";
 import { ShelfCountPanel } from "../components/ShelfCount";
 import { SizeChartsPanel } from "../components/SizeCharts";
 import { WaitingPanel } from "../components/Waiting";
@@ -378,6 +380,9 @@ function Console({
       {can("catalog") && <CatalogSyncPanel token={token} />}
       {can("catalog") && <SizeChartsPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
+      {can("orders") && <ReviewsPanel token={token} canReply={can("chats")} />}
+      {can("trust") && <FraudReportsPanel token={token} />}
+      {me.is_platform && can("trust") && <FraudReviewPanel token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
       {can("settings") && <AnswersPanel token={token} />}

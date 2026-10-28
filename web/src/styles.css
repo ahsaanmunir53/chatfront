@@ -5536,3 +5536,212 @@ button {
 .size-charts > .import-actions {
   margin-top: 14px;
 }
+
+/* Shield: fraud reports, reviews and the trust numbers ---------------------------------- */
+
+.fraud-badge {
+  display: inline-block;
+  padding: 1px 10px 2px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.fraud-badge.is-pending {
+  background: color-mix(in srgb, var(--saffron) 24%, var(--card));
+  color: var(--text);
+}
+
+.fraud-badge.is-confirmed,
+.fraud-badge.is-listed {
+  background: color-mix(in srgb, var(--chili) 18%, var(--card));
+  color: color-mix(in srgb, var(--chili) 70%, var(--text));
+}
+
+.fraud-report {
+  flex-basis: 100%;
+  font-size: 14px;
+}
+
+.fraud-report summary {
+  width: fit-content;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fraud-case {
+  row-gap: 8px;
+}
+
+.fraud-evidence {
+  flex-basis: 100%;
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.fraud-review-note {
+  display: grid;
+  flex: 1 1 220px;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fraud-review-note input,
+.review-page textarea {
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.reviews:not(.pay-panel) {
+  margin-top: 40px;
+}
+
+.stars {
+  color: var(--saffron);
+  font-size: 16px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.stars-off {
+  color: var(--line);
+}
+
+.review-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 14px 0;
+  font-weight: 650;
+}
+
+.review-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.review-who {
+  font-weight: 650;
+}
+
+.review-badge {
+  color: var(--stamp);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.review-text {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.review-reply {
+  margin: 10px 0 0;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--rule);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.review-reply-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.review-reply-form [role="alert"] {
+  grid-column: 1 / -1;
+}
+
+.review-page {
+  max-width: 560px;
+}
+
+.star-pick {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.star-pick legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.star-pick label {
+  position: relative;
+  display: block;
+  padding: 0 2px;
+  border-radius: 8px;
+  color: var(--line);
+  font-size: 36px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.star-pick label.is-on {
+  color: var(--saffron);
+}
+
+.star-pick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.star-pick label:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.trust-numbers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trust-numbers li {
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+  font-variant-numeric: tabular-nums;
+}
+
+.trust-numbers li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}

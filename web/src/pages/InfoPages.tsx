@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
-import type { TrustInfo } from "../api";
+import type { TrustInfo, TrustStats } from "../api";
 import { Avatar } from "../components/Avatar";
 import { ShieldIcon } from "../components/Icons";
+import { ShopReviewsSection } from "../components/Reviews";
 import { Page, Problem } from "../components/Shell";
 import { demoShop } from "../demo";
 import type { Key } from "../i18n";
@@ -72,7 +73,58 @@ export function TrustPage() {
           ))}
         </ul>
       </section>
+      <TrustNumbers slug={slug} />
+      <ShopReviewsSection slug={slug} />
     </Page>
+  );
+}
+
+/** What the shop's own records say (feature 45); a figure waits until there is enough
+ * behind it. */
+function TrustNumbers({ slug }: { slug: string }) {
+  const { t, lang } = useLang();
+  const { state } = useServer();
+  const [stats, setStats] = useState<TrustStats | null>(null);
+  useEffect(() => {
+    if (state !== "online") return;
+    let current = true;
+    api.trustStats(slug).then(
+      (found) => current && setStats(found),
+      () => {
+        // The page still shows the shop's channels.
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [slug, state]);
+  if (!stats) return null;
+  const since = new Intl.DateTimeFormat(lang, { month: "long", year: "numeric" }).format(
+    new Date(stats.since),
+  );
+  const lines: string[] = [
+    t("trust.since", { date: since }),
+    t("trust.delivered", { count: stats.delivered }),
+    stats.return_rate === null
+      ? t("trust.returns_new")
+      : t("trust.returns", { rate: stats.return_rate }),
+  ];
+  if (stats.reply_minutes !== null) lines.push(t("trust.reply", { minutes: stats.reply_minutes }));
+  if (stats.rating !== null) {
+    lines.push(t("trust.rating", { rating: stats.rating.toFixed(1), count: stats.reviews }));
+  }
+  return (
+    <section aria-labelledby="numbers-heading" className="plain-section">
+      <h2 id="numbers-heading" className="section-title">
+        {t("trust.numbers")}
+      </h2>
+      <ul className="trust-numbers">
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      <p className="pay-note">{t("trust.numbers_note")}</p>
+    </section>
   );
 }
 
