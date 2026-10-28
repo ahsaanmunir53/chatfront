@@ -127,7 +127,7 @@ test("a vague address gets a pin, and the owner packs, labels and dispatches the
 
   // A buyer can be reported for fraud from the customers list (feature 37).
   const people = page.getByRole("region", { name: /^Customers/ });
-  const buyer = people.locator("li").first();
+  const buyer = people.locator("ul.customers > li").first();
   await buyer.getByText("Report fraud").click();
   await buyer.getByLabel("What happened").selectOption("refused_cod");
   await buyer.getByRole("button", { name: "Send report" }).click();
@@ -135,6 +135,19 @@ test("a vague address gets a pin, and the owner packs, labels and dispatches the
   await page.reload();
   await expect(page.getByRole("region", { name: "Your fraud reports" })).toContainText(
     "Refused a cash-on-delivery parcel",
+  );
+
+  // What the buyer is worth, and a greeting to the buyers whose chat is open (feature 59).
+  await expect(people.locator(".crm-stats")).toContainText("1 buyer");
+  await expect(buyer.locator(".segment")).toHaveText("New");
+  await people.getByText("Send a greeting").click();
+  await people.getByLabel("Your greeting").fill("Eid Mubarak from Barkat Kiryana!");
+  await people.getByRole("button", { name: "Send to open chats" }).click();
+  await expect(people.getByText("Sent to 1 buyer.")).toBeVisible();
+  await customer.goto(`${shopPath}/chat`);
+  await expect(customer.locator(".bubble-out").last()).toHaveText(
+    /Eid Mubarak from Barkat Kiryana!/,
+    { timeout: 15_000 },
   );
 
   // Profit by product takes in what the courier charged (feature 51).

@@ -61,6 +61,45 @@ test("the trust page lists the shop's official channels", async ({ page }) => {
   await expect(page.getByText("Chat on this website")).toBeVisible();
 });
 
+test("the trust page gives AI assistants an address to order through", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/s/noor-salon/trust");
+  const access = page.getByRole("region", { name: "Order through your AI assistant" });
+  await expect(access).toContainText("/mcp/noor-salon");
+  await access.getByRole("button", { name: "Copy address" }).click();
+  await expect(access.getByRole("button", { name: "Copied" })).toBeVisible();
+  const address = await page.evaluate(() => navigator.clipboard.readText());
+  const listed = await page.request.post(address, {
+    data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+  });
+  const { result } = (await listed.json()) as { result: { tools: { name: string }[] } };
+  expect(result.tools.map((tool) => tool.name)).toContain("start_checkout");
+});
+
+test("a shared product link shows a preview and leads back to the product", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/s/saffron-kitchen");
+  const share = page.getByRole("button", { name: /^Share: / }).first();
+  await share.click();
+  await expect(page.getByText("Link copied")).toBeVisible();
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  const code = /\/s\/saffron-kitchen\/p\/(\w+)$/.exec(link)?.[1] ?? "";
+  expect(code).not.toBe("");
+  const preview = await page.request.get(link);
+  const card = /property="og:image" content="([^"]+)"/.exec(await preview.text())?.[1] ?? "";
+  const picture = await page.request.get(card.replaceAll("&amp;", "&"));
+  expect(picture.headers()["content-type"]).toBe("image/png");
+  await page.goto(link);
+  await expect(page).toHaveURL(new RegExp(`/s/saffron-kitchen#p-${code}$`));
+  await expect(page.locator(`#p-${code}`)).toBeInViewport();
+});
+
 test("an unknown shop says so", async ({ page }) => {
   await page.goto("/s/no-such-shop");
   await expect(page.getByRole("alert")).toHaveText("Shop not found");
