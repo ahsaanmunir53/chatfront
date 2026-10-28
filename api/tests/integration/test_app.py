@@ -281,6 +281,7 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
     response = await client.post("/internal/cron", headers={"X-Cron-Secret": "test-cron-secret"})
     assert response.json() == {
         "enqueued": [
+            "catalog-sync",
             "requeue-stale",
             "remove-expired-shops",
             "payment-watch",
@@ -294,7 +295,7 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
         pass
     async with seeded.system() as session:
         statuses = list(await session.scalars(select(Job.status)))
-    assert len(statuses) >= 6  # the six, and whatever they queue for each shop
+    assert len(statuses) >= 7  # the seven, and whatever they queue for each shop
     assert set(statuses) == {"done"}
 
 

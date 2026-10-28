@@ -4,7 +4,9 @@ lands in the customer's cart."""
 
 from __future__ import annotations
 
+import asyncio
 import json
+import uuid
 from urllib.parse import parse_qs
 
 import httpx
@@ -16,6 +18,8 @@ from chatfront.catalog import meta
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.core.models import Tenant
+from chatfront.jobs.models import Job
+from chatfront.jobs.queue import JobContext
 from chatfront.media import service as media_service
 from chatfront.orders.models import Order, OrderItem
 from chatfront.orders.states import OrderStatus
@@ -190,3 +194,42 @@ async def test_titles_prices_and_the_command_line(
     monkeypatch.delenv("CATALOG_TOKEN", raising=False)
     with pytest.raises(SystemExit):
         meta.main(["--shop", SHOP, "--catalog-id", "C", "--token-env", "CATALOG_TOKEN"])
+
+
+async def test_the_half_hourly_send_and_the_status_checks(
+    app: tuple[Client, Services],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _, services = app
+    monkeypatch.setenv("CATALOG_TOKEN", "catalog-token")
+    await asyncio.to_thread(
+        meta.main, ["--shop", SHOP, "--catalog-id", "CAT1", "--token-env", "CATALOG_TOKEN"]
+    )
+    assert "Connected catalog CAT1" in capsys.readouterr().out
+    async with services.db.system() as session:
+        tenant_id = await shop_id(session)
+
+    def context(payload: dict[str, object], tenant: uuid.UUID | None) -> JobContext:
+        return JobContext(uuid.uuid4(), tenant, payload, 1, services.db, services)
+
+    await meta.sync_all_job(context({}, None))
+    async with services.db.system() as session:
+        queued = list(await session.scalars(select(Job.kind).where(Job.kind == meta.SYNC_JOB)))
+    assert queued == [meta.SYNC_JOB]
+
+    with respx.mock:
+        respx.post(BATCH).mock(return_value=httpx.Response(200, json={"handles": ["H9"]}))
+        await meta.sync_job(context({}, tenant_id))
+        status = respx.get(f"{GRAPH}/CAT1/check_batch_request_status").mock(
+            side_effect=[
+                httpx.Response(200, json={"data": [{"status": "started"}]}),
+                httpx.Response(200, json={"data": [{"status": "finished"}]}),
+            ]
+        )
+        await meta.check_job(context({"handle": "H9", "try": 1}, tenant_id))
+        await meta.check_job(context({"handle": "H9", "try": 2}, tenant_id))
+    assert status.call_count == 2
+    async with services.db.system() as session:
+        checks = list(await session.scalars(select(Job).where(Job.kind == meta.CHECK_JOB)))
+    assert len(checks) == 2  # one after the send, one more while Meta was still working
