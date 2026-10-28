@@ -325,6 +325,42 @@ real buyer to the checkout (needs Ahsaan's Commerce Manager catalog); the Docker
 itself (this workspace cannot reach Docker Hub; the same start command was run with the
 production dependencies instead, and Render builds the image on deploy).
 
+## Done on 27 October: Meta channels (76, 77, 79, 6), the first Stretch group
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 738 passed, 94.3% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 58 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Inbox (76): every customer chat from WhatsApp, Instagram, Messenger and the web chat in one
+  list in the console, with who has it. A person takes a chat and the assistant stops there;
+  the owner gives a chat to someone who answers chats; giving it back clears who had it. It
+  replaces the waiting list.
+- Comment-to-DM (77): "price?" under an Instagram post or reel or a Facebook Page post gets
+  one private reply with the product, written by code in the commenter's language, then the
+  order agent carries on in DMs. Posts whose caption names no product wait for the owner to
+  choose it in the console's Comments panel.
+- One customer (79): a wa.me link with a one-time code joins an Instagram, Messenger or web
+  chat record to the customer's WhatsApp record, with chats, cart, orders, khata and
+  verified status.
+- Meta catalog (6): products to the shop's Commerce catalog every 30 minutes and on Send now,
+  one item per variant by its catalog id; Meta's answer in the console; carts sent from the
+  WhatsApp catalog go straight into the customer's cart.
+- Migrations 0011 to 0014: identity links, who has a chat, posts and comments, the shop's
+  Meta catalog.
+
+Not verified yet: comments, private replies, catalog sends and WhatsApp catalog carts on real
+Meta accounts (they need Ahsaan's Instagram, Page, WhatsApp number and Commerce Manager
+catalog, and Meta wants the app live for comment webhooks); the agent offering the link
+(needs a model key).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -334,6 +370,7 @@ Never in the chat. Each key goes in one or more of these places, typed by Ahsaan
 | `BASETEN_API_KEY` | yes (live evaluation workflow) | yes (the app) | optional |
 | `FIREWORKS_API_KEY` | yes | yes | optional |
 | `MODAL_GLIMMER_BASE_URL`, `MODAL_GLIMMER_API_KEY` | yes | yes | optional |
+| `META_CATALOG_TOKEN` (feature 6, a system user token with catalog_management) | no | yes | optional |
 
 Then: Actions > "Live model evaluation" > Run workflow. It runs the language set and the
 order agent's 100 conversations against the real model; each results file is attached to the
@@ -365,7 +402,7 @@ samples; 121: live runs, voice notes and native review).
 Proposed order, the Meta platform first since it is what is judged:
 
 1. Meta channels: 76 (one inbox with staff assign), 77 (comment-to-DM), 79 (one customer
-   across channels), 6 (WhatsApp catalog and Instagram shop sync).
+   across channels), 6 (WhatsApp catalog and Instagram shop sync). Done on 27 October.
 2. Payments and returns: 28, 29, 100, 92.
 3. Selling more: 13, 16, 19, 95, 91.
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88.
@@ -456,6 +493,21 @@ stays the same.
    and eval lines, and to record the two voice notes per language (script in the eval data).
 
 ## Decisions taken
+
+- A customer's records are joined only by a code sent from WhatsApp, never by a typed phone
+  number. The WhatsApp record is kept. Two web chats from two browsers on the same shop stay
+  apart, since their bargaining rounds are append-only. A second khata stays as a named
+  account with no customer, so nothing owed is lost.
+- In the inbox, anyone who answers chats takes a chat for themselves; giving a chat to someone
+  else is the owner's (the team right). Taking or giving stops the assistant; a staff take
+  does not notify the owner.
+- Comment replies: only comments that ask about price, stock or ordering; one per person per
+  post; 7 days; 750 an hour per account; the shop's own comments never. No public reply under
+  the comment. A post with no product named waits for the owner rather than sending a vague
+  message, since Meta allows only one private reply.
+- The Meta catalog gets one item per variant, `CODE` or `CODE-n` like the shop page checkout;
+  products without a photo are left out; the photo link is the API's own stable link that
+  redirects to a fresh signed link.
 
 - Reasoning effort is chosen per job, not per role: low for chat, the owner's assistant,
   translations and summaries; medium for reading products, bills and purchases; high for

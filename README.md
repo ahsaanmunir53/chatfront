@@ -121,7 +121,7 @@ api/src/chatfront/
   eval/       evaluation sets: languages, and the order agent's 100 conversations
 i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page with cart and checkout, try-it chat, start page, owner console
-              with the dashboard, trust page, receipt check, parcel tracking
+              (dashboard, inbox, comments, Meta catalog), trust page, receipt check, parcels
 ```
 
 ## Built during the hackathon
@@ -129,6 +129,11 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, Meta channels:** one inbox for WhatsApp, Instagram, Messenger and web chats,
+  where a person takes a chat or the owner gives it to someone; "price?" under an Instagram or
+  Facebook post answered by a private reply with the product; one customer across channels,
+  joined by a code sent from WhatsApp; the shop's products sent to its Meta catalog, and carts
+  from the WhatsApp catalog taken straight into the customer's cart.
 - **27 October, dashboard, shop checkout and the evaluation set:** the owner console opens on
   the shop at a glance (orders and where they came from, money in and waiting, fraud, the
   books, orders per day, the model's cost per order); a cart and checkout on every shop page,
@@ -211,8 +216,9 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    judges try it.
 5. Meta: in the app dashboard set one webhook URL for WhatsApp, Instagram and Messenger:
    `https://<service>.onrender.com/webhooks/meta`, with `META_VERIFY_TOKEN` as the verify
-   token. Subscribe WhatsApp to `messages`, Instagram to `messages` and
-   `messaging_postbacks`, and the Page to `messages` and `messaging_postbacks`.
+   token. Subscribe WhatsApp to `messages`, Instagram to `messages`, `messaging_postbacks`
+   and `comments`, and the Page to `messages`, `messaging_postbacks` and `feed` (the last two
+   bring comments under posts, feature 77).
 6. Connect each account to its shop (tokens come from environment variables, never the
    command line):
    `python -m chatfront.channels.connect --shop gulmohar-lawn --channel whatsapp --account-id <phone number id> --handle <public number> --token-env WA_TOKEN`
@@ -223,12 +229,18 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    forwarding makes a link with the shop's secret, shown once. In a free SMS forwarder app on
    the owner's Android phone, forward messages from JazzCash, Easypaisa and the bank to it
    (POST, JSON or form). Messages from other senders are dropped unread.
-8. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
+8. Meta catalog (feature 6, optional): in Commerce Manager make a catalog for the shop, connect
+   it to the WhatsApp Business Account and the Instagram account, and set the website's
+   checkout URL to `https://<web app>/s/<shop>/checkout`. Then
+   `python -m chatfront.catalog.meta --shop <shop> --catalog-id <id> --token-env CATALOG_TOKEN`
+   with a system user token that has catalog_management (or set `META_CATALOG_TOKEN` on
+   Render). Products go to the catalog every 30 minutes, and on Send now in the console.
+9. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
    variable `API_BASE` = the Render URL; set `CORS_ORIGINS` on Render to
    `https://<user>.github.io` and `WEB_BASE_URL` to `https://<user>.github.io/chatfront`
    (so links sent in chats open the Pages app); then run the "Deploy the web app to GitHub
    Pages" workflow.
-9. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
+10. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
    come) in Render's Environment for the app, and as repository secrets for the manual
    "Live model evaluation" workflow. They never go in the repository or the chat. Until they
    come, set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
