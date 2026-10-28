@@ -108,6 +108,21 @@
   ],
   "default_weight_g": 500,
   "return_days": 7,
+  "size_charts": [
+    {
+      "name": "Stitched suits and kurtas",
+      "unit": "in",
+      "categories": ["suits", "kurtas"],
+      "rows": [
+        {"size": "XS", "ranges": {"chest": [32, 33], "waist": [25, 26], "hips": [34, 35]}},
+        {"size": "S", "ranges": {"chest": [34, 35], "waist": [27, 28], "hips": [36, 37]}},
+        {"size": "M", "ranges": {"chest": [36, 37], "waist": [29, 30], "hips": [38, 39]}},
+        {"size": "L", "ranges": {"chest": [38, 40], "waist": [31, 33], "hips": [40, 42]}},
+        {"size": "XL", "ranges": {"chest": [41, 43], "waist": [34, 36], "hips": [43, 45]}},
+        {"size": "XXL", "ranges": {"chest": [44, 46], "waist": [37, 39], "hips": [46, 48]}}
+      ]
+    }
+  ],
   "demo": {
     "slug": "gulmohar-lawn",
     "name": "Gulmohar Lawn House",

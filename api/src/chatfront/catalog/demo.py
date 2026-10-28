@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.audit.service import SYSTEM
 from chatfront.catalog.models import Product
 from chatfront.catalog.service import ProductInput, VariantInput, create_product
+from chatfront.catalog.sizes import CHARTS
 from chatfront.core.db import Database
 from chatfront.core.money import Minor
 from chatfront.offers.service import LOYALTY
@@ -98,17 +99,20 @@ async def add_demo_offers(
     await session.flush()
 
 
-def demo_loyalty(template_id: str, digits: int) -> dict[str, Any]:
-    """The template's points, as a shop profile keeps them; empty when it gives none."""
-    loyalty = get_template(template_id).demo.offers.loyalty
-    if loyalty is None:
-        return {}
-    scale = 10**digits
-    return {
-        LOYALTY: {
+def demo_profile(template_id: str, digits: int) -> dict[str, Any]:
+    """What a demo shop's profile gets from its template: points as the profile keeps them
+    (feature 19) and the usual size charts (feature 5)."""
+    template = get_template(template_id)
+    profile: dict[str, Any] = {}
+    if template.size_charts:
+        profile[CHARTS] = template.size_charts
+    loyalty = template.demo.offers.loyalty
+    if loyalty is not None:
+        scale = 10**digits
+        profile[LOYALTY] = {
             "on": True,
             "earn_per": loyalty.earn_per * scale,
             "point_value": loyalty.point_value * scale,
             "max_share": loyalty.max_share,
         }
-    }
+    return profile

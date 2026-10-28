@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from chatfront.books.ledger import today
+from chatfront.catalog import sizes
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.channels.links import chat_link
@@ -90,6 +91,7 @@ class ProductOut(BaseModel):
     image_url: str | None
     in_stock: bool
     ships_from: date | None  # on pre-order: orderable now, ships from this day (feature 16)
+    size_chart: dict[str, Any] | None  # the shop's chart for it (feature 5)
     variants: list[VariantOut]
 
 
@@ -259,9 +261,11 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
             )
         }
     ttl = services.settings.signed_url_ttl_seconds
+    charts = sizes.charts_of(tenant)
     out = []
     for item in items:
         product, photo = item.product, photos.get(item.product.image_media_id)  # type: ignore[arg-type]
+        chart = sizes.chart_for(charts, product, item.variants)
         out.append(
             ProductOut(
                 code=product.code,
@@ -281,6 +285,7 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                 ),
                 in_stock=item.in_stock,
                 ships_from=item.preorder,
+                size_chart=sizes.public(chart) if chart else None,
                 variants=[
                     VariantOut(
                         id=v.id,

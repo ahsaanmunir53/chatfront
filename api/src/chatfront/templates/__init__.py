@@ -6,7 +6,7 @@ import json
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -151,6 +151,9 @@ class BusinessTemplate(BaseModel):
     default_weight_g: int = Field(default=500, ge=0)
     # Days after delivery a customer may ask to swap or return (feature 92); 0 for none.
     return_days: int = Field(default=7, ge=0, le=60)
+    # The usual size charts for this kind of shop (feature 5): a starting point the owner edits
+    # in the console, read as catalog.sizes.SizeChart.
+    size_charts: list[dict[str, Any]] = Field(default_factory=list)
     demo: DemoShop
 
 

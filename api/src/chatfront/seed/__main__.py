@@ -12,7 +12,7 @@ import logging
 
 from sqlalchemy import func, select
 
-from chatfront.catalog.demo import add_demo_offers, add_demo_products, demo_loyalty
+from chatfront.catalog.demo import add_demo_offers, add_demo_products, demo_profile
 from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
 from chatfront.core.models import Tenant, Tier
@@ -24,7 +24,6 @@ from chatfront.models import (  # all models, so foreign keys resolve when run a
     Product,
 )
 from chatfront.modules.registry import ModuleRegistry, core_modules
-from chatfront.offers.service import LOYALTY
 from chatfront.stock.batches import shop_today
 from chatfront.templates import all_templates
 
@@ -61,7 +60,7 @@ def demo_shops() -> list[NewShop]:
                 profile={
                     "city": demo.city,
                     "tagline": demo.tagline.model_dump(by_alias=True),
-                    **demo_loyalty(template.id, get_pack(DEMO_COUNTRY).minor_digits),
+                    **demo_profile(template.id, get_pack(DEMO_COUNTRY).minor_digits),
                 },
                 is_demo=True,
             )
@@ -78,7 +77,8 @@ async def _stock_if_empty(db: Database, tenant: Tenant) -> None:
 
 
 async def _offers_if_none(db: Database, tenant: Tenant) -> None:
-    """Demo shops made before offers existed get the template's (features 13 and 19)."""
+    """Demo shops made before offers or size charts existed get the template's (features 13,
+    19 and 5)."""
     digits = get_pack(tenant.country).minor_digits
     async with db.tenant(tenant.id) as session:
         found = await session.scalar(select(func.count()).select_from(Coupon))
@@ -89,9 +89,13 @@ async def _offers_if_none(db: Database, tenant: Tenant) -> None:
             )
         stored = await session.get(Tenant, tenant.id)
         assert stored is not None
-        loyalty = demo_loyalty(tenant.template, digits)
-        if loyalty and LOYALTY not in (stored.profile or {}):
-            stored.profile = {**(stored.profile or {}), **loyalty}
+        missing = {
+            key: value
+            for key, value in demo_profile(tenant.template, digits).items()
+            if key not in (stored.profile or {})
+        }
+        if missing:
+            stored.profile = {**(stored.profile or {}), **missing}
 
 
 async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
