@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     messenger_page_access_token: SecretStr | None = None
     meta_catalog_token: SecretStr | None = None  # catalog_management; per shop if sealed
 
+    # Google Safe Browsing (feature 40): links in chats are also checked against Google's
+    # lists of phishing and malware sites; without a key, code's own checks run alone.
+    safe_browsing_api_key: SecretStr | None = None
+    safe_browsing_url: str = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
+
     # Models. "auto" calls a provider when its key is set and the mock otherwise.
     ai_mode: Literal["auto", "mock"] = "auto"
     baseten_api_key: SecretStr | None = None

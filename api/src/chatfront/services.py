@@ -44,6 +44,7 @@ from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.returns import KIND as return_kind
 from chatfront.orders.returns import RETURN, return_tools
+from chatfront.orders.review_tool import review_tools
 from chatfront.orders.sizes import size_tools
 from chatfront.orders.tools import order_tools
 from chatfront.orders.waitlist import back_in_stock_job, waitlist_tools
@@ -106,7 +107,7 @@ def build_registries() -> Registries:
     catalog_tools, orders_tools = order_tools()
     registries.modules.modules["catalog"].tools.extend([*catalog_tools, *size_tools()])
     registries.modules.modules["orders"].tools.extend(
-        [*orders_tools, *return_tools(), *offer_tools(), *waitlist_tools()]
+        [*orders_tools, *return_tools(), *offer_tools(), *waitlist_tools(), *review_tools()]
     )
     registries.approvals[RETURN] = return_kind
     registries.approvals[answers.ANSWER] = answers.KIND
@@ -205,6 +206,7 @@ def build_services(settings: Settings, registries: Registries) -> Services:
             ai,
             storage,
             settings,
+            http,
             buttons=(
                 partial(resume_button, services),
                 partial(payment_button, services),

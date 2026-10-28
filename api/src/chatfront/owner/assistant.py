@@ -11,6 +11,7 @@ import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from typing import Any
 
+import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.ai.client import AiClient
@@ -68,6 +69,9 @@ from chatfront.owner.changes import resolve_changes, typed_price_change
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.types import Problem
+from chatfront.shield import phishing
+from chatfront.shield.phishing import CODE_WORDS as CODE
+from chatfront.shield.phishing import link_line
 from chatfront.stock import changes as stock_changes
 from chatfront.stock import count, panel, profit, restock
 from chatfront.stock import ops as stock_ops
@@ -104,6 +108,7 @@ class OwnerAssistant:
         ai: AiClient,
         storage: Storage,
         settings: Settings,
+        http: httpx.AsyncClient,
         buttons: Sequence[ButtonHandler] = (),
         followups: Sequence[FollowUp] = (),
     ) -> None:
@@ -111,6 +116,7 @@ class OwnerAssistant:
         self.ai = ai
         self.storage = storage
         self.settings = settings
+        self.http = http
         self.buttons = tuple(buttons)
         self.followups = tuple(followups)
 
@@ -138,6 +144,8 @@ class OwnerAssistant:
             return await self._product(turn, None, None) if Can.CATALOG in allowed else refuse(turn)
         if kind == Kind.VIDEO:
             return await self._video(turn) if Can.CATALOG in allowed else refuse(turn)
+        if kind == Kind.TEXT and (phishing.full_links(words) or phishing.says(words, CODE)):
+            return await self._links(turn)
         for followup in self.followups:
             replies = await followup(turn, action)
             if replies is not None:
@@ -227,6 +235,15 @@ class OwnerAssistant:
             text = t("owner.preview_new", lang, summary=product_summary(tenant, product, lang))
             return [confirm_card(saved, text, "owner.confirm", lang)]
         return [OutText(t(self._ask_for(draft, message.kind, words), lang))]
+
+    async def _links(self, turn: Turn) -> list[Outbound]:
+        """Links the owner sends, checked as a customer's would be, and a word on codes
+        (feature 40)."""
+        scan = await phishing.scan(self.http, self.settings, turn.message.body)
+        lines = [link_line(link, turn.lang) for link in scan.links]
+        if scan.asks_for_code or scan.alarm:
+            lines.append(t("shield.never_share", turn.lang))
+        return [OutText("\n".join(lines))]
 
     async def _video(self, turn: Turn) -> list[Outbound]:
         """A video of a rack or shelf: its products become drafts in the console (feature 2)."""

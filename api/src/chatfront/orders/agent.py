@@ -47,6 +47,7 @@ from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.languages import load_registry
+from chatfront.core.models import Customer
 from chatfront.delivery import pins
 from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
@@ -67,9 +68,10 @@ from chatfront.owner import actions
 from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.payments.claims import handle_screenshot
 from chatfront.payments.due import ask_for, start_payment
-from chatfront.shield import buyers
+from chatfront.shield import buyers, phishing
 from chatfront.shield.answer_check import Facts, describe, unsupported
 from chatfront.shield.injection import injection_attempt, wants_a_person
+from chatfront.stock import notices
 from chatfront.templates import get_template
 
 if TYPE_CHECKING:
@@ -133,6 +135,9 @@ class OrderAgent:
         code = link_code_of(turn.message.body)
         if code is not None and turn.message.channel == Channel.WHATSAPP:
             return await self._link(turn, code)
+        scam = await phishing.scan(self.services.http, self.services.settings, turn.message.body)
+        if scam.alarm is not None:
+            return await self._scam(turn, scam)
         if wants_a_person(turn.message.body):
             return await self._hand_over(turn, "the customer asked for a person", "customer")
         if turn.media is not None:
@@ -287,6 +292,34 @@ class OrderAgent:
         if retry and not unsupported(retry, ctx.facts, turn.lang):
             return retry
         return None
+
+    async def _scam(self, turn: Turn, scam: phishing.Scan) -> list[Outbound]:
+        """A fake link or a request for a code (feature 40): the assistant stays out of it,
+        the sender hears that the shop never asks for codes, and the owner is told."""
+        suspect = [link for link in scam.links if link.verdict != phishing.Verdict.OFFICIAL]
+        brand = next((link.brand for link in suspect if link.brand), None)
+        async with self.services.db.tenant(turn.tenant.id) as session:
+            customer = await session.get(Customer, turn.conversation.customer_id)
+            await record(
+                session,
+                turn.tenant.id,
+                AGENT,
+                "shield.phishing",
+                entity=("message", str(turn.message.id)),
+                data={"alarm": scam.alarm, "hosts": [link.host for link in suspect]},
+            )
+            await notices.queue(
+                session,
+                turn.tenant.id,
+                "phishing",
+                f"shield.alert_{scam.alarm}",
+                {
+                    "name": (customer.display_name if customer else None) or "—",
+                    "hosts": ", ".join(link.host for link in suspect) or "—",
+                    "brand": (brand or "Meta").capitalize(),
+                },
+            )
+        return [OutText(t("shield.scam_reply", turn.lang))]
 
     async def _note_injection(self, turn: Turn, pattern: str) -> None:
         async with self.services.db.tenant(turn.tenant.id) as session:
