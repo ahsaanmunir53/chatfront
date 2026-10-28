@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "इस व्यक्ति को पहले जवाब दिया जा चुका",
   "console.posts_status_too_old": "7 दिन से पुराना",
   "console.posts_status_hourly_limit": "घंटे की सीमा से ज़्यादा",
-  "console.posts_status_which_product": "आपके प्रोडक्ट चुनने का इंतज़ार"
+  "console.posts_status_which_product": "आपके प्रोडक्ट चुनने का इंतज़ार",
+  "order.catalog_cart": "हमारे व्हाट्सऐप कैटलॉग से आपकी कार्ट:\n{lines}\nसामान का कुल: {total}",
+  "order.catalog_empty": "इनमें से कोई चीज़ अभी उपलब्ध नहीं है।",
+  "order.catalog_missing": "जैसा माँगा वैसा उपलब्ध नहीं: {items}",
+  "order.catalog_next": "डिलीवरी कहाँ करें? अपना शहर और पूरा पता भेजें।",
+  "console.catalog_title": "मेटा कैटलॉग",
+  "console.catalog_lede": "आपके प्रोडक्ट व्हाट्सऐप कैटलॉग और इंस्टाग्राम और फेसबुक शॉप में। हर 30 मिनट में भेजे जाते हैं; खरीदने के लिंक आपकी दुकान का पेज खोलते हैं।",
+  "console.catalog_not_connected": "इस दुकान से अभी कोई मेटा कैटलॉग नहीं जुड़ा है।",
+  "console.catalog_items": "{count, plural, one {कैटलॉग में # चीज़} other {कैटलॉग में # चीज़ें}}",
+  "console.catalog_synced": "आखिरी बार भेजा {when}",
+  "console.catalog_never": "अभी नहीं भेजा",
+  "console.catalog_send": "अभी भेजें",
+  "console.catalog_queued": "भेज रहे हैं। एक मिनट लगेगा।",
+  "console.catalog_no_photo": "फ़ोटो न होने से छूट गए: {names}",
+  "console.catalog_errors": "मेटा ने क्या कहा",
+  "console.catalog_status": "स्थिति: {status}"
 }

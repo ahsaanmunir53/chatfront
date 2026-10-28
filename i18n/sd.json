@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "هن ماڻهوءَ کي اڳ ۾ جواب ڏنو ويو",
   "console.posts_status_too_old": "7 ڏينهن کان پراڻو",
   "console.posts_status_hourly_limit": "ڪلاڪ جي حد کان وڌيڪ",
-  "console.posts_status_which_product": "توهان جي پراڊڪٽ چونڊڻ جو انتظار"
+  "console.posts_status_which_product": "توهان جي پراڊڪٽ چونڊڻ جو انتظار",
+  "order.catalog_cart": "اسان جي واٽس ايپ ڪيٽلاگ مان توهان جي ڪارٽ:\n{lines}\nشين جو ڪل: {total}",
+  "order.catalog_empty": "انهن مان ڪا به شيءِ هن وقت موجود ناهي.",
+  "order.catalog_missing": "جيئن گهريو تيئن موجود ناهي: {items}",
+  "order.catalog_next": "ڊليوري ڪٿي ڪريون؟ پنهنجو شهر ۽ پورو پتو موڪليو.",
+  "console.catalog_title": "ميٽا ڪيٽلاگ",
+  "console.catalog_lede": "توهان جون پراڊڪٽس واٽس ايپ ڪيٽلاگ ۽ انسٽاگرام ۽ فيس بڪ شاپ ۾. هر 30 منٽن کانپوءِ موڪليون وڃن ٿيون؛ خريد جا لنڪ توهان جي دڪان جو صفحو کولين ٿا.",
+  "console.catalog_not_connected": "هن دڪان سان اڃا ڪو ميٽا ڪيٽلاگ ڳنڍيل ناهي.",
+  "console.catalog_items": "{count, plural, one {ڪيٽلاگ ۾ # شيءِ} other {ڪيٽلاگ ۾ # شيون}}",
+  "console.catalog_synced": "آخري ڀيرو موڪليو {when}",
+  "console.catalog_never": "اڃا نه موڪليو",
+  "console.catalog_send": "هاڻي موڪليو",
+  "console.catalog_queued": "موڪلي رهيا آهيون. هڪ منٽ لڳندو.",
+  "console.catalog_no_photo": "تصوير نه هجڻ ڪري رهجي ويون: {names}",
+  "console.catalog_errors": "ميٽا ڇا چيو",
+  "console.catalog_status": "حالت: {status}"
 }

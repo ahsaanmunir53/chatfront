@@ -100,3 +100,23 @@ class StockMovement(Base):
     ref_id: Mapped[str | None] = mapped_column(String(40))
     actor: Mapped[str] = mapped_column(String(60))
     created_at: Mapped[datetime] = created_at_column()
+
+
+class CommerceCatalog(Base):
+    """The shop's Meta Commerce catalog (feature 6): where its products are sent so they show
+    in the WhatsApp catalog and the Instagram and Facebook shop, and how the last send went."""
+
+    __tablename__ = "commerce_catalogs"
+    __table_args__ = (UniqueConstraint("tenant_id"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    catalog_id: Mapped[str] = mapped_column(String(40))
+    access_token_sealed: Mapped[str | None] = mapped_column(Text)
+    synced_ids: Mapped[list[Any]] = mapped_column(default=list)  # item ids now in the catalog
+    status: Mapped[str] = mapped_column(String(20), default="never")
+    handle: Mapped[str | None] = mapped_column(String(300))  # Meta's id for the last batch
+    errors: Mapped[list[Any]] = mapped_column(default=list)  # {id, message} from Meta
+    left_out: Mapped[list[Any]] = mapped_column(default=list)  # names of products with no photo
+    synced_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()

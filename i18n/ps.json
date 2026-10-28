@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "دې کس ته مخکې ځواب ورکړل شوی",
   "console.posts_status_too_old": "له 7 ورځو زوړ",
   "console.posts_status_hourly_limit": "له ساعتي حد څخه زیات",
-  "console.posts_status_which_product": "ستاسو د محصول ټاکلو په تمه"
+  "console.posts_status_which_product": "ستاسو د محصول ټاکلو په تمه",
+  "order.catalog_cart": "زموږ د واټس اپ کټلاګ څخه ستاسو کارټ:\n{lines}\nد شیانو ټول: {total}",
+  "order.catalog_empty": "له دې شیانو څخه یو هم اوس نشته.",
+  "order.catalog_missing": "لکه چې وغوښتل شو، نشته: {items}",
+  "order.catalog_next": "چېرته یې درولېږو؟ خپل ښار او بشپړ پته راولېږئ.",
+  "console.catalog_title": "د میټا کټلاګ",
+  "console.catalog_lede": "ستاسو محصولات د واټس اپ کټلاګ او انسټاګرام او فېسبوک شاپ کې. هر 30 دقیقې وروسته لېږل کېږي؛ د پېرلو لینکونه ستاسو د دوکان پاڼه پرانیزي.",
+  "console.catalog_not_connected": "له دې دوکان سره لا هېڅ میټا کټلاګ نه دی نښلول شوی.",
+  "console.catalog_items": "{count, plural, one {په کټلاګ کې # شی} other {په کټلاګ کې # شیان}}",
+  "console.catalog_synced": "وروستی ځل ولېږل شو {when}",
+  "console.catalog_never": "لا نه دی لېږل شوی",
+  "console.catalog_send": "اوس یې ولېږئ",
+  "console.catalog_queued": "لېږل کېږي. یوه دقیقه وخت نیسي.",
+  "console.catalog_no_photo": "د انځور د نشتوالي له امله پاتې: {names}",
+  "console.catalog_errors": "میټا څه وویل",
+  "console.catalog_status": "حالت: {status}"
 }

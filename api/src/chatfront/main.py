@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from chatfront.books.routes import router as books_router
+from chatfront.catalog.meta_routes import router as catalog_sync_router
 from chatfront.channels.routes import router as channel_router
 from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(inbox_router)
     app.include_router(posts_router)
+    app.include_router(catalog_sync_router)
     app.include_router(team_router)
     app.include_router(books_router)
     app.include_router(shield_router)

@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
+import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { DashboardPanel } from "../components/Dashboard";
 import { InboxPanel } from "../components/Inbox";
@@ -370,6 +371,7 @@ function Console({
         <BooksPanel me={me} token={token} books={books.books} onChange={books.refresh} />
       )}
       {can("chats") && <PostsPanel token={token} products={products ?? []} />}
+      {can("catalog") && <CatalogSyncPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <SettingsPanel token={token} />}

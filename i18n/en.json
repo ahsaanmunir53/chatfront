@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "Already answered this person",
   "console.posts_status_too_old": "Older than 7 days",
   "console.posts_status_hourly_limit": "Over the hourly limit",
-  "console.posts_status_which_product": "Waiting for you to choose the product"
+  "console.posts_status_which_product": "Waiting for you to choose the product",
+  "order.catalog_cart": "Your cart from our WhatsApp catalog:\n{lines}\nItems total: {total}",
+  "order.catalog_empty": "None of those items are available right now.",
+  "order.catalog_missing": "Not available as asked: {items}",
+  "order.catalog_next": "Where should we deliver? Send your city and full address.",
+  "console.catalog_title": "Meta catalog",
+  "console.catalog_lede": "Your products in the WhatsApp catalog and your Instagram and Facebook shop. They are sent every 30 minutes; buy links open your shop page.",
+  "console.catalog_not_connected": "No Meta catalog is connected to this shop yet.",
+  "console.catalog_items": "{count, plural, one {# item in the catalog} other {# items in the catalog}}",
+  "console.catalog_synced": "Last sent {when}",
+  "console.catalog_never": "Not sent yet",
+  "console.catalog_send": "Send now",
+  "console.catalog_queued": "Sending. This takes a minute.",
+  "console.catalog_no_photo": "Left out, no photo: {names}",
+  "console.catalog_errors": "What Meta said",
+  "console.catalog_status": "Status: {status}"
 }

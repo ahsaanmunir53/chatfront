@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType
-from chatfront.catalog.service import CatalogItem, OutOfStock, load_items
+from chatfront.catalog.service import CatalogItem, OutOfStock, by_catalog_id, load_items
 from chatfront.channels import service as channels
 from chatfront.channels.models import Channel
 from chatfront.channels.notify import send_to
@@ -112,25 +112,16 @@ class Priced:
     weight_g: int
 
 
-def _find(items: Sequence[CatalogItem], wanted: str) -> tuple[CatalogItem, uuid.UUID] | None:
-    for item in items:
-        variant = item.by_catalog_id(wanted.strip())
-        if variant is not None and variant.active:
-            return item, variant.id
-    return None
-
-
 def price_lines(tenant: Tenant, items: Sequence[CatalogItem], lines: Sequence[LineIn]) -> Priced:
     """Each line at the catalog's price, or what is wrong with it; nothing is reserved."""
     out: list[LineOut] = []
     subtotal = weight = 0
     for line in lines:
-        found = _find(items, line.item)
+        found = by_catalog_id(items, line.item)
         if found is None:
             out.append(LineOut(item=line.item, quantity=line.quantity, problem="not_found"))
             continue
-        item, variant_id = found
-        variant = next(v for v in item.variants if v.id == variant_id)
+        item, variant = found
         price = item.price_of(variant)
         row = LineOut(
             item=line.item,
@@ -209,9 +200,10 @@ async def _fill_cart(
         raise AppError("cart_problem", "Some items are not available as asked", status_code=409)
     wanted: dict[uuid.UUID, int] = {}
     for line in body.lines:
-        found = _find(items, line.item)
+        found = by_catalog_id(items, line.item)
         assert found is not None  # priced above
-        wanted[found[1]] = wanted.get(found[1], 0) + line.quantity
+        variant_id = found[1].id
+        wanted[variant_id] = wanted.get(variant_id, 0) + line.quantity
     for old in await orders.lines(session, cart):
         if old.variant_id not in wanted:
             await orders.set_quantity(session, cart, old.variant_id, 0)

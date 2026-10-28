@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "ایس بندے نوں پہلاں جواب دتا جا چکیا",
   "console.posts_status_too_old": "7 دناں توں پرانا",
   "console.posts_status_hourly_limit": "گھنٹے دی حد توں ودھ",
-  "console.posts_status_which_product": "تہاڈے پروڈکٹ چنن دی اڈیک"
+  "console.posts_status_which_product": "تہاڈے پروڈکٹ چنن دی اڈیک",
+  "order.catalog_cart": "ساڈے واٹس ایپ کیٹلاگ توں تہاڈی کارٹ:\n{lines}\nچیزاں دا کُل: {total}",
+  "order.catalog_empty": "ایہناں وچوں کوئی چیز حالے نہیں ملدی۔",
+  "order.catalog_missing": "جیویں منگیا اونج نہیں ملدی: {items}",
+  "order.catalog_next": "ڈلیوری کتھے کرئیے؟ اپنا شہر تے پورا پتہ گھلو۔",
+  "console.catalog_title": "میٹا کیٹلاگ",
+  "console.catalog_lede": "تہاڈیاں پروڈکٹاں واٹس ایپ کیٹلاگ تے انسٹاگرام تے فیس بک شاپ وچ۔ ہر 30 منٹ بعد گھلیاں جاندیاں نیں؛ خریدن دے لنک تہاڈا دکان دا صفحہ کھولدے نیں۔",
+  "console.catalog_not_connected": "ایس دکان نال حالے کوئی میٹا کیٹلاگ نہیں جڑیا۔",
+  "console.catalog_items": "{count, plural, one {کیٹلاگ وچ # چیز} other {کیٹلاگ وچ # چیزاں}}",
+  "console.catalog_synced": "آخری وار گھلیا {when}",
+  "console.catalog_never": "حالے نہیں گھلیا",
+  "console.catalog_send": "ہنے گھلو",
+  "console.catalog_queued": "گھل رہے آں۔ اک منٹ لگے گا۔",
+  "console.catalog_no_photo": "تصویر نہ ہون پاروں رہ گئیاں: {names}",
+  "console.catalog_errors": "میٹا نے کیہ کہیا",
+  "console.catalog_status": "حالت: {status}"
 }

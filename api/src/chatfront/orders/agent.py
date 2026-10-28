@@ -50,6 +50,7 @@ from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
+from chatfront.orders.catalog_cart import take_catalog_cart
 from chatfront.orders.models import Order, OrderItem
 from chatfront.orders.states import OrderStatus
 from chatfront.orders.tools import (
@@ -105,6 +106,8 @@ class OrderAgent:
         button = actions.parse_button((turn.message.payload or {}).get("button_id"))
         if button is not None:
             return await self._tap(turn, *button)
+        if turn.message.kind == Kind.ORDER:  # a cart from the WhatsApp catalog (feature 6)
+            return await take_catalog_cart(self.services, turn)
         code = link_code_of(turn.message.body)
         if code is not None and turn.message.channel == Channel.WHATSAPP:
             return await self._link(turn, code)

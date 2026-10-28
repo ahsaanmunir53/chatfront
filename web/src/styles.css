@@ -2883,6 +2883,43 @@ button {
   border-radius: 16px;
 }
 
+/* The Meta catalog (feature 6) ------------------------------------------------------------ */
+
+.catalog-sync {
+  margin-top: 36px;
+}
+
+.catalog-sync-card {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.catalog-sync-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.catalog-sync-line strong {
+  color: var(--text);
+}
+
+.catalog-sync-status.is-finished {
+  color: var(--stamp);
+}
+
+.catalog-sync-status.is-error {
+  color: var(--chili);
+}
+
 /* Comments on posts (feature 77): a post waiting for its product gets the chili edge. ---- */
 
 .posts {

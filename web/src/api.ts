@@ -173,6 +173,15 @@ export type PostComment = {
   commented_at: string;
 };
 export type Posts = { posts: SocialPost[]; comments: PostComment[] };
+export type CatalogSync = {
+  connected: boolean;
+  catalog_id: string | null;
+  status: string | null;
+  items: number;
+  synced_at: string | null;
+  errors: { id?: string | null; message: string }[];
+  left_out: string[];
+};
 export type InboxShow = "all" | "waiting" | "mine";
 export type Inbox = {
   items: InboxItem[];
@@ -608,6 +617,10 @@ export const api = {
       headers: bearer(token),
       body: JSON.stringify({ product_id: productId }),
     }),
+  catalogSync: (token: string) =>
+    call<CatalogSync>("/api/owner/catalog-sync", { headers: bearer(token) }),
+  sendCatalog: (token: string) =>
+    call<{ queued: boolean }>("/api/owner/catalog-sync", { method: "POST", headers: bearer(token) }),
   chatMessages: (token: string, conversationId: string) =>
     call<ConsoleMessage[]>(
       `/api/owner/conversations/${encodeURIComponent(conversationId)}/messages`,

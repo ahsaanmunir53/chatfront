@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "تم الرد على هذا الشخص من قبل",
   "console.posts_status_too_old": "أقدم من 7 أيام",
   "console.posts_status_hourly_limit": "تجاوز حد الساعة",
-  "console.posts_status_which_product": "بانتظار اختيارك للمنتج"
+  "console.posts_status_which_product": "بانتظار اختيارك للمنتج",
+  "order.catalog_cart": "سلتك من كتالوج واتساب لدينا:\n{lines}\nمجموع المنتجات: {total}",
+  "order.catalog_empty": "لا يتوفر أي من هذه المنتجات الآن.",
+  "order.catalog_missing": "غير متوفر كما طلبت: {items}",
+  "order.catalog_next": "أين نوصل الطلب؟ أرسل مدينتك وعنوانك الكامل.",
+  "console.catalog_title": "كتالوج ميتا",
+  "console.catalog_lede": "منتجاتك في كتالوج واتساب ومتجرك على إنستغرام وفيسبوك. تُرسل كل 30 دقيقة، وروابط الشراء تفتح صفحة متجرك.",
+  "console.catalog_not_connected": "لم يُربط أي كتالوج ميتا بهذا المتجر بعد.",
+  "console.catalog_items": "{count, plural, zero {لا منتجات في الكتالوج} one {منتج واحد في الكتالوج} two {منتجان في الكتالوج} few {# منتجات في الكتالوج} many {# منتجًا في الكتالوج} other {# منتج في الكتالوج}}",
+  "console.catalog_synced": "آخر إرسال {when}",
+  "console.catalog_never": "لم يُرسل بعد",
+  "console.catalog_send": "أرسل الآن",
+  "console.catalog_queued": "جارٍ الإرسال. يستغرق دقيقة.",
+  "console.catalog_no_photo": "لم تُرسل لعدم وجود صورة: {names}",
+  "console.catalog_errors": "ما قالته ميتا",
+  "console.catalog_status": "الحالة: {status}"
 }

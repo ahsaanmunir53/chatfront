@@ -6,9 +6,11 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
@@ -222,3 +224,23 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
             )
         )
     return out
+
+
+@router.get("/api/shops/{slug}/products/{code}/photo")
+async def product_photo(slug: str, code: str, request: Request, services: ServicesDep) -> Any:
+    """A stable link to a product's photo for the Meta catalog (feature 6), which keeps the
+    link while the stored photo's own links expire: each visit gets a fresh one."""
+    _limit(services, request)
+    tenant = await _tenant(services, slug)
+    async with services.db.tenant(tenant.id) as session:
+        photo = await session.scalar(
+            select(Media)
+            .join(Product, Product.image_media_id == Media.id)
+            .where(Product.code == code.upper(), Product.status == ProductStatus.ACTIVE)
+        )
+    if photo is None:
+        raise NotFound("photo")
+    url = await media_service.signed_url(
+        services.storage, photo, services.settings.signed_url_ttl_seconds, blurred=False
+    )
+    return RedirectResponse(url, status_code=302)

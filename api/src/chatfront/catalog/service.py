@@ -80,6 +80,16 @@ class CatalogItem:
         return next((v for v in self.variants if self.catalog_id(v) == wanted), None)
 
 
+def by_catalog_id(items: Sequence[CatalogItem], wanted: str) -> tuple[CatalogItem, Variant] | None:
+    """The variant a Facebook or Instagram shop, or a WhatsApp catalog cart, names, if it is on
+    sale."""
+    for item in items:
+        variant = item.by_catalog_id(wanted.strip())
+        if variant is not None and variant.active:
+            return item, variant
+    return None
+
+
 def actor_label(actor: Actor) -> str:
     return f"{actor.type}:{actor.id}" if actor.id else str(actor.type)
 

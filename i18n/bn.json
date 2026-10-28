@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "এই ব্যক্তিকে আগেই উত্তর দেওয়া হয়েছে",
   "console.posts_status_too_old": "৭ দিনের বেশি পুরনো",
   "console.posts_status_hourly_limit": "ঘণ্টার সীমার বেশি",
-  "console.posts_status_which_product": "আপনার প্রোডাক্ট বাছার অপেক্ষায়"
+  "console.posts_status_which_product": "আপনার প্রোডাক্ট বাছার অপেক্ষায়",
+  "order.catalog_cart": "আমাদের হোয়াটসঅ্যাপ ক্যাটালগ থেকে আপনার কার্ট:\n{lines}\nজিনিসের মোট: {total}",
+  "order.catalog_empty": "এর কোনোটিই এখন পাওয়া যাচ্ছে না।",
+  "order.catalog_missing": "যেমন চেয়েছেন তেমন পাওয়া যাচ্ছে না: {items}",
+  "order.catalog_next": "কোথায় ডেলিভারি দেব? আপনার শহর আর পুরো ঠিকানা পাঠান।",
+  "console.catalog_title": "মেটা ক্যাটালগ",
+  "console.catalog_lede": "আপনার প্রোডাক্ট হোয়াটসঅ্যাপ ক্যাটালগ আর ইনস্টাগ্রাম ও ফেসবুক শপে। প্রতি ৩০ মিনিটে পাঠানো হয়; কেনার লিংক আপনার দোকানের পেজ খোলে।",
+  "console.catalog_not_connected": "এই দোকানের সাথে এখনও কোনো মেটা ক্যাটালগ যুক্ত হয়নি।",
+  "console.catalog_items": "{count, plural, one {ক্যাটালগে # টি জিনিস} other {ক্যাটালগে # টি জিনিস}}",
+  "console.catalog_synced": "শেষবার পাঠানো {when}",
+  "console.catalog_never": "এখনও পাঠানো হয়নি",
+  "console.catalog_send": "এখনই পাঠান",
+  "console.catalog_queued": "পাঠানো হচ্ছে। এক মিনিট লাগবে।",
+  "console.catalog_no_photo": "ছবি না থাকায় বাদ পড়েছে: {names}",
+  "console.catalog_errors": "মেটা যা বলেছে",
+  "console.catalog_status": "অবস্থা: {status}"
 }

@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "اس شخص کو پہلے جواب دیا جا چکا",
   "console.posts_status_too_old": "7 دن سے پرانا",
   "console.posts_status_hourly_limit": "گھنٹے کی حد سے زیادہ",
-  "console.posts_status_which_product": "آپ کے پروڈکٹ چننے کا انتظار"
+  "console.posts_status_which_product": "آپ کے پروڈکٹ چننے کا انتظار",
+  "order.catalog_cart": "ہمارے واٹس ایپ کیٹلاگ سے آپ کی کارٹ:\n{lines}\nچیزوں کا کل: {total}",
+  "order.catalog_empty": "ان میں سے کوئی چیز ابھی دستیاب نہیں۔",
+  "order.catalog_missing": "جیسے مانگا ویسے دستیاب نہیں: {items}",
+  "order.catalog_next": "ڈیلیوری کہاں کریں؟ اپنا شہر اور پورا پتہ بھیجیں۔",
+  "console.catalog_title": "میٹا کیٹلاگ",
+  "console.catalog_lede": "آپ کی پروڈکٹس واٹس ایپ کیٹلاگ اور انسٹاگرام اور فیس بک شاپ میں۔ ہر 30 منٹ بعد بھیجی جاتی ہیں؛ خریدنے کے لنک آپ کا دکان کا صفحہ کھولتے ہیں۔",
+  "console.catalog_not_connected": "اس دکان سے ابھی کوئی میٹا کیٹلاگ نہیں جڑا۔",
+  "console.catalog_items": "{count, plural, one {کیٹلاگ میں # چیز} other {کیٹلاگ میں # چیزیں}}",
+  "console.catalog_synced": "آخری بار بھیجا {when}",
+  "console.catalog_never": "ابھی نہیں بھیجا",
+  "console.catalog_send": "ابھی بھیجیں",
+  "console.catalog_queued": "بھیج رہے ہیں۔ ایک منٹ لگے گا۔",
+  "console.catalog_no_photo": "تصویر نہ ہونے سے رہ گئیں: {names}",
+  "console.catalog_errors": "میٹا نے کیا کہا",
+  "console.catalog_status": "حالت: {status}"
 }

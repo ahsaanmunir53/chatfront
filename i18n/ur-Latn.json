@@ -827,5 +827,20 @@
   "console.posts_status_already_answered": "Is shakhs ko pehle jawab diya ja chuka",
   "console.posts_status_too_old": "7 din se purana",
   "console.posts_status_hourly_limit": "Ghante ki had se zyada",
-  "console.posts_status_which_product": "Aap ke product chunne ka intezar"
+  "console.posts_status_which_product": "Aap ke product chunne ka intezar",
+  "order.catalog_cart": "Hamare WhatsApp catalog se aap ki cart:\n{lines}\nCheezon ka kul: {total}",
+  "order.catalog_empty": "In mein se koi cheez abhi dastiyab nahi.",
+  "order.catalog_missing": "Jaise manga waise dastiyab nahi: {items}",
+  "order.catalog_next": "Delivery kahan karein? Apna shehar aur poora pata bhejein.",
+  "console.catalog_title": "Meta catalog",
+  "console.catalog_lede": "Aap ki products WhatsApp catalog aur Instagram aur Facebook shop mein. Har 30 minute baad bheji jati hain; khareedne ke link aap ka dukaan ka page kholte hain.",
+  "console.catalog_not_connected": "Is dukaan se abhi koi Meta catalog nahi jura.",
+  "console.catalog_items": "{count, plural, one {Catalog mein # cheez} other {Catalog mein # cheezein}}",
+  "console.catalog_synced": "Aakhri baar bheja {when}",
+  "console.catalog_never": "Abhi nahi bheja",
+  "console.catalog_send": "Abhi bhejein",
+  "console.catalog_queued": "Bhej rahe hain. Ek minute lagega.",
+  "console.catalog_no_photo": "Tasveer na hone se reh gayin: {names}",
+  "console.catalog_errors": "Meta ne kya kaha",
+  "console.catalog_status": "Haalat: {status}"
 }

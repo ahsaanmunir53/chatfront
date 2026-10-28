@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     instagram_graph_base_url: str = "https://graph.instagram.com"
     instagram_access_token: SecretStr | None = None
     messenger_page_access_token: SecretStr | None = None
+    meta_catalog_token: SecretStr | None = None  # catalog_management; per shop if sealed
 
     # Models. "auto" calls a provider when its key is set and the mock otherwise.
     ai_mode: Literal["auto", "mock"] = "auto"
