@@ -459,6 +459,63 @@ Decisions:
 Not verified yet: the suggestions, codes, points, waitlist and approved answers in chat on
 the real model (they need a model key); waitlist messages on a real WhatsApp number.
 
+## Done on 28 October: the catalog from what the shop already has (84, 85, 2, 5, 87, 88)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 833 passed, 94.76% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 66 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- One way in for what a shop already sells: a sheet, its Meta catalog, its Instagram posts
+  or a video of a rack become drafts in the console's "Bring in your products". Nothing is on
+  sale until the owner adds a draft; then code builds the product, checked against the
+  template like any other, and translates it.
+- Sheets and the Meta catalog (85): the shop's own Excel or CSV, or Commerce Manager's export
+  of the catalog its WhatsApp Business catalog uses. The model matches the columns; without
+  one, code matches the headers. Rows of one product become its colours or sizes. A
+  connected Meta catalog is read with the Graph API, and the added products replace its old
+  items at the next send.
+- Instagram (84): the last 30 posts and reels, read for one product each from the picture
+  and caption; code reads captions when no model can. An added post then answers comments
+  with its product (feature 77).
+- A video of a rack (2): up to 30 products, the same design in other colours put together,
+  each with a still taken from the video by ffmpeg.
+- Shelf count (87): a photo with "stock count" in the owner's chat or the console; the count
+  is shown next to the books and becomes the stock only on Confirm.
+- Size charts (5): kept in the console, shown on the shop page, and used by the
+  `size_advice` tool, which decides the size by code.
+- Video search (88): the website chat takes videos; a clip or a shared reel goes to the
+  agent as a video, and the shop's own reel names its product by code.
+- Migration 0017: imports and their drafts. CI installs ffmpeg for the video tests.
+
+Decisions:
+
+- A draft keeps where its price came from. Prices the owner wrote (a sheet, the catalog, a
+  caption) can be added in one go; a price read from a picture, heard in a video or read from
+  a tag is shown for the owner to check, and "Add the ones with your prices" leaves it, and
+  any draft that looks like a product already in the shop.
+- Photos are fetched only from Meta's own servers (fbcdn.net, cdninstagram.com, fbsbx.com)
+  over HTTPS. Image links in a sheet are not fetched; the owner adds photos to those later.
+- The same Instagram post, catalog group or video moment is never drafted twice; one import
+  of each kind reads at a time, and a run still reading after 20 minutes shows as timed out.
+- A count above the books comes in as loose stock with no known cost; missing pieces come
+  off the batches in selling order and their cost is written off in the books.
+- Size advice: the smallest size whose every range holds the measures; else the smallest
+  that is tight nowhere, saying where it is loose; else none, saying where it is tight. The
+  clothing template carries a usual chart the owner can start from; the demo shop has it.
+- `prompt_context` moved to catalog.drafts and the translate job's name to
+  catalog.translations, so the importers do not depend on the owner's assistant.
+
+Not verified yet: reading pictures, videos and shelves on the real model (they need a model
+key); a real Instagram account's posts and a real Meta catalog.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -503,7 +560,7 @@ Proposed order, the Meta platform first since it is what is judged:
    across channels), 6 (WhatsApp catalog and Instagram shop sync). Done on 27 October.
 2. Payments and returns: 28, 29, 100, 92. Done on 28 October.
 3. Selling more: 13, 16, 19, 95, 91. Done on 28 October.
-4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88.
+4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88. Done on 28 October.
 5. Shield: 37, 40, 43, 45, 46.
 6. Packing and books: 102, 103, 51.
 7. Data and growth: 57, 59, 116, 66.

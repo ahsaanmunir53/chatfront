@@ -129,6 +129,12 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, the catalog from what the shop already has:** a sheet, the shop's Meta
+  catalog, its past Instagram posts or a video of its rack turned into drafts the owner adds
+  in the console; stock counted from a shelf photo and set once the owner confirms; size
+  charts on the shop page and a size worked out by code from the customer's measurements;
+  and a clip or a shared reel in the chat read as a video, the shop's own reel naming its
+  product.
 - **28 October, selling more:** bundles the owner sets in the console, suggested when a piece
   goes in the cart and taken off by code; discount codes with their own rules, typed at the
   shop page checkout or given in chat, and loyalty points earned on delivery and spent on
