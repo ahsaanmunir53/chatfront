@@ -4,6 +4,7 @@ cost, profit and expiry, discards, price questions, and the owner's notices."""
 from __future__ import annotations
 
 import uuid
+from dataclasses import asdict
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
@@ -13,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType
+from chatfront.books import ledger
 from chatfront.catalog.drafts import prompt_context
 from chatfront.catalog.models import Product, ProductStatus, Variant
 from chatfront.catalog.service import load_items
@@ -27,7 +29,7 @@ from chatfront.media.models import MediaKind
 from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.routes import ServicesDep, StaffDep, needs
 from chatfront.owner.sessions import OwnerSession
-from chatfront.stock import actions, count, expiry, notices, profit, restock, sheets
+from chatfront.stock import actions, count, expiry, notices, profit, restock, sheets, suppliers
 from chatfront.stock.batches import MAX_BATCH, unit_cost
 from chatfront.stock.models import OwnerNotice, PriceQuestion, StockBatch
 from chatfront.stock.prices import answer, on_hand
@@ -408,3 +410,75 @@ async def product_profit(session: BooksDep, services: ServicesDep) -> list[Produ
             )
             for row in await profit.true_by_product(db)
         ]
+
+
+# -- suppliers (feature 53) ---------------------------------------------------------------------
+
+
+class QuoteOut(BaseModel):
+    supplier: str
+    phone: str | None
+    unit_cost: int
+    on: date
+    times: int
+
+
+class SupplierItem(BaseModel):
+    variant_id: uuid.UUID
+    name: str
+    left: int | None
+    quotes: list[QuoteOut]  # cheapest first
+
+
+class ReorderLine(BaseModel):
+    name: str
+    quantity: int
+    unit_cost: int | None
+
+
+class ReorderOut(BaseModel):
+    supplier: str | None
+    phone: str | None
+    lines: list[ReorderLine]
+    total: int | None
+    draft: str
+    link: str | None
+
+
+class SuppliersOut(BaseModel):
+    compared: list[SupplierItem]  # items bought from more than one supplier
+    reorders: list[ReorderOut]
+
+
+@router.get("/suppliers")
+async def supplier_prices(session: StockDep, services: ServicesDep) -> SuppliersOut:
+    """What each supplier charged for the same item, and one reorder draft per supplier for
+    the low items. Nothing is sent: the owner sends the drafts from their own WhatsApp."""
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await _tenant(db, session)
+        staff = await db.get(Staff, session.staff_id)
+        found = await suppliers.items(db, tenant, ledger.today(tenant))
+    lang = staff_language(staff, tenant) if staff else tenant.default_lang
+    return SuppliersOut(
+        compared=[
+            SupplierItem(
+                variant_id=item.variant_id,
+                name=item.name,
+                left=item.left,
+                quotes=[QuoteOut(**asdict(q)) for q in item.quotes],
+            )
+            for item in found
+            if len(item.quotes) > 1
+        ],
+        reorders=[
+            ReorderOut(
+                supplier=r.supplier,
+                phone=r.phone,
+                lines=[ReorderLine(**asdict(line)) for line in r.lines],
+                total=r.total,
+                draft=r.draft,
+                link=r.link,
+            )
+            for r in suppliers.reorders(tenant, found, lang)
+        ],
+    )

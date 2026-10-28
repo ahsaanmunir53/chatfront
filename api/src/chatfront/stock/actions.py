@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import uuid
 from typing import TYPE_CHECKING
-from urllib.parse import quote
 
 from sqlalchemy import select
 
@@ -23,17 +22,12 @@ from chatfront.core.countries import shop_money
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.owner.rights import Can, staff_rights
-from chatfront.stock import expiry, prices
+from chatfront.stock import expiry, prices, suppliers
 from chatfront.stock.models import StockBatch
+from chatfront.stock.suppliers import REORDER_FALLBACK, whatsapp_link
 
 if TYPE_CHECKING:
     from chatfront.services import Services
-
-REORDER_FALLBACK = 10  # pieces to ask for when the shop has never restocked this
-
-
-def whatsapp_link(phone: str, text: str) -> str:
-    return f"https://wa.me/{phone.lstrip('+')}?text={quote(text)}"
 
 
 async def _low(
@@ -48,18 +42,34 @@ async def _low(
         if choice == SNOOZE:
             variant.low_snoozed_until = utcnow() + expiry.SNOOZE
             return [t("stock.snoozed", lang, name=name, days=expiry.SNOOZE.days)]
-        last = await session.scalar(
-            select(StockBatch)
-            .where(StockBatch.variant_id == variant_id)
-            .order_by(StockBatch.created_at.desc())
-            .limit(1)
+        batches = list(
+            await session.scalars(
+                select(StockBatch)
+                .where(StockBatch.variant_id == variant_id)
+                .order_by(StockBatch.received_on.desc(), StockBatch.created_at.desc())
+            )
         )
+    last = batches[0] if batches else None
     quantity = last.quantity if last else REORDER_FALLBACK
     draft = t("stock.reorder_draft", lang, name=name, quantity=quantity, shop=tenant.name)
     replies = [t("stock.reorder_ready", lang), draft]
-    if last and last.supplier_phone:
-        supplier = last.supplier or last.supplier_phone
-        link = whatsapp_link(last.supplier_phone, draft)
+    quotes = suppliers.quotes(batches)
+    if len(quotes) > 1:  # say who charged less (feature 53)
+        cheap, dear = quotes[0], quotes[-1]
+        replies.append(
+            t(
+                "suppliers.cheaper",
+                lang,
+                supplier=cheap.supplier,
+                cost=shop_money(tenant, cheap.unit_cost, lang),
+                other=dear.supplier,
+                other_cost=shop_money(tenant, dear.unit_cost, lang),
+            )
+        )
+    phone = quotes[0].phone if quotes and quotes[0].phone else (last and last.supplier_phone)
+    if phone:
+        supplier = (quotes[0].supplier if quotes else None) or (last and last.supplier) or phone
+        link = whatsapp_link(phone, draft)
         replies.append(t("stock.reorder_link", lang, supplier=supplier, link=link))
     else:
         replies.append(t("stock.reorder_forward", lang))
