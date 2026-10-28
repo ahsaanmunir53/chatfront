@@ -17,10 +17,10 @@ from chatfront.books.reminders import KIND as reminder_kind
 from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
 from chatfront.books.reports import CARD_JOB, CARDS_JOB, card_job, cards_job
 from chatfront.books.reports import EVERY as CARDS_EVERY
-from chatfront.catalog import meta
+from chatfront.catalog import instagram_import, meta, meta_import, video_import
 from chatfront.catalog.stock import BACK_IN_STOCK_JOB, LOW_STOCK_JOB
 from chatfront.catalog.stock import alert_job as low_stock_alert
-from chatfront.catalog.translations import translate_product
+from chatfront.catalog.translations import TRANSLATE_JOB, translate_product
 from chatfront.channels import answers
 from chatfront.channels.base import ChannelAdapter
 from chatfront.channels.comments import COMMENT_JOB, reply_to_comment
@@ -44,9 +44,10 @@ from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.returns import KIND as return_kind
 from chatfront.orders.returns import RETURN, return_tools
+from chatfront.orders.sizes import size_tools
 from chatfront.orders.tools import order_tools
 from chatfront.orders.waitlist import back_in_stock_job, waitlist_tools
-from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
+from chatfront.owner.assistant import OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
@@ -103,7 +104,7 @@ class Services:
 def build_registries() -> Registries:
     registries = Registries()
     catalog_tools, orders_tools = order_tools()
-    registries.modules.modules["catalog"].tools.extend(catalog_tools)
+    registries.modules.modules["catalog"].tools.extend([*catalog_tools, *size_tools()])
     registries.modules.modules["orders"].tools.extend(
         [*orders_tools, *return_tools(), *offer_tools(), *waitlist_tools()]
     )
@@ -135,6 +136,8 @@ def build_registries() -> Registries:
     registries.jobs.register(meta.SYNC_JOB)(meta.sync_job)
     registries.jobs.register(meta.SYNC_ALL_JOB)(meta.sync_all_job)
     registries.jobs.register(meta.CHECK_JOB)(meta.check_job)
+    for importer in (instagram_import, meta_import, video_import):
+        registries.jobs.register(importer.IMPORT_JOB)(importer.import_job)
     registries.cron.add(Periodic("catalog-sync", meta.SYNC_EVERY, meta.SYNC_ALL_JOB))
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
