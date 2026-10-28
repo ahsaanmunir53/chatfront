@@ -251,7 +251,11 @@ async def post_chat_message(
     return {"accepted": accepted is not None}
 
 
-_MEDIA_KINDS = {MediaKind.IMAGE: Kind.IMAGE, MediaKind.AUDIO: Kind.AUDIO}
+_MEDIA_KINDS = {
+    MediaKind.IMAGE: Kind.IMAGE,
+    MediaKind.AUDIO: Kind.AUDIO,
+    MediaKind.VIDEO: Kind.VIDEO,  # a clip of what they want (88), or the owner's rack (2)
+}
 # What the page may see of a message's details: its buttons, its list, a request for the
 # customer's pin and a pin they shared. Language tags and internal notes stay on the server.
 _SHOWN = frozenset({"buttons", "list", "location_request", "location"})
@@ -284,7 +288,9 @@ async def post_chat_media(
         )
     kind = _MEDIA_KINDS.get(MediaKind(media.kind))
     if kind is None:
-        raise AppError("unsupported_media", "Send a photo or a voice note", status_code=415)
+        raise AppError(
+            "unsupported_media", "Send a photo, a video or a voice note", status_code=415
+        )
     accepted = await accept_web(
         services, account, identity, client_id, kind=kind, text=caption or None, media_id=media.id
     )

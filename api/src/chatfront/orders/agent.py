@@ -14,7 +14,7 @@ import json
 import logging
 import uuid
 from dataclasses import replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest
 from chatfront.audit.service import AGENT, Actor, ActorType, record
 from chatfront.books.ledger import today
+from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import CatalogItem, OutOfStock, load_items
 from chatfront.channels import answers, identity
 from chatfront.channels.codes import link_code_of
@@ -38,7 +39,7 @@ from chatfront.channels.conversation import (
 )
 from chatfront.channels.handover import HANDOVER, start_handover
 from chatfront.channels.language import reply_language
-from chatfront.channels.models import Channel, Conversation
+from chatfront.channels.models import Channel, Conversation, SocialPost
 from chatfront.channels.notify import send_to
 from chatfront.channels.types import Kind, Outbound, OutText
 from chatfront.core.clock import utcnow
@@ -98,6 +99,25 @@ _INJECTION_NOTE = (
 )
 
 
+_SHARED_NOTE = (
+    "Note from Chatfront: the customer shared the shop's own post, which shows {} (code {}). "
+    "That is the product they mean."
+)
+
+
+async def shared_product(session: AsyncSession, payload: dict[str, Any] | None) -> Product | None:
+    """The product on sale that the shop's own reel or post shows, when the customer shared it
+    (feature 88): code knows it from the post, so it is not guessed from the video."""
+    reel = (payload or {}).get("reel_id")
+    if not reel:
+        return None
+    return await session.scalar(
+        select(Product)
+        .join(SocialPost, SocialPost.product_id == Product.id)
+        .where(SocialPost.media_id == str(reel), Product.status == ProductStatus.ACTIVE)
+    )
+
+
 class OrderAgent:
     def __init__(self, services: Services) -> None:
         self.services = services
@@ -149,6 +169,7 @@ class OrderAgent:
                 *seasons.sale_lines(tenant, list(shown), today(tenant)),
                 *answers.detail_lines(await answers.approved(session)),
             ]
+            shared = await shared_product(session, turn.message.payload)
         language = load_registry().get(turn.lang)
         details = shop_details(tenant, items, notes)
         facts = self._facts(turn, items, details)
@@ -180,6 +201,8 @@ class OrderAgent:
         if pattern := injection_attempt(turn.message.body):
             await self._note_injection(turn, pattern)
             messages.append(ChatMessage("system", _INJECTION_NOTE))
+        if shared is not None:
+            messages.append(ChatMessage("system", _SHARED_NOTE.format(shared.name, shared.code)))
         messages.append(current_message(turn))
         request = ChatRequest(
             role=role_for(turn),
