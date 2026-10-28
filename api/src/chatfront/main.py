@@ -16,8 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from chatfront.books.routes import router as books_router
 from chatfront.catalog.import_routes import router as imports_router
 from chatfront.catalog.meta_routes import router as catalog_sync_router
+from chatfront.catalog.photo_routes import router as photos_router
+from chatfront.catalog.sale_routes import router as sales_router
 from chatfront.catalog.share_routes import router as share_router
 from chatfront.catalog.size_routes import router as size_charts_router
+from chatfront.channels.lead_routes import router as leads_router
 from chatfront.channels.routes import router as channel_router
 from chatfront.core.errors import NotFound, install_error_handlers
 from chatfront.core.logging import setup_logging
@@ -38,6 +41,7 @@ from chatfront.owner.routes import router as owner_router
 from chatfront.owner.team import router as team_router
 from chatfront.payments.refund_routes import router as refunds_router
 from chatfront.payments.routes import router as payments_router
+from chatfront.publish.routes import router as publish_router
 from chatfront.push.routes import router as push_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
@@ -104,6 +108,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(inbox_router)
     app.include_router(posts_router)
     app.include_router(catalog_sync_router)
+    app.include_router(photos_router)
+    app.include_router(sales_router)
+    app.include_router(publish_router)
+    app.include_router(leads_router)
     app.include_router(imports_router)
     app.include_router(size_charts_router)
     app.include_router(team_router)

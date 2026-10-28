@@ -1,0 +1,11 @@
+[
+  {
+    "prompt": "post_caption",
+    "role": "*",
+    "match": "*",
+    "json": {
+      "ur": "نیا مال آ گیا ہے! اپنی پسند کا سوٹ ابھی چنیں۔",
+      "en": "New stock is in! Pick your favourite before it is gone."
+    }
+  }
+]

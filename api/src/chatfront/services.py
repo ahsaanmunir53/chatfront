@@ -17,7 +17,7 @@ from chatfront.books.reminders import KIND as reminder_kind
 from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
 from chatfront.books.reports import CARD_JOB, CARDS_JOB, card_job, cards_job
 from chatfront.books.reports import EVERY as CARDS_EVERY
-from chatfront.catalog import instagram_import, meta, meta_import, video_import
+from chatfront.catalog import instagram_import, meta, meta_import, sales, video_import
 from chatfront.catalog.stock import BACK_IN_STOCK_JOB, LOW_STOCK_JOB
 from chatfront.catalog.stock import alert_job as low_stock_alert
 from chatfront.catalog.translations import TRANSLATE_JOB, translate_product
@@ -42,6 +42,7 @@ from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
 from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.offers import referrals
 from chatfront.offers.tools import offer_tools
+from chatfront.orders import live_claims
 from chatfront.orders import reminders as cart_reminders
 from chatfront.orders.agent import OrderAgent
 from chatfront.orders.discounts import DISCOUNT
@@ -58,6 +59,7 @@ from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
 from chatfront.payments.tools import payment_tools
 from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
+from chatfront.publish import service as publishing
 from chatfront.push.alerts import PUSH_JOB
 from chatfront.push.alerts import send_job as push_job
 from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
@@ -146,6 +148,15 @@ def build_registries() -> Registries:
         referrals.THANKS_JOB: referrals.thanks_job,
     }
     growth.periodic.append(Periodic("cart-reminders", cart_reminders.EVERY, cart_reminders.JOB))
+    growth.jobs |= {
+        publishing.DAILY_JOB: publishing.daily_job,
+        publishing.DAY_JOB: publishing.day_job,
+        publishing.SEND_JOB: publishing.send_job,
+    }
+    growth.periodic.append(Periodic("daily-posts", publishing.EVERY, publishing.DAILY_JOB))
+    catalog = registries.modules.modules["catalog"]
+    catalog.jobs[sales.JOB] = live_claims.release_job
+    catalog.periodic.append(Periodic("sale-holds", sales.EVERY, sales.JOB))
     delivery = registries.modules.modules["delivery"]
     delivery.jobs |= {picking.DAILY_JOB: picking.daily_job, picking.SEND_JOB: picking.send_job}
     delivery.periodic.append(Periodic("pick-lists", picking.EVERY, picking.DAILY_JOB))

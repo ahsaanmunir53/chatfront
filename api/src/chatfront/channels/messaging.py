@@ -267,6 +267,71 @@ class MetaMessagingAdapter:
         )
         return [post for post in response.json().get("data") or [] if isinstance(post, dict)]
 
+    async def _create(self, account: AccountRef, fields: dict[str, str]) -> str:
+        response = await request(
+            self.http,
+            "POST",
+            f"{self.base}/{account.external_id}/media",
+            service=self.channel,
+            json=fields,
+            headers=self._bearer(account),
+            retries=0,
+        )
+        container = response.json().get("id")
+        if not isinstance(container, str):
+            raise AppError(f"{self.channel}_bad_response", "No media container came back")
+        return container
+
+    async def publish_post(self, account: AccountRef, image_urls: list[str], caption: str) -> str:
+        """An Instagram post of one picture, or a carousel of several (features 7 and 82),
+        through the content publishing API: a container per picture, then publish. Meta
+        fetches each picture from its link. Returns the post's media id."""
+        if not image_urls:
+            raise AppError("nothing_to_post", "A post needs a picture")
+        if len(image_urls) == 1:
+            container = await self._create(
+                account, {"image_url": image_urls[0], "caption": caption}
+            )
+        else:
+            children = [
+                await self._create(account, {"image_url": url, "is_carousel_item": "true"})
+                for url in image_urls[:10]
+            ]
+            container = await self._create(
+                account,
+                {"media_type": "CAROUSEL", "children": ",".join(children), "caption": caption},
+            )
+        response = await request(
+            self.http,
+            "POST",
+            f"{self.base}/{account.external_id}/media_publish",
+            service=self.channel,
+            json={"creation_id": container},
+            headers=self._bearer(account),
+            retries=0,
+        )
+        media_id = response.json().get("id")
+        if not isinstance(media_id, str):
+            raise AppError(f"{self.channel}_bad_response", "No post id came back")
+        return media_id
+
+    async def publish_photo(self, account: AccountRef, image_url: str, caption: str) -> str:
+        """A photo post on the Facebook Page (feature 82). Returns the post's id."""
+        response = await request(
+            self.http,
+            "POST",
+            f"{self.base}/{account.external_id}/photos",
+            service=self.channel,
+            json={"url": image_url, "caption": caption},
+            headers=self._bearer(account),
+            retries=0,
+        )
+        data = response.json()
+        post = data.get("post_id") or data.get("id")
+        if not isinstance(post, str):
+            raise AppError(f"{self.channel}_bad_response", "No post id came back")
+        return post
+
     async def download_media(self, account: AccountRef, media_ref: str) -> bytes:
         """Attachment links are signed CDN URLs, so no token is sent with them."""
         del account
