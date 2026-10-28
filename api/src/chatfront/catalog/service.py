@@ -18,8 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, record
-from chatfront.catalog import stock
+from chatfront.catalog import sales, stock
 from chatfront.catalog.models import Product, ProductStatus, StockMovement, StockReason, Variant
+from chatfront.catalog.sales import Terms
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
@@ -63,8 +64,14 @@ class ProductInput:
 class CatalogItem:
     product: Product
     variants: list[Variant]
+    sale: Terms | None = None  # a flash or live sale it is in now (feature 8)
 
     def price_of(self, variant: Variant) -> Minor:
+        """What a piece costs now: the catalog price, or the sale price while one is on."""
+        catalog = variant.price if variant.price is not None else self.product.price
+        return Minor(min(catalog, self.sale.price) if self.sale else catalog)
+
+    def list_price_of(self, variant: Variant) -> Minor:
         return Minor(variant.price if variant.price is not None else self.product.price)
 
     @property
@@ -246,7 +253,8 @@ async def load_items(
     by_product: dict[uuid.UUID, list[Variant]] = {p.id: [] for p in products}
     for variant in variants:
         by_product[variant.product_id].append(variant)
-    return [CatalogItem(p, by_product[p.id]) for p in products]
+    on_sale = await sales.on_now(session)
+    return [CatalogItem(p, by_product[p.id], on_sale.get(p.id)) for p in products]
 
 
 async def load_item(session: AsyncSession, product_id: uuid.UUID) -> CatalogItem:

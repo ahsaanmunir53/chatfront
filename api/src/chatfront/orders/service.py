@@ -13,8 +13,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, record
+from chatfront.catalog import sales
 from chatfront.catalog.models import Product, ProductStatus, StockReason, Variant
 from chatfront.catalog.service import on_preorder
+from chatfront.channels import leads
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
@@ -195,6 +197,10 @@ async def set_quantity(
     item = await session.scalar(
         select(OrderItem).where(OrderItem.order_id == order.id, OrderItem.variant_id == variant.id)
     )
+    others = await sales.other_lines(session, order, product.id, variant.id)
+    sale_price = await sales.price_for(
+        session, order, product, other_lines=others, quantity=quantity
+    )
     if quantity == 0:
         if item is not None:
             await session.delete(item)
@@ -207,9 +213,9 @@ async def set_quantity(
         if room is not None and quantity > room:
             raise AppError("preorder_full", f"{product.name}: {room} more on pre-order")
     catalog_price = variant.price if variant.price is not None else product.price
-    bargained = agreed_price is not None and 0 < agreed_price < catalog_price
-    unit_price = agreed_price if bargained and agreed_price is not None else catalog_price
-    list_price = catalog_price if bargained else None
+    lower = [p for p in (agreed_price, sale_price) if p is not None and 0 < p < catalog_price]
+    unit_price = min(lower, default=catalog_price)  # a bargain or the sale, whichever is less
+    list_price = catalog_price if lower else None
     if item is None:
         item = OrderItem(
             tenant_id=order.tenant_id,
@@ -257,11 +263,13 @@ async def move(
     now = utcnow()
     if wanted == OrderStatus.PLACED:
         order.placed_at = now
+        await leads.attribute(session, order)
     if wanted in CLOSED:
         order.closed_at = now
     await session.flush()
     tenant = await session.get(Tenant, order.tenant_id)
     assert tenant is not None
+    await sales.on_move(session, order, wanted)
     await offers.on_move(session, tenant, order, wanted)
     if wanted == OrderStatus.CANCELLED and order.paid > 0:
         await refunds.on_cancel(session, order)  # what it took goes back (feature 28)

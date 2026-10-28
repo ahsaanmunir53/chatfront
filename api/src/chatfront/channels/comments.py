@@ -25,6 +25,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.catalog import sales
 from chatfront.catalog.service import CatalogItem, load_items
 from chatfront.channels import service as channels
 from chatfront.channels.messaging import MetaMessagingAdapter
@@ -37,6 +38,7 @@ from chatfront.channels.models import (
     PostComment,
     SocialPost,
 )
+from chatfront.channels.types import to_record
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
@@ -47,6 +49,7 @@ from chatfront.core.models import Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.core.settings import get_settings
 from chatfront.jobs.queue import JobContext, enqueue
+from chatfront.orders import live_claims
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -83,7 +86,7 @@ def _time(value: Any) -> datetime:
 
 def _comment(channel: Channel, account: str, field: Any, value: dict[str, Any]) -> Comment | None:
     author = str((value.get("from") or {}).get("id") or "")
-    if channel is Channel.INSTAGRAM and field == "comments":
+    if channel is Channel.INSTAGRAM and field in ("comments", "live_comments"):
         comment_id, text = value.get("id") or value.get("comment_id"), value.get("text")
         media = (value.get("media") or {}).get("id")
     elif (
@@ -167,7 +170,38 @@ def product_named(items: list[CatalogItem], text: str | None) -> CatalogItem | N
 # -- storing and answering -------------------------------------------------------------------
 
 
-async def accept(db: Database, account: ChannelAccount, comment: Comment, key: str) -> bool:
+async def live_claim(services: Services, account: ChannelAccount, comment: Comment) -> str | None:
+    """A comment that is a number during a live sale takes a piece (feature 8), first come
+    first served; the answer to send it. The comment's author is the customer: with Instagram
+    Login their id in a comment is the one their messages come from. None when it is not a
+    claim, or the comment was seen before."""
+    number = sales.claim_number(comment.text)
+    if number is None:
+        return None
+    async with services.db.tenant(account.tenant_id) as session:
+        seen = await session.scalar(
+            select(PostComment.id).where(
+                PostComment.channel == comment.channel, PostComment.comment_id == comment.comment_id
+            )
+        )
+        tenant = await session.get(Tenant, account.tenant_id)
+        if seen is not None or tenant is None or await sales.live_item(session, number) is None:
+            return None
+        lang = _language(tenant, comment.text)
+        customer = await channels.identify_sender(
+            session, tenant.id, Channel(account.channel), comment.author_id, services.keys
+        )
+        chat = await channels.open_conversation(session, tenant.id, customer.id, account.id)
+        chat.lang = chat.lang or lang
+        replies = await live_claims.claim(
+            session, tenant, customer.id, chat.id, number, lang, first_choice=True
+        )
+    return to_record(replies[0])[0] if replies else None
+
+
+async def accept(
+    db: Database, account: ChannelAccount, comment: Comment, key: str, claim: str | None = None
+) -> bool:
     """Keep the comment and queue its answer. False for a comment seen before."""
     async with db.tenant(account.tenant_id) as session:
         stored = await session.scalar(
@@ -181,6 +215,7 @@ async def accept(db: Database, account: ChannelAccount, comment: Comment, key: s
                 author_hash=hash_phone(f"{comment.channel}:comment:{comment.author_id}", key),
                 text=comment.text,
                 status=CommentStatus.NEW,
+                claim_reply=claim,
                 commented_at=comment.commented_at,
                 post_id=await _post(session, account, comment.media_id),
             )
@@ -329,6 +364,9 @@ async def reply_to_comment(ctx: JobContext) -> None:
         reason = await _why_not(session, row, now)
     assert account is not None
     assert tenant is not None
+    if row.claim_reply:  # a live sale's claim: code decided it when the comment came
+        await _send_text(services, tenant, account, row, row.claim_reply, None)
+        return
     if reason is not None:
         await _skip(services, row, CommentStatus.SKIPPED, reason)
         return
@@ -353,11 +391,24 @@ async def _send(
     row: PostComment,
     item: CatalogItem,
 ) -> None:
-    adapter = services.adapters[Channel(account.channel)]
-    assert isinstance(adapter, MetaMessagingAdapter)
     lang = _language(tenant, row.text)
     link = f"{services.settings.web_url}/s/{tenant.slug}#p-{item.product.code}"
     text = product_message(tenant, item, lang, link)
+    await _send_text(services, tenant, account, row, text, item.product.id)
+
+
+async def _send_text(
+    services: Services,
+    tenant: Tenant,
+    account: ChannelAccount,
+    row: PostComment,
+    text: str,
+    product_id: uuid.UUID | None,
+) -> None:
+    """The private reply, and the DM thread it starts."""
+    adapter = services.adapters[Channel(account.channel)]
+    assert isinstance(adapter, MetaMessagingAdapter)
+    lang = _language(tenant, row.text)
     ref = channels.account_ref(account, services.keys, services.fallback_token(account.channel))
     try:
         recipient, message_id = await adapter.private_reply(ref, row.comment_id, text)
@@ -386,7 +437,7 @@ async def _send(
         stored = await session.get(PostComment, row.id)
         assert stored is not None
         stored.status, stored.reason = CommentStatus.SENT, None
-        stored.lang, stored.product_id = lang, item.product.id
+        stored.lang, stored.product_id = lang, product_id or stored.product_id
         stored.conversation_id, stored.message_id, stored.replied_at = chat.id, message_id, utcnow()
 
 

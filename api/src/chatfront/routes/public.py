@@ -15,6 +15,7 @@ from chatfront.books.ledger import today
 from chatfront.catalog import sizes
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import load_items
+from chatfront.catalog.share import share_url
 from chatfront.channels.links import chat_link
 from chatfront.channels.models import ChannelAccount
 from chatfront.core.clock import utcnow
@@ -78,6 +79,17 @@ class VariantOut(BaseModel):
     in_stock: bool
 
 
+class SaleOut(BaseModel):
+    """The flash or live sale a product is in now (feature 8)."""
+
+    name: str
+    price: int
+    ends_at: datetime
+    left: int  # pieces still to be had at the sale price
+    live: bool
+    number: int  # what to write to take one in a live sale
+
+
 class ProductOut(BaseModel):
     """A product on the shop page. Prices are minor units of the shop's currency."""
 
@@ -94,6 +106,7 @@ class ProductOut(BaseModel):
     size_chart: dict[str, Any] | None  # the shop's chart for it (feature 5)
     variants: list[VariantOut]
     share_url: str  # the link with a preview card (feature 116)
+    sale: SaleOut | None = None
 
 
 class ShopSummary(BaseModel):
@@ -266,7 +279,6 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
             )
         }
     ttl = services.settings.signed_url_ttl_seconds
-    public = services.settings.public_base_url.rstrip("/")
     charts = sizes.charts_of(tenant)
     out = []
     for item in items:
@@ -292,7 +304,17 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                 in_stock=item.in_stock,
                 ships_from=item.preorder,
                 size_chart=sizes.public(chart) if chart else None,
-                share_url=f"{public}/s/{slug}/p/{product.code}",
+                share_url=share_url(services.settings, slug, product.code),
+                sale=SaleOut(
+                    name=item.sale.sale,
+                    price=item.sale.price,
+                    ends_at=item.sale.ends_at,
+                    left=item.sale.left,
+                    live=item.sale.live,
+                    number=item.sale.number,
+                )
+                if item.sale
+                else None,
                 variants=[
                     VariantOut(
                         id=v.id,

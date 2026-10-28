@@ -100,7 +100,10 @@ async def meta_webhook(
     for comment in comments.parse(payload):  # feature 77
         account = await channels.route(services.db, comment.channel, comment.account_external_id)
         if account is not None:
-            await comments.accept(services.db, account, comment, services.keys.phone_hash_key)
+            claim = await comments.live_claim(services, account, comment)
+            await comments.accept(
+                services.db, account, comment, services.keys.phone_hash_key, claim
+            )
     return {"ok": True}
 
 
