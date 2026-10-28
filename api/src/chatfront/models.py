@@ -24,6 +24,7 @@ from chatfront.channels.models import (
 )
 from chatfront.core.db import Base
 from chatfront.core.models import Customer, Staff, Tenant, TenantModule
+from chatfront.crm.models import Broadcast, BroadcastRecipient
 from chatfront.delivery.models import PackingCheck, Shipment
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
@@ -31,6 +32,7 @@ from chatfront.orders.models import (
     Bundle,
     Coupon,
     CouponUse,
+    GroupOrder,
     LoyaltyEntry,
     Order,
     OrderItem,
@@ -47,7 +49,7 @@ from chatfront.payments.models import (
     WalletCredit,
 )
 from chatfront.push.models import PushSubscription
-from chatfront.shield.models import Approval, FraudListEntry, FraudReport, Review
+from chatfront.shield.models import Approval, Consent, FraudListEntry, FraudReport, Review
 from chatfront.sim.models import SimChat, SimRun
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
@@ -57,10 +59,13 @@ __all__ = [
     "AuditEntry",
     "Base",
     "BatchAllocation",
+    "Broadcast",
+    "BroadcastRecipient",
     "Bundle",
     "CatalogImport",
     "ChannelAccount",
     "CommerceCatalog",
+    "Consent",
     "Conversation",
     "Coupon",
     "CouponUse",
@@ -69,6 +74,7 @@ __all__ = [
     "CustomerIdentity",
     "FraudListEntry",
     "FraudReport",
+    "GroupOrder",
     "Handover",
     "IdentityLink",
     "ImportDraft",

@@ -52,6 +52,17 @@ class Order(Base):
     coupon_code: Mapped[str | None] = mapped_column(String(24))
     points_used: Mapped[int] = mapped_column(default=0, server_default="0")
     reminded_at: Mapped[datetime | None]  # the watcher's one reminder (feature 30)
+    cart_reminded_at: Mapped[datetime | None]  # the one reminder of a quiet cart (feature 14)
+    # A gift (feature 21): the address is the recipient's; the card says this, and the parcel
+    # carries no prices.
+    gift: Mapped[bool] = mapped_column(default=False, server_default="false")
+    gift_message: Mapped[str] = mapped_column(Text, default="", server_default="")
+    gift_from: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    # One part of a group order (feature 22): friends order together, each pays their part.
+    group_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("group_orders.id", ondelete="SET NULL"), index=True
+    )
+    group_member: Mapped[str] = mapped_column(String(80), default="", server_default="")
     # How likely a cash-on-delivery order is to come back unpaid, 0 to 100, with the reasons
     # code found (feature 34): [{"code": ..., "points": ...}].
     risk_score: Mapped[int] = mapped_column(default=0, server_default="0")
@@ -199,6 +210,24 @@ class Bundle(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+class GroupOrder(Base):
+    """A shared cart link (feature 22): the organiser gives the address, friends add their
+    parts, each part is its own order paid on its own, and they ship together."""
+
+    __tablename__ = "group_orders"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    code: Mapped[str] = mapped_column(String(12))
+    organiser: Mapped[str] = mapped_column(String(80))
+    organiser_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    address: Mapped[dict[str, Any]]
+    closes_at: Mapped[datetime]
+    closed_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class Coupon(Base):
     """A discount code (feature 19): a percentage or an amount off the catalog-price part of a
     cart, with a minimum, dates and a limit on uses. A shown coupon is the shop page's sale,
@@ -219,6 +248,15 @@ class Coupon(Base):
     once_per_customer: Mapped[bool] = mapped_column(default=True)
     show_on_page: Mapped[bool] = mapped_column(default=False)
     active: Mapped[bool] = mapped_column(default=True)
+    # Referrals (feature 20): a customer's own code for friends, good on a first order only;
+    # and a thank-you code that only one customer may use.
+    referrer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("customers.id", ondelete="SET NULL"), index=True
+    )
+    first_order_only: Mapped[bool] = mapped_column(default=False, server_default="false")
+    for_customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE")
+    )
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -245,6 +283,7 @@ class PointsReason(StrEnum):
     REDEEMED = "redeemed"  # spent on a placed order
     CANCELLED = "cancelled"  # a cancelled order gives its points back
     RETURNED = "returned"  # a returned order takes its earned points back
+    REFERRAL = "referral"  # a friend's first order was delivered (feature 20)
 
 
 class LoyaltyEntry(Base):

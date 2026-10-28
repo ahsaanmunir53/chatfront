@@ -120,3 +120,29 @@ class Review(Base):
     reply: Mapped[str | None] = mapped_column(Text)
     replied_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
+
+
+class Purpose(StrEnum):
+    OFFERS = "offers"  # a customer agrees to offers and broadcasts (feature 15)
+    FRAUD_LIST = "fraud_list"  # the shop agrees to share its fraud reports (feature 37)
+    CREDIT_PASSPORT = "credit_passport"  # the shop shares its sales history (feature 64)
+
+
+class Consent(Base):
+    """One yes or no, as it was given (feature 108). Append-only: the latest row for a person
+    and a purpose is what holds now, and the rows before it are the record."""
+
+    __tablename__ = "consents"
+    __table_args__ = (Index("ix_consents_lookup", "tenant_id", "purpose", "customer_id"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    purpose: Mapped[str] = mapped_column(String(20))
+    customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE")
+    )  # None: the shop itself, by its staff
+    granted: Mapped[bool]
+    via: Mapped[str] = mapped_column(String(12))  # chat, button, page, console
+    wording: Mapped[str] = mapped_column(Text)  # what the person saw or wrote
+    staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = created_at_column()
