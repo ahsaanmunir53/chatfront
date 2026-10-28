@@ -805,6 +805,52 @@ Decisions:
 - A caption from the model with any number in it is not used; the shop's plain caption is.
 - A sale price must be below the product's price; code never puts a price up.
 
+## Done on 28 October: bookings, custom orders and couriers (17, 18, 31, 32, 35, 36)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 1,120 passed |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 38 passed |
+| Browser tests, desktop and phone | 80 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Bookings (18): a service's length comes from its Duration field; the owner sets each day's
+  hours and how many customers are served at once; code finds the free times and sends them
+  as a list to tap (or, with `WHATSAPP_FLOW_BOOKING_ID`, as a WhatsApp Flow form). A tapped
+  time is checked again under a lock; a reminder goes once, three hours before; the owner
+  marks a booking done or missed, or cancels it and the customer hears.
+- Custom orders (17): the agent takes down the words, colours, size and day; code draws a plain
+  sketch (Muse Image stays Model API only); the owner sets the price; the customer accepts or
+  declines it with a button, and an accepted price goes into the cart as its own line.
+- Couriers (31, 32): the shop's own PostEx token, kept sealed; a packed parcel booked from the
+  order; hourly tracking that moves an order only on delivered or returned; PostEx's payment
+  status kept as a settlement. Any courier's payment sheet (CSV or Excel) is matched to the
+  orders: short payments, unknown rows and rows paid before stand out.
+- Proof of delivery (35): the rider's photo read for the order's code or tracking number; it
+  never moves the order.
+- Unboxing video (36): watched beside the catalog and packing photos for a damaged or wrong
+  item; code turns the reading into advice for the owner, who still decides.
+- What the rider was to collect now stays on the parcel after delivery, so a later charge or
+  settlement is checked against it (it was being reset to zero).
+- Migration 0025.
+
+Decisions:
+
+- A booking moves no money and no stock; it is paid at the shop at the catalog price.
+- Times are offered every 30 minutes, from an hour after now, for the next 30 days.
+- A custom line stands on a hidden archived product per kind, so it never shows in the catalog
+  and the customer cannot change its quantity; the price is the owner's alone.
+- A parcel is booked with a courier only once it is packed.
+- PostEx is the only courier with an API adapter; it is built to its published merchant API and
+  marked `needs-key` until a shop's real token has been tried.
+- A delivery photo and an unboxing video are advice; delivered stays the owner's or the
+  courier's word, since it posts the cash.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -816,6 +862,10 @@ Never in the chat. Each key goes in one or more of these places, typed by Ahsaan
 | `MODAL_GLIMMER_BASE_URL`, `MODAL_GLIMMER_API_KEY` | yes | yes | optional |
 | `META_CATALOG_TOKEN` (feature 6, a system user token with catalog_management) | no | yes | optional |
 | `SAFE_BROWSING_API_KEY` (feature 40, optional; Google Cloud API key for the Safe Browsing API) | no | yes | optional |
+| `WHATSAPP_FLOW_BOOKING_ID` (feature 18, optional; the id WhatsApp Manager gives the published `bookings/flows/book.json`) | no | yes | optional |
+
+A shop's PostEx token is not an env var: the owner types it in the console under Couriers and
+cash collected, and it is stored sealed.
 
 Then: Actions > "Live model evaluation" > Run workflow. It runs the language set and the
 order agent's 100 conversations against the real model; each results file is attached to the
@@ -862,7 +912,7 @@ In groups, each committed and pushed when its checks pass:
 
 1. Selling later: 14, 15, 20, 21, 22, 96, 108. Done on 28 October.
 2. Posting and sales: 3, 7, 8, 78, 81, 82. Done on 28 October.
-3. Groups 3 and 4: 17, 18, 31, 32, 35, 36.
+3. Groups 3 and 4: 17, 18, 31, 32, 35, 36. Done on 28 October.
 4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65.
 5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73.
 
