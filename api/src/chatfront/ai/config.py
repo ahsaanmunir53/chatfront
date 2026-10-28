@@ -58,9 +58,13 @@ JOB_ROUTES: dict[str, tuple[Effort, int]] = {
     "translate": (Effort.LOW, 2048),
     "translate_product": (Effort.LOW, 4096),
     "map_columns": (Effort.LOW, 2048),
+    "map_product_columns": (Effort.LOW, 2048),
     "product_draft": (Effort.MEDIUM, 8192),
     "read_bill": (Effort.MEDIUM, 8192),
     "read_purchase": (Effort.MEDIUM, 8192),
+    "post_product": (Effort.MEDIUM, 8192),
+    "shelf_count": (Effort.MEDIUM, 8192),
+    "video_products": (Effort.MEDIUM, 16384),
     "payment_evidence": (Effort.HIGH, 4096),
     "payment_screenshot": (Effort.XHIGH, 16384),
 }
