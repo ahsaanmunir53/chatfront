@@ -3207,6 +3207,125 @@ button {
   word-break: break-all;
 }
 
+/* Money and goods coming back: refunds with their proof, swaps and returns ------------- */
+
+.refund-columns {
+  margin-top: 12px;
+}
+
+@media (min-width: 960px) {
+  .refund-columns {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.refund-amount {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.refund-to,
+.refund-why,
+.return-said {
+  margin: 4px 0 0;
+  font-size: 15px;
+}
+
+.refund-why {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  color: var(--muted);
+}
+
+.return-said {
+  font-style: italic;
+}
+
+.refund-check {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--chili) 8%, var(--card));
+}
+
+.refund-check p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.refund-check .aside {
+  margin-top: 8px;
+  font-weight: 400;
+}
+
+.refund-upload {
+  position: relative;
+  cursor: pointer;
+}
+
+.refund-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.refund-upload:focus-within {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.refund-upload.is-busy {
+  opacity: 0.7;
+}
+
+.return-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.return-item.has-photo {
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
+.return-status {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.return-status.is-requested {
+  background: color-mix(in srgb, var(--saffron) 22%, var(--card));
+}
+
+.return-status.is-rejected {
+  color: var(--muted);
+}
+
+.return-lines {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.return-lines li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
+.return-wants {
+  font-weight: 650;
+}
+
 /* A receipt is a paper slip with torn edges; the stamp lands when the signature checks. -- */
 
 .slip,

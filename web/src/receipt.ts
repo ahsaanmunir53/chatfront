@@ -19,10 +19,16 @@ export type ReceiptPayload = {
   order_total: number;
   paid_so_far: number;
   balance: number;
-  method: "transfer" | "cod" | null;
-  verified_by: "sms" | "owner";
+  // A payment's method; a refund's is the wallet or bank it went back through.
+  method: string | null;
+  verified_by: "sms" | "owner" | "proof";
   transaction_id: string | null;
   issued_at: string;
+  // Refund receipts only (feature 28).
+  kind?: "refund";
+  refunded_so_far?: number;
+  reason?: "cancelled" | "returned" | "overpaid";
+  to?: string | null;
 };
 
 export type Verdict = "valid" | "invalid" | "unsupported";

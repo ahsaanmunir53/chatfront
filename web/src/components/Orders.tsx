@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
 import type { OwnerMe, OwnerOrder } from "../api";
+import { saveFile } from "../download";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
 import { usePolled } from "../usePolled";
@@ -22,13 +23,7 @@ export function useOrders(token: string, enabled: boolean) {
 }
 
 async function downloadLabel(token: string, code: string) {
-  const blob = await api.label(token, code);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `label-${code}.pdf`;
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  saveFile(await api.label(token, code), `label-${code}.pdf`);
 }
 
 function Risk({ order }: { order: OwnerOrder }) {

@@ -13,6 +13,7 @@ import { DashboardPanel } from "../components/Dashboard";
 import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
+import { RefundsPanel, ReturnsPanel } from "../components/Returns";
 import { PostsPanel } from "../components/Posts";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
 import { Alerts, StockPanel, useNotices } from "../components/Stock";
@@ -364,9 +365,11 @@ function Console({
       {can("stock") && (
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
+      {can("orders") && <ReturnsPanel token={token} canShip={can("ship")} />}
       {can("payments") && (
         <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
       )}
+      {can("payments") && <RefundsPanel me={me} token={token} />}
       {can("books") && (
         <BooksPanel me={me} token={token} books={books.books} onChange={books.refresh} />
       )}

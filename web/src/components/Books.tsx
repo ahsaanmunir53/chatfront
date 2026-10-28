@@ -21,6 +21,7 @@ const ROWS: { key: Key; pick: (sums: Sums) => number }[] = [
   { key: "console.books_expenses", pick: (s) => s.expenses },
   { key: "console.books_udhaar_given", pick: (s) => s.udhaar_given },
   { key: "console.books_write_offs", pick: (s) => s.write_offs },
+  { key: "console.books_refunds", pick: (s) => s.refunds },
 ];
 const IN_KINDS = new Set(["sale", "udhaar_paid"]);
 
@@ -119,7 +120,8 @@ function Entry({
     !entry.reversed &&
     entry.reverses === null &&
     !entry.kind.startsWith("udhaar") &&
-    entry.kind !== "write_off";
+    entry.kind !== "write_off" &&
+    entry.kind !== "refund";
   return (
     <li className={`entry-line${entry.reversed || entry.reverses ? " is-undone" : ""}`}>
       <time dateTime={entry.occurred_on}>

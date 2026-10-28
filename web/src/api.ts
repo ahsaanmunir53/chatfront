@@ -200,6 +200,48 @@ export type ConsoleMessage = {
 };
 
 export type PaymentSignal = { code: string; detail: string };
+export type RefundReason = "cancelled" | "returned" | "overpaid";
+export type Refund = {
+  id: string;
+  order_code: string;
+  customer: string;
+  amount: number;
+  reason: RefundReason;
+  to_name: string | null;
+  to_provider: string | null;
+  status: "due" | "sent";
+  return_code: string | null;
+  signals: PaymentSignal[];
+  proof_url: string | null;
+  verified_by: "proof" | "owner" | null;
+  receipt_code: string | null;
+  created_at: string;
+  sent_at: string | null;
+};
+export type Refunds = { currency: string; due: Refund[]; sent: Refund[] };
+export type RefundResult = {
+  outcome: "sent" | "check";
+  signals: PaymentSignal[];
+  receipt_code: string | null;
+  customer_told: boolean;
+};
+export type ReturnLine = { name: string; quantity: number; to: string | null };
+export type ReturnStatus = "requested" | "approved" | "rejected" | "received" | "closed";
+export type OwnerReturn = {
+  id: string;
+  code: string;
+  order_code: string;
+  customer: string;
+  kind: "exchange" | "return";
+  reason_code: string;
+  reason: string;
+  lines: ReturnLine[];
+  photo_url: string | null;
+  status: ReturnStatus;
+  approval_id: string | null;
+  exchange_order_code: string | null;
+  created_at: string;
+};
 export type PaymentReview = {
   id: string;
   order_code: string;
@@ -284,11 +326,12 @@ export type Sums = {
   cash_profit: number;
   goods_profit: number;
   write_offs: number;
+  refunds: number;
   cost_unknown: number;
 };
 export type LedgerEntry = {
   id: string;
-  kind: "sale" | "expense" | "udhaar_given" | "udhaar_paid" | "write_off";
+  kind: "sale" | "expense" | "udhaar_given" | "udhaar_paid" | "write_off" | "refund";
   category: string;
   amount: number;
   description: string;
@@ -501,6 +544,13 @@ const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
 
 type Init = Omit<RequestInit, "headers"> & { headers?: Record<string, string> };
 
+/** A PDF the console downloads with the owner's token: a shipping or return label. */
+async function pdf(token: string, path: string): Promise<Blob> {
+  const response = await fetch(API_BASE + path, { headers: bearer(token) });
+  if (!response.ok) throw new ApiError(response.status, `http_${response.status}`, "No label");
+  return response.blob();
+}
+
 async function call<T>(path: string, init?: Init): Promise<T> {
   // JSON bodies say so; a FormData body lets the browser set its multipart boundary.
   const json: Record<string, string> =
@@ -647,14 +697,31 @@ export const api = {
       headers: bearer(token),
       body: JSON.stringify({ to, courier, tracking }),
     }),
-  label: async (token: string, code: string): Promise<Blob> => {
-    const response = await fetch(
-      `${API_BASE}/api/owner/orders/${encodeURIComponent(code)}/label.pdf`,
-      { headers: bearer(token) },
-    );
-    if (!response.ok) throw new ApiError(response.status, `http_${response.status}`, "No label");
-    return response.blob();
+  label: (token: string, code: string) =>
+    pdf(token, `/api/owner/orders/${encodeURIComponent(code)}/label.pdf`),
+  returnLabel: (token: string, returnId: string) =>
+    pdf(token, `/api/owner/returns/${encodeURIComponent(returnId)}/label.pdf`),
+  refunds: (token: string) => call<Refunds>("/api/owner/refunds", { headers: bearer(token) }),
+  refundProof: (token: string, refundId: string, file: Blob) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<RefundResult>(`/api/owner/refunds/${encodeURIComponent(refundId)}/proof`, {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
   },
+  recordRefund: (token: string, refundId: string) =>
+    call<RefundResult>(`/api/owner/refunds/${encodeURIComponent(refundId)}/record`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  returns: (token: string) => call<OwnerReturn[]>("/api/owner/returns", { headers: bearer(token) }),
+  returnReceived: (token: string, returnId: string) =>
+    call<{ code: string; refund: number }>(
+      `/api/owner/returns/${encodeURIComponent(returnId)}/received`,
+      { method: "POST", headers: bearer(token) },
+    ),
   track: (code: string) => call<Parcel>(`/api/track/${encodeURIComponent(code)}`),
   receipt: (code: string) => call<ReceiptCheck>(`/api/receipts/${encodeURIComponent(code)}`),
   resumeHandover: (token: string, handoverId: string) =>

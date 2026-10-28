@@ -95,8 +95,13 @@ export function ReceiptPage() {
     timeStyle: "short",
   });
   const valid = verdict === "valid" || (verdict === "unsupported" && receipt.valid);
+  const refund = p.kind === "refund";
   const method: Key = p.method === "cod" ? "receipt.method_cod" : "receipt.method_transfer";
-  const by: Key = p.verified_by === "sms" ? "receipt.verified_sms" : "receipt.verified_owner";
+  const by: Key = {
+    sms: "receipt.verified_sms",
+    owner: "receipt.verified_owner",
+    proof: "receipt.verified_proof",
+  }[p.verified_by] as Key;
 
   return (
     <Page>
@@ -116,9 +121,12 @@ export function ReceiptPage() {
           )}
         </header>
         <p className="slip-paid">
-          <span>{t("receipt.amount")}</span>
+          <span>{refund ? t("receipt.refund_amount") : t("receipt.amount")}</span>
           <strong>{money(p.amount)}</strong>
         </p>
+        {refund && p.reason && (
+          <p className="slip-reason">{t("refund.reason", { reason: p.reason })}</p>
+        )}
         {p.items.length > 0 && (
           <section className="slip-items" aria-label={t("receipt.items")}>
             <ul>
@@ -140,12 +148,25 @@ export function ReceiptPage() {
             <dt>{t("receipt.paid_so_far")}</dt>
             <dd>{money(p.paid_so_far)}</dd>
           </div>
+          {refund ? (
+            <>
+              <div>
+                <dt>{t("receipt.refunded_so_far")}</dt>
+                <dd>{money(p.refunded_so_far ?? p.amount)}</dd>
+              </div>
+              <div>
+                <dt>{t("receipt.refund_to")}</dt>
+                <dd dir="auto">{[p.to, p.method].filter(Boolean).join(", ") || "—"}</dd>
+              </div>
+            </>
+          ) : (
+            <div>
+              <dt>{t("receipt.balance")}</dt>
+              <dd>{money(p.balance)}</dd>
+            </div>
+          )}
           <div>
-            <dt>{t("receipt.balance")}</dt>
-            <dd>{money(p.balance)}</dd>
-          </div>
-          <div>
-            <dt>{t(method)}</dt>
+            <dt>{refund ? t("receipt.checked") : t(method)}</dt>
             <dd>{t(by)}</dd>
           </div>
           {p.transaction_id && (
