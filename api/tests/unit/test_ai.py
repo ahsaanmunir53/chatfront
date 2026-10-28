@@ -291,6 +291,9 @@ class TestClient:
     async def test_no_endpoints(self) -> None:
         client, _ = client_for()
         assert not client.is_live(Role.CHAT)
+        assert client.mode == "no keys"  # what /health says, so a deploy without keys shows
+        assert client_for(BASETEN)[0].mode == "live"
+        assert client_for(BASETEN, use_mock=True)[0].mode == "mock"
         with pytest.raises(ModelUnavailable, match="no endpoint"):
             await client.complete(chat())
 

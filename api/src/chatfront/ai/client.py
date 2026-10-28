@@ -76,6 +76,13 @@ class AiClient:
     def is_live(self, role: Role) -> bool:
         return not self.use_mock and bool(self.roles[role].endpoints)
 
+    @property
+    def mode(self) -> str:
+        """What answers: recorded fixtures, the real models, or nothing (no key in production)."""
+        if self.use_mock:
+            return "mock"
+        return "live" if any(config.endpoints for config in self.roles.values()) else "no keys"
+
     async def complete(self, req: ChatRequest) -> ChatResult:
         config = self.roles[req.role]
         routed_effort, routed_tokens = route(config, req.prompt)

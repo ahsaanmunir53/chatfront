@@ -23,7 +23,7 @@ ServicesDep = Annotated[Services, Depends(get_services)]
 async def health(services: ServicesDep) -> dict[str, object]:
     async with services.db.system() as session:
         await session.execute(text("SELECT 1"))
-    return {"ok": True, "models": "mock" if services.ai.use_mock else "live"}
+    return {"ok": True, "models": services.ai.mode}
 
 
 @router.post("/internal/cron")
