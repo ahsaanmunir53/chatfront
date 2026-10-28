@@ -252,12 +252,9 @@ async def test_the_owner_ships_a_cod_order_and_a_return_makes_the_next_one_risky
     assert not_yet.status_code == 409
 
 
-async def deliver_lawn(
-    client: Client, services: Services
-) -> tuple[Order, dict[str, str], str, list[dict[str, Any]]]:
-    """A lawn suit paid for by transfer, packed, dispatched and delivered: the order, the
-    buyer's chat header and token, and their messages."""
-    owner = await owner_auth(services)
+async def paid_lawn(client: Client, services: Services) -> tuple[Order, dict[str, str], str]:
+    """A lawn suit ordered in the web chat and paid for by transfer: the order, and the
+    buyer's chat header and token."""
     code = await code_of(client, "Printed lawn 3-piece")
     lawn_order(
         services,
@@ -279,6 +276,16 @@ async def deliver_lawn(
         await session.execute(
             update(Order).where(Order.id == order.id).values(status="paid", paid=order.total)
         )
+    return order, guest, token
+
+
+async def deliver_lawn(
+    client: Client, services: Services
+) -> tuple[Order, dict[str, str], str, list[dict[str, Any]]]:
+    """A paid lawn suit packed, dispatched and delivered: the order, the buyer's chat header
+    and token, and their messages."""
+    owner = await owner_auth(services)
+    order, guest, token = await paid_lawn(client, services)
     url = f"/api/owner/orders/{order.code}/status"
     for step in ("packed", "dispatched", "delivered"):
         assert (await client.post(url, json={"to": step}, headers=owner)).status_code == 200

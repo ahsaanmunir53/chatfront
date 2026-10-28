@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
 
+// A one-pixel PNG: enough for the packing check to receive a photo.
+const PIXEL =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
 test("a vague address gets a pin, and the owner packs, labels and dispatches the order", async ({
   browser,
   page,
@@ -48,16 +52,33 @@ test("a vague address gets a pin, and the owner packs, labels and dispatches the
   const row = orders.locator(".order-row").filter({ hasText: code });
   await expect(row).toContainText("Confirmed", { timeout: 20_000 });
   await expect(row.getByTitle("Location pin")).toBeVisible();
+
+  // The day's pick list has it (feature 103); a photo of the packed parcel needs the model
+  // before it can be checked (feature 102), so the mock says so.
+  await page.reload();
+  const pickList = page.getByRole("region", { name: "Today's pick list" });
+  await expect(pickList).toContainText(code, { timeout: 15_000 });
+  const slips = page.waitForEvent("download");
+  await pickList.getByRole("button", { name: "Print the list and packing slips" }).click();
+  expect((await slips).suggestedFilename()).toMatch(/^pick-list-.*\.pdf$/);
+  await row.getByLabel("Check packing").setInputFiles({
+    name: "packed.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(PIXEL, "base64"),
+  });
+  await expect(row.getByRole("alert")).toContainText("Photo checks need the model");
   await row.getByRole("button", { name: "Mark packed" }).click();
   await expect(row).toContainText("Packed", { timeout: 15_000 });
   const download = page.waitForEvent("download");
   await row.getByRole("button", { name: "Shipping label" }).click();
   expect((await download).suggestedFilename()).toBe(`label-${code}.pdf`);
   await row.getByRole("button", { name: "Mark dispatched" }).click();
-  await row.getByLabel("Courier").fill("TCS");
+  await row.getByLabel("Courier", { exact: true }).fill("TCS");
   await row.getByLabel("Tracking number").fill("7712345");
+  await row.getByLabel("Courier charge (optional)").fill("250");
   await row.getByRole("button", { name: "Mark dispatched" }).last().click();
   await expect(row).toContainText("On its way", { timeout: 15_000 });
+  await expect(row).toContainText("Courier charged Rs 250");
 
   // The customer is told, and follows the parcel.
   const sent = customer.locator(".bubble-out").filter({ hasText: "is on its way" }).last();
@@ -115,5 +136,10 @@ test("a vague address gets a pin, and the owner packs, labels and dispatches the
   await expect(page.getByRole("region", { name: "Your fraud reports" })).toContainText(
     "Refused a cash-on-delivery parcel",
   );
+
+  // Profit by product takes in what the courier charged (feature 51).
+  const stock = page.getByRole("region", { name: "Stock" });
+  await expect(stock.getByRole("columnheader", { name: "True profit" })).toBeVisible();
+  await expect(stock.locator(".profit-table tbody tr").first()).toContainText("Sugar");
   await customerContext.close();
 });
