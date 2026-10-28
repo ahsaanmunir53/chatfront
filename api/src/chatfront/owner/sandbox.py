@@ -7,7 +7,10 @@ Each visitor gets a separate shop, so what one judge changes never reaches anoth
 from __future__ import annotations
 
 import logging
+import uuid
+from collections.abc import Sequence
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, func, select
 
@@ -24,6 +27,9 @@ from chatfront.media.models import Media
 from chatfront.modules.registry import ModuleRegistry
 from chatfront.owner.sessions import issue
 from chatfront.templates import get_template
+
+if TYPE_CHECKING:
+    from chatfront.services import Services
 
 log = logging.getLogger(__name__)
 
@@ -70,18 +76,25 @@ async def copy_demo_shop(
     return tenant, issue(owner.id, tenant.id, secret, ttl=COPY_LIFETIME)
 
 
-async def remove_expired_shops(ctx: JobContext) -> None:
-    services = ctx.services
+async def remove_shops(services: Services, ids: Sequence[uuid.UUID]) -> None:
+    """Delete shops with everything they hold, and their stored files."""
+    if not ids:
+        return
     async with services.db.system() as session:
-        expired = list(await session.scalars(select(Tenant.id).where(Tenant.expires_at < utcnow())))
         keys = list(
-            await session.scalars(select(Media.storage_key).where(Media.tenant_id.in_(expired)))
+            await session.scalars(select(Media.storage_key).where(Media.tenant_id.in_(ids)))
         )
-        if expired:
-            await session.execute(delete(Tenant).where(Tenant.id.in_(expired)))
+        await session.execute(delete(Tenant).where(Tenant.id.in_(ids)))
     for key in keys:
         try:
             await services.storage.delete(key)
         except AppError:
-            log.warning("could not delete a stored file of an expired shop")
+            log.warning("could not delete a stored file of a removed shop")
+
+
+async def remove_expired_shops(ctx: JobContext) -> None:
+    services = ctx.services
+    async with services.db.system() as session:
+        expired = list(await session.scalars(select(Tenant.id).where(Tenant.expires_at < utcnow())))
+    await remove_shops(services, expired)
     log.info("removed %d expired shops", len(expired))

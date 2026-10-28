@@ -16,7 +16,7 @@ from pydantic import BaseModel, ValidationError
 from chatfront.ai.config import Endpoint, RoleConfig, cost_millipaisa, route
 from chatfront.ai.mock import MOCK_ENDPOINT
 from chatfront.ai.provider import Provider
-from chatfront.ai.types import ChatMessage, ChatRequest, ChatResult, JsonSchema, Role
+from chatfront.ai.types import ChatMessage, ChatRequest, ChatResult, JsonSchema, Role, ToolCall
 from chatfront.core.errors import AppError
 from chatfront.core.logging import redact
 
@@ -47,6 +47,7 @@ class CallRecord:
     error: str | None
     ref: tuple[str, str] | None
     effort: str | None = None
+    tool_calls: tuple[ToolCall, ...] = ()  # what the model asked to run (the evaluation reads it)
 
 
 Meter = Callable[[CallRecord], Awaitable[None]]
@@ -147,6 +148,7 @@ class AiClient:
             error=redact(error)[:500] if error else None,
             ref=req.ref,
             effort=req.effort.value if req.effort else None,
+            tool_calls=result.tool_calls if result else (),
         )
         try:
             await self.meter(record)

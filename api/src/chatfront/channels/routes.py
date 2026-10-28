@@ -189,7 +189,7 @@ def _identity(
     return ChatIdentity(chat_token, None)
 
 
-async def _accept(
+async def accept_web(
     services: Services,
     account: ChannelAccount,
     identity: ChatIdentity,
@@ -199,7 +199,8 @@ async def _accept(
     text: str | None,
     payload: dict[str, Any] | None = None,
     media_id: uuid.UUID | None = None,
-) -> bool:
+) -> uuid.UUID | None:
+    """Store a message typed into the web chat and queue its reply; None for a repeat."""
     tag = hashlib.sha256(identity.sender_id.encode()).hexdigest()[:12]
     message = Inbound(
         channel=Channel.WEBCHAT,
@@ -213,7 +214,7 @@ async def _accept(
         staff_id=identity.staff_id,
         media_id=media_id,
     )
-    return await channels.accept(services.db, account, message, services.keys) is not None
+    return await channels.accept(services.db, account, message, services.keys)
 
 
 @router.post("/api/shops/{slug}/chat/session")
@@ -239,10 +240,10 @@ async def post_chat_message(
         kind, payload = Kind.LOCATION, {"location": body.location.model_dump()}
     elif body.button_id:
         kind, payload = Kind.BUTTON, {"button_id": body.button_id}
-    accepted = await _accept(
+    accepted = await accept_web(
         services, account, identity, body.client_id, kind=kind, text=body.text, payload=payload
     )
-    return {"accepted": accepted}
+    return {"accepted": accepted is not None}
 
 
 _MEDIA_KINDS = {MediaKind.IMAGE: Kind.IMAGE, MediaKind.AUDIO: Kind.AUDIO}
@@ -279,10 +280,10 @@ async def post_chat_media(
     kind = _MEDIA_KINDS.get(MediaKind(media.kind))
     if kind is None:
         raise AppError("unsupported_media", "Send a photo or a voice note", status_code=415)
-    accepted = await _accept(
+    accepted = await accept_web(
         services, account, identity, client_id, kind=kind, text=caption or None, media_id=media.id
     )
-    return {"accepted": accepted}
+    return {"accepted": accepted is not None}
 
 
 @router.get("/api/shops/{slug}/chat/messages")

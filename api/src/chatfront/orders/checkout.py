@@ -258,13 +258,10 @@ async def _place(
         return cart, chat.id
 
 
-@router.post("")
-async def checkout(
-    slug: str, body: CheckoutIn, request: Request, services: ServicesDep, token: ChatToken
+async def place_from_page(
+    services: Services, tenant: Tenant, token: str, body: CheckoutIn
 ) -> PlacedOut:
-    """Place the order from the page. Nothing is kept unless every check passes."""
-    _limit(services, request, slug)
-    tenant = await _shop(services, slug)
+    """Place the order and send its payment instructions to the buyer's web chat."""
     lang = load_registry().ui_language(body.lang or tenant.default_lang).tag
     try:
         order, chat_id = await _place(services, tenant, token, body)
@@ -282,3 +279,12 @@ async def checkout(
         payment_method=order.payment_method or body.payment_method,
         message=message,
     )
+
+
+@router.post("")
+async def checkout(
+    slug: str, body: CheckoutIn, request: Request, services: ServicesDep, token: ChatToken
+) -> PlacedOut:
+    """Place the order from the page. Nothing is kept unless every check passes."""
+    _limit(services, request, slug)
+    return await place_from_page(services, await _shop(services, slug), token, body)
