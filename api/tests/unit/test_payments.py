@@ -229,6 +229,7 @@ def _reading(**extra: object) -> PaymentReading:
         "provider": "JazzCash",
         "status": "successful",
         "amount": 2497.0,
+        "currency": "PKR",
         "transaction_id": "012345678901",
         "paid_at": "2026-10-27T17:02:00",  # Karachi time, 12:02 UTC
         "payer_name": "Ayesha",

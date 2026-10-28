@@ -40,6 +40,7 @@ def reading(amount: float | None, **extra: Any) -> dict[str, Any]:
         "provider": "JazzCash",
         "status": "successful",
         "amount": amount,
+        "currency": None,
         "transaction_id": TID,
         "paid_at": None,
         "payer_name": "Ayesha Test",

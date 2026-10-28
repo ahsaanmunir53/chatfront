@@ -73,6 +73,7 @@ def _reading(**extra: object) -> PaymentReading:
             "provider": "JazzCash",
             "status": "successful",
             "amount": 4999.0,
+            "currency": None,
             "transaction_id": "998877665544",
             "paid_at": None,
             "payer_name": "Gulmohar Lawn House",

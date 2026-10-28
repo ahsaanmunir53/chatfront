@@ -7,6 +7,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 
+from chatfront.core.i18n import t
 from chatfront.orders.models import Order
 from chatfront.services import Services
 from tests.integration.chat import Client, customer, owner_auth
@@ -85,7 +86,11 @@ async def test_the_page_places_an_order_into_the_buyers_chat(
     assert order["code"] in order["message"]
     assert "Rs 149" in order["message"]  # the advance to send now
     chat = (await client.get(f"/api/shops/{SHOP}/chat/messages", headers=guest)).json()
-    assert [m["body"] for m in chat] == [order["message"]]
+    # The order, then, once, whether they would like offers (feature 108).
+    assert [m["body"] for m in chat] == [
+        order["message"],
+        t("consent.offers_ask", "en", shop="Gulmohar Lawn House"),
+    ]
     async with services.db.system() as session:
         stored = await session.scalar(select(Order).where(Order.code == order["code"]))
     assert stored is not None
@@ -100,7 +105,9 @@ async def test_the_page_places_an_order_into_the_buyers_chat(
     # The same buyer again, by transfer: a second order in the same chat.
     again = await place(client, token, payment_method="transfer")
     assert again.json()["status"] == "awaiting_payment"
-    assert len((await client.get(f"/api/shops/{SHOP}/chat/messages", headers=guest)).json()) == 2
+    chat = (await client.get(f"/api/shops/{SHOP}/chat/messages", headers=guest)).json()
+    assert len(chat) == 3  # not asked about offers a second time
+    assert chat[-1]["body"] == again.json()["message"]
 
 
 async def test_nothing_is_kept_when_a_check_fails(app: tuple[Client, Services]) -> None:

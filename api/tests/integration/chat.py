@@ -22,6 +22,7 @@ from chatfront.core.i18n import t
 from chatfront.core.models import Staff, StaffRole, Tenant
 from chatfront.owner.sessions import issue
 from chatfront.services import Services
+from chatfront.shield.consent import BUTTON
 from tests.integration.conftest import SHOP
 
 Client = httpx.AsyncClient
@@ -95,15 +96,22 @@ async def send_file(
     return await settle(client, services, slug, auth)
 
 
+def offers_question(message: dict[str, Any]) -> bool:
+    """The once-only "may we send you offers?" question after a first order (feature 108)."""
+    buttons = message["payload"].get("buttons") or []
+    return any(str(choice["id"]).startswith(BUTTON) for choice in buttons)
+
+
 async def settle(
-    client: Client, services: Services, slug: str, auth: dict[str, str]
+    client: Client, services: Services, slug: str, auth: dict[str, str], *, offers: bool = False
 ) -> list[dict[str, Any]]:
+    """The chat once every job has run; without the offers question unless asked for."""
     assert services.worker is not None
     while await services.worker.run_once():
         pass
     response = await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)
     assert response.status_code == 200
-    return list(response.json())
+    return [m for m in response.json() if offers or not offers_question(m)]
 
 
 def last(messages: list[dict[str, Any]]) -> dict[str, Any]:

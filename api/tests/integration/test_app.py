@@ -327,6 +327,7 @@ async def test_cron(app: tuple[httpx.AsyncClient, Services], seeded: Database) -
             "profit-cards",
             "pick-lists",
             "stock-mornings",
+            "cart-reminders",
         ]
     }
     assert services.worker is not None

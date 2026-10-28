@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -115,6 +116,20 @@ class TestCatalogs:
             assert list(catalog) == list(source), tag
             for key, text in catalog.items():
                 assert _arguments(parse(text)) == _arguments(parse(source[key])), (tag, key)
+
+    def test_every_key_the_code_names_is_in_the_catalogs(self) -> None:
+        """A missing key fails a job at run time, so look for one here: each t("...") key,
+        and each payment signal, whose words the owner reads."""
+        source = load_catalogs()["en"]
+        code = Path(__file__).parents[2] / "src" / "chatfront"
+        named: set[str] = set()
+        for file in code.rglob("*.py"):
+            text = file.read_text(encoding="utf-8")
+            named |= set(re.findall(r'\bt\(\s*"([a-z_][a-z0-9_.]+)"', text))
+            if file.parent.name == "payments":
+                found = re.findall(r'Signal\(\s*"([a-z_]+)"', text)
+                named |= {f"payment.signal.{signal}" for signal in found}
+        assert sorted(named - set(source)) == []
 
     def test_model_drafted_catalogs_are_marked_for_native_review(self) -> None:
         review = json.loads((I18N / "review.json").read_text(encoding="utf-8"))["catalogs"]
