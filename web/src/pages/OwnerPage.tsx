@@ -9,12 +9,12 @@ import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { ChatView } from "../components/ChatView";
 import { DashboardPanel } from "../components/Dashboard";
+import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
 import { Alerts, StockPanel, useNotices } from "../components/Stock";
 import { ActivityPanel, TeamPanel } from "../components/Team";
-import { Waiting, useHandovers } from "../components/Waiting";
 import { Page } from "../components/Shell";
 import { languageOf, scriptLang } from "../i18n";
 import type { Key } from "../i18n";
@@ -275,7 +275,6 @@ function Console({
   const [saves, setSaves] = useState(0);
   const [panel, setPanel] = useState<"chat" | "products">("chat");
   const can = (right: string) => me.rights.includes(right);
-  const waiting = useHandovers(token, can("chats"));
   const payments = usePayments(token, can("payments"));
   const orders = useOrders(token, can("orders"));
   const books = useBooks(token, can("books"));
@@ -323,7 +322,7 @@ function Console({
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
       <Approvals token={token} list={approvals.list} onChange={approvals.refresh} />
       <Alerts me={me} token={token} list={notices.list} onChange={notices.refresh} />
-      {can("chats") && <Waiting token={token} list={waiting.list} onChange={waiting.refresh} />}
+      {can("chats") && <InboxPanel me={me} token={token} />}
       {can("payments") && (
         <PaymentReviews me={me} token={token} data={payments.data} onChange={payments.refresh} />
       )}

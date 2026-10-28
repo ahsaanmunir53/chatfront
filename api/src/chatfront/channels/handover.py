@@ -222,8 +222,10 @@ async def start_handover(
     *,
     reason: str,
     requested_by: str,
+    taken_by: uuid.UUID | None = None,
 ) -> Handover:
-    """Stop the agent on this chat and tell the owner. Asking twice changes nothing."""
+    """Stop the agent on this chat and tell the owner. Asking twice changes nothing. A staff
+    member who takes the chat from the inbox (feature 76) has it at once; nobody is told."""
     async with services.db.tenant(tenant.id) as session:
         open_one = await session.scalar(
             select(Handover).where(
@@ -242,6 +244,7 @@ async def start_handover(
         conversation = await session.get(Conversation, conversation_id)
         assert conversation is not None
         conversation.status = HANDOVER
+        conversation.assigned_staff_id = taken_by
         handover = Handover(
             tenant_id=tenant.id,
             conversation_id=conversation_id,
@@ -254,12 +257,13 @@ async def start_handover(
         await record(
             session,
             tenant.id,
-            AGENT,
+            Actor(ActorType.STAFF, str(taken_by)) if taken_by else AGENT,
             "conversation.handover",
             entity=("conversation", str(conversation_id)),
             data={"reason": reason[:300], "requested_by": requested_by},
         )
-    await _tell_owner(services, tenant, owner, handover)
+    if taken_by is None:
+        await _tell_owner(services, tenant, owner, handover)
     return handover
 
 
@@ -299,7 +303,7 @@ async def resume(
         tenant = await session.get(Tenant, tenant_id)
         assert conversation is not None
         assert tenant is not None
-        conversation.status = OPEN
+        conversation.status, conversation.assigned_staff_id = OPEN, None
         await record(
             session,
             tenant_id,

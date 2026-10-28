@@ -344,11 +344,11 @@ async def test_staff_roles_limit_what_each_person_can_do(app: tuple[Client, Serv
     me = (await client.get("/api/owner/me", headers=sana)).json()
     assert (me["role"], "books_write" in me["rights"]) == ("accounts", True)
     assert (await client.get("/api/owner/books", headers=sana)).status_code == 200
-    assert (await client.get("/api/owner/handovers", headers=sana)).status_code == 403
+    assert (await client.get("/api/owner/inbox", headers=sana)).status_code == 403
     assert (await client.get("/api/owner/team", headers=sana)).status_code == 403
     assert (await client.get("/api/owner/settings", headers=sana)).status_code == 403
     assert (await client.get("/api/owner/books", headers=ali_auth)).status_code == 403
-    assert (await client.get("/api/owner/handovers", headers=ali_auth)).status_code == 200
+    assert (await client.get("/api/owner/inbox", headers=ali_auth)).status_code == 200
 
     # The same rights in the chat: accounts may spend, not change prices; sales may do neither.
     card = last(await say(client, services, slug, sana, "petrol 900"))

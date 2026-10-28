@@ -366,9 +366,9 @@ async def test_a_customer_asks_for_a_person_and_the_owner_takes_over(
     assert quiet[-1]["direction"] == "in"  # a person has the chat: the agent stays quiet
 
     owner = await owner_auth(services)
-    inbox = (await client.get("/api/owner/handovers", headers=owner)).json()
+    inbox = (await client.get("/api/owner/inbox?show=waiting", headers=owner)).json()["items"]
     assert len(inbox) == 1
-    assert inbox[0]["requested_by"] == "customer"
+    assert inbox[0]["state"] == "waiting"
     assert len(inbox[0]["summary"].splitlines()) == 3  # code's lines: no summary model here
     chat_id = inbox[0]["conversation_id"]
     seen = (await client.get(f"/api/owner/conversations/{chat_id}/messages", headers=owner)).json()
@@ -377,12 +377,15 @@ async def test_a_customer_asks_for_a_person_and_the_owner_takes_over(
     assert (
         await client.post(f"/api/owner/conversations/{chat_id}/reply", json=reply, headers=owner)
     ).json() == {"sent": True}
-    resumed = await client.post(f"/api/owner/handovers/{inbox[0]['id']}/resume", headers=owner)
+    resumed = await client.post(
+        f"/api/owner/handovers/{inbox[0]['handover_id']}/resume", headers=owner
+    )
     assert resumed.json() == {"resumed": True}
     messages = await settle(client, services, SHOP, guest)
     assert messages[-2]["body"] == "Ji main hoon, bataiye"
     assert messages[-1]["body"] in said("handover.back")
-    assert (await client.get("/api/owner/handovers", headers=owner)).json() == []
+    waiting = (await client.get("/api/owner/inbox?show=waiting", headers=owner)).json()
+    assert waiting["items"] == []
     back = await say(client, services, SHOP, guest, "salam", token=token)
     assert back[-1]["direction"] == "out"  # the agent answers again
     late = await client.post(f"/api/owner/conversations/{chat_id}/reply", json=reply, headers=owner)

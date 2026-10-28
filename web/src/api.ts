@@ -115,6 +115,7 @@ export type Placed = {
 export type OwnerMe = {
   slug: string;
   shop_name: string;
+  staff_id: string;
   staff_name: string;
   lang: string;
   template: string;
@@ -136,15 +137,26 @@ export type OwnerProduct = {
   variants: { id: string; options: Record<string, string>; price: number; stock: number | null }[];
 };
 
-export type Handover = {
-  id: string;
+export type InboxState = "assistant" | "waiting" | "person";
+export type InboxPerson = { id: string; name: string };
+export type InboxItem = {
   conversation_id: string;
   customer: string | null;
   channel: string;
-  reason: string;
-  summary: string;
-  requested_by: string;
-  created_at: string;
+  known_on: string[];
+  state: InboxState;
+  handover_id: string | null;
+  summary: string | null;
+  assigned: InboxPerson | null;
+  last: { by: "customer" | "agent" | "staff"; kind: string; text: string | null; at: string } | null;
+  window_open: boolean;
+};
+export type InboxShow = "all" | "waiting" | "mine";
+export type Inbox = {
+  items: InboxItem[];
+  waiting: number;
+  people: InboxPerson[];
+  can_assign: boolean;
 };
 export type ConsoleMessage = {
   id: string;
@@ -552,8 +564,22 @@ export const api = {
   me: (token: string) => call<OwnerMe>("/api/owner/me", { headers: bearer(token) }),
   ownerProducts: (token: string) =>
     call<OwnerProduct[]>("/api/owner/products", { headers: bearer(token) }),
-  handovers: (token: string) => call<Handover[]>("/api/owner/handovers", { headers: bearer(token) }),
-  handoverMessages: (token: string, conversationId: string) =>
+  inbox: (token: string, show: InboxShow, channel: string) => {
+    const query = new URLSearchParams({ show, ...(channel ? { channel } : {}) });
+    return call<Inbox>(`/api/owner/inbox?${query}`, { headers: bearer(token) });
+  },
+  takeChat: (token: string, conversationId: string) =>
+    call<InboxItem>(`/api/owner/inbox/${encodeURIComponent(conversationId)}/take`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  giveChat: (token: string, conversationId: string, staffId: string | null) =>
+    call<InboxItem>(`/api/owner/inbox/${encodeURIComponent(conversationId)}/assign`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ staff_id: staffId }),
+    }),
+  chatMessages: (token: string, conversationId: string) =>
     call<ConsoleMessage[]>(
       `/api/owner/conversations/${encodeURIComponent(conversationId)}/messages`,
       { headers: bearer(token) },

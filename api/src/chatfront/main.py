@@ -21,6 +21,7 @@ from chatfront.core.settings import Settings, get_settings
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.orders.checkout import router as checkout_router
 from chatfront.owner.dashboard import router as dashboard_router
+from chatfront.owner.inbox import router as inbox_router
 from chatfront.owner.routes import router as owner_router
 from chatfront.owner.team import router as team_router
 from chatfront.payments.routes import router as payments_router
@@ -77,6 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(checkout_router)
     app.include_router(owner_router)
     app.include_router(dashboard_router)
+    app.include_router(inbox_router)
     app.include_router(team_router)
     app.include_router(books_router)
     app.include_router(shield_router)

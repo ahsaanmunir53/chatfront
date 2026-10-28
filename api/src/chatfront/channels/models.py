@@ -101,7 +101,10 @@ class IdentityLink(Base):
 
 class Conversation(Base):
     __tablename__ = "conversations"
-    __table_args__ = (UniqueConstraint("customer_id", "channel_account_id"),)
+    __table_args__ = (
+        UniqueConstraint("customer_id", "channel_account_id"),
+        Index("ix_conversations_tenant_assigned", "tenant_id", "assigned_staff_id"),
+    )
 
     id: Mapped[uuid.UUID] = id_column()
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -116,6 +119,10 @@ class Conversation(Base):
     lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # detected from the customer
     lang_choice: Mapped[str | None] = mapped_column(String(LANG_TAG))  # asked for; wins
     last_inbound_at: Mapped[datetime | None]
+    # The person who answers this chat while it is handed over (feature 76).
+    assigned_staff_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("staff.id", ondelete="SET NULL")
+    )
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -170,7 +177,7 @@ class Handover(Base):
     )
     reason: Mapped[str] = mapped_column(Text)
     summary: Mapped[str] = mapped_column(Text)  # three lines, in the owner's language
-    requested_by: Mapped[str] = mapped_column(String(12))  # customer, agent or code
+    requested_by: Mapped[str] = mapped_column(String(12))  # customer, agent, code or staff
     status: Mapped[str] = mapped_column(String(10), default=HandoverStatus.OPEN)
     resolved_at: Mapped[datetime | None]
     resolved_by: Mapped[uuid.UUID | None] = mapped_column(

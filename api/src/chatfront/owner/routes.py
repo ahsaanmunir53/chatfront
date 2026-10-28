@@ -24,15 +24,12 @@ from chatfront.channels.handover import (
     staff_language,
 )
 from chatfront.channels.models import (
-    ChannelAccount,
     Conversation,
     Direction,
-    Handover,
-    HandoverStatus,
     Message,
 )
 from chatfront.core.errors import AppError, Forbidden, NotFound
-from chatfront.core.models import Customer, Staff, Tenant
+from chatfront.core.models import Staff, Tenant
 from chatfront.owner.rights import Can, rights
 from chatfront.owner.sandbox import copy_demo_shop
 from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
@@ -98,6 +95,7 @@ class SignedIn(BaseModel):
 class Me(BaseModel):
     slug: str
     shop_name: str
+    staff_id: uuid.UUID
     staff_name: str
     lang: str
     template: str
@@ -156,6 +154,7 @@ async def me(session: OwnerDep, services: ServicesDep) -> Me:
     return Me(
         slug=tenant.slug,
         shop_name=tenant.name,
+        staff_id=staff.id,
         staff_name=staff.name,
         lang=staff.lang or tenant.default_lang,
         template=tenant.template,
@@ -222,17 +221,6 @@ async def set_translation(
 # -- chats handed over to the owner (feature 90) ------------------------------------------
 
 
-class HandoverOut(BaseModel):
-    id: uuid.UUID
-    conversation_id: uuid.UUID
-    customer: str | None
-    channel: str
-    reason: str
-    summary: str
-    requested_by: str
-    created_at: datetime
-
-
 class ConsoleMessage(BaseModel):
     id: uuid.UUID
     direction: str
@@ -245,33 +233,6 @@ class ConsoleMessage(BaseModel):
 
 class StaffReply(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
-
-
-@router.get("/handovers")
-async def handovers(session: ChatsDep, services: ServicesDep) -> list[HandoverOut]:
-    async with services.db.tenant(session.tenant_id) as db:
-        rows = await db.execute(
-            select(Handover, Customer.display_name, ChannelAccount.channel)
-            .join(Conversation, Conversation.id == Handover.conversation_id)
-            .join(Customer, Customer.id == Conversation.customer_id)
-            .join(ChannelAccount, ChannelAccount.id == Conversation.channel_account_id)
-            .where(Handover.status == HandoverStatus.OPEN)
-            .order_by(Handover.created_at.desc())
-            .limit(50)
-        )
-        return [
-            HandoverOut(
-                id=handover.id,
-                conversation_id=handover.conversation_id,
-                customer=name,
-                channel=channel,
-                reason=handover.reason,
-                summary=handover.summary,
-                requested_by=handover.requested_by,
-                created_at=handover.created_at,
-            )
-            for handover, name, channel in rows.all()
-        ]
 
 
 async def _conversation(

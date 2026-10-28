@@ -2542,13 +2542,13 @@ button {
   background: var(--saffron);
 }
 
-.waiting-chat {
+.inbox-chat {
   display: grid;
   gap: 10px;
   margin-top: 12px;
 }
 
-.waiting-thread {
+.inbox-thread {
   display: grid;
   gap: 8px;
   max-height: 320px;
@@ -2560,7 +2560,7 @@ button {
   background: var(--paper);
 }
 
-.waiting-line {
+.inbox-line {
   display: grid;
   gap: 2px;
   max-width: 85%;
@@ -2570,30 +2570,30 @@ button {
   border: 1px solid var(--line);
 }
 
-.waiting-line.by-staff {
+.inbox-line.by-staff {
   justify-self: end;
   background: color-mix(in srgb, var(--saffron) 20%, var(--card));
 }
 
-.waiting-who {
+.inbox-who {
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
 }
 
-.waiting-original {
+.inbox-original {
   color: var(--muted);
   font-size: 13px;
 }
 
-.waiting-reply {
+.inbox-reply {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: 8px;
 }
 
-.waiting-reply textarea {
+.inbox-reply textarea {
   flex: 1;
   min-width: 0;
   padding: 9px 12px;
@@ -2606,9 +2606,274 @@ button {
   resize: vertical;
 }
 
-.waiting-reply [role="alert"] {
+.inbox-reply [role="alert"] {
   flex-basis: 100%;
   color: var(--chili);
+  font-size: 14px;
+}
+
+/* The inbox: every customer chat, newest first. A chili edge means someone waits for a
+   person, saffron means a person has it; the assistant's chats stay plain. ----------------- */
+
+.inbox {
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.inbox-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+
+.inbox-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  font-stretch: 88%;
+}
+
+.inbox-waiting {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--chili);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.inbox-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inbox-shows {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.inbox-shows button {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.inbox-shows button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.inbox-channel select,
+.inbox-give select {
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.inbox-grid {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 860px) {
+  .inbox-grid {
+    grid-template-columns: minmax(260px, 340px) 1fr;
+    align-items: start;
+  }
+}
+
+.inbox-list {
+  display: grid;
+  gap: 2px;
+  max-height: 560px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.inbox-row {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-inline-start: 4px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.inbox-row:hover,
+.inbox-row[aria-current="true"] {
+  background: var(--paper);
+}
+
+.inbox-row.is-waiting {
+  border-inline-start-color: var(--chili);
+}
+
+.inbox-row.is-person {
+  border-inline-start-color: var(--saffron);
+}
+
+.inbox-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.inbox-row-head strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-row-channel,
+.inbox-row-time {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.inbox-row-time {
+  margin-inline-start: auto;
+}
+
+.inbox-row-last {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-state {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.inbox-state.is-waiting {
+  color: var(--chili);
+}
+
+.inbox-state.is-person {
+  color: color-mix(in srgb, var(--saffron) 55%, var(--text));
+}
+
+.inbox-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.inbox-open {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.inbox-open-head {
+  display: grid;
+  gap: 2px;
+}
+
+.inbox-open-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.inbox-open-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.inbox-back {
+  justify-self: start;
+  margin-bottom: 4px;
+  padding: 6px 12px;
+  background: var(--card);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media (min-width: 860px) {
+  .inbox-back {
+    display: none;
+  }
+}
+
+@media (max-width: 859px) {
+  .inbox.has-open .inbox-list,
+  .inbox.has-open .inbox-empty {
+    display: none;
+  }
+}
+
+.inbox-summary {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--chili) 8%, var(--card));
+  white-space: pre-line;
+}
+
+.inbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inbox-actions .action {
+  padding: 8px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.inbox-actions .action-primary {
+  background: var(--saffron);
+}
+
+.inbox-give {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.inbox-note {
+  margin: 0;
+  color: var(--muted);
   font-size: 14px;
 }
 
