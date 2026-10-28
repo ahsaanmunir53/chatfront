@@ -64,6 +64,7 @@ class Change(Strict):
         "free_delivery_over",
         "low_stock_limit",
         "expiry",
+        "preorder",
     ]
     product: str | None
     value_number: float | None

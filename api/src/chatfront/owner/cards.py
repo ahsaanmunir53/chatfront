@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import date
 from typing import Any
 
 from chatfront.catalog.service import ProductInput
 from chatfront.channels.types import Button, OutButtons
-from chatfront.core.countries import shop_money
+from chatfront.core.countries import format_day, get_pack, shop_money
 from chatfront.core.i18n import t
 from chatfront.core.languages import load_registry
 from chatfront.core.models import Tenant
@@ -77,6 +78,17 @@ def change_line(tenant: Tenant, op: dict[str, Any], lang: str) -> str:
         return t("owner.change_low_stock_shop", lang, old=old, new=op["new"])
     if kind in ("available", "unavailable"):
         return t(f"owner.change_{kind}", lang, name=op["name"])
+    if kind == "preorder":
+        if not op["ships_from"]:
+            return t("owner.change_preorder_off", lang, name=op["name"])
+        day = format_day(
+            date.fromisoformat(op["ships_from"]),
+            get_pack(tenant.country),
+            load_registry().get(lang),
+        )
+        if op["limit"] is None:
+            return t("owner.change_preorder", lang, name=op["name"], date=day)
+        return t("owner.change_preorder_limit", lang, name=op["name"], date=day, count=op["limit"])
     if kind in ("delivery_fee", "free_delivery_over"):
         none = t("owner.none_set", lang)
         old = shop_money(tenant, op["old"], lang) if op["old"] is not None else none

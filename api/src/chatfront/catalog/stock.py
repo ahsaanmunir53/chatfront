@@ -17,12 +17,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.catalog.models import Product, Variant
-from chatfront.channels.handover import staff_language
+from chatfront.channels.language import staff_language
 from chatfront.channels.types import Button
+from chatfront.core.clock import utcnow
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.core.provisioning import owner_of
 from chatfront.jobs.queue import JobContext, enqueue
+from chatfront.orders.models import WaitlistEntry, WaitStatus
 from chatfront.shield.autonomy import Action, Level, level
 from chatfront.stock import notices
 
@@ -30,6 +32,8 @@ if TYPE_CHECKING:
     from chatfront.services import Services
 
 LOW_STOCK_JOB = "stock.low_alert"
+BACK_IN_STOCK_JOB = "orders.back_in_stock"  # the waitlist (feature 16), in orders.waitlist
+BACK_BUCKET_SECONDS = 600  # one telling per variant per ten minutes, however many restocks
 LOW_PREFIX = "ls"
 REORDER, SNOOZE = "reorder", "snooze"
 DEFAULT_LIMIT = 3
@@ -50,13 +54,26 @@ def limit_for(tenant: Tenant, product: Product) -> int:
 async def crossed(session: AsyncSession, variant: Variant, delta: int) -> None:
     """After a stock change: alert once when a sale or a write-off takes stock down to the
     limit, re-arm when stock is back above it. Stock that starts low is shown in the console
-    and the low-stock report, not alerted."""
+    and the low-stock report, not alerted. Stock back from none tells the waitlist."""
     if variant.stock is None:
         return
     product = await session.get(Product, variant.product_id)
     tenant = await session.get(Tenant, variant.tenant_id)
     if product is None or tenant is None:  # pragma: no cover - foreign keys forbid it
         return
+    if (
+        delta > 0
+        and variant.stock > 0 >= variant.stock - delta
+        and await _waited_for(session, product)
+    ):
+        bucket = int(utcnow().timestamp() // BACK_BUCKET_SECONDS)
+        await enqueue(
+            session,
+            BACK_IN_STOCK_JOB,
+            {"variant_id": str(variant.id)},
+            tenant_id=variant.tenant_id,
+            dedupe_key=f"back:{variant.id}:{bucket}",
+        )
     low = variant.stock <= limit_for(tenant, product)
     if low and delta < 0 and not variant.low_alerted:
         variant.low_alerted = True
@@ -65,6 +82,18 @@ async def crossed(session: AsyncSession, variant: Variant, delta: int) -> None:
         )
     elif not low and variant.low_alerted:
         variant.low_alerted = False
+
+
+async def _waited_for(session: AsyncSession, product: Product) -> bool:
+    found = await session.scalar(
+        select(WaitlistEntry.id)
+        .where(
+            WaitlistEntry.product_id == product.id,
+            WaitlistEntry.status == WaitStatus.WAITING,
+        )
+        .limit(1)
+    )
+    return found is not None
 
 
 def low_button(variant_id: uuid.UUID, choice: str) -> str:

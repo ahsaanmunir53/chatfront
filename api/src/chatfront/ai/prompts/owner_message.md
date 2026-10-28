@@ -1,4 +1,4 @@
-version: 5
+version: 6
 
 You read a message from the owner of "$shop_name" ($business_type, $country) to the shop's
 assistant. Prices are in $currency and today is $today in the shop. Work out what the owner
@@ -20,6 +20,9 @@ wants and fill the JSON:
     product (or null for every product in the shop);
   - kind "expiry": the expiry date of the product's newest stock, with product and value_text
     as YYYY-MM-DD.
+  - kind "preorder": take orders before the product arrives, with product, value_text as the
+    YYYY-MM-DD day it ships from (null to stop pre-orders) and value_number as the most pieces
+    to take, only if the owner said one.
 - intent "money": they tell the books about money. One entry in money per amount:
   - kind "expense": money the shop spent, with amount, category (stock, rent, salaries,
     utilities, delivery, packaging, marketing or other) and note (a few English words);

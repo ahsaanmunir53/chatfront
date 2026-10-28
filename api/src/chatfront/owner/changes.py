@@ -5,12 +5,14 @@ here writes; the owner confirms the card first and catalog.service applies it.""
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import date
 from typing import Any
 
 from chatfront.catalog.drafts import Change, name_from_words, to_minor
 from chatfront.catalog.models import Product
 from chatfront.catalog.service import MAX_LIMIT, CatalogItem, find_products, single_match
 from chatfront.catalog.stock import shop_limit
+from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
@@ -48,6 +50,28 @@ def _stock_limit_op(
         "name": product.name if product is not None else None,
         "old": old,
         "new": int(value),
+    }
+
+
+def _preorder_op(change: Change, product: Product) -> dict[str, Any] | Problem:
+    """Pre-orders (feature 16) from a day, or no more of them; the day must not have passed."""
+    limit = change.value_number
+    if limit is not None and (not float(limit).is_integer() or not 1 <= limit <= MAX_LIMIT):
+        return ("owner.need_count", {})
+    ships_from = None
+    if change.value_text and change.value_text.strip():
+        try:
+            ships_from = date.fromisoformat(change.value_text.strip())
+        except ValueError:
+            return ("owner.need_date", {"name": product.name})
+        if ships_from < utcnow().date():
+            return ("owner.need_date", {"name": product.name})
+    return {
+        "op": "preorder",
+        "product_id": str(product.id),
+        "name": product.name,
+        "ships_from": ships_from.isoformat() if ships_from else None,
+        "limit": int(limit) if limit is not None and ships_from else None,
     }
 
 
@@ -108,6 +132,9 @@ def resolve_changes(
         if change.kind == "low_stock_limit":
             if tenant is not None:
                 _add(ops, problems, _stock_limit_op(change, tenant, product))
+            continue
+        if change.kind == "preorder":
+            _add(ops, problems, _preorder_op(change, product))
             continue
         if change.kind in ("price", "floor_price"):
             new = to_minor(change.value_number, digits) if change.value_number is not None else None

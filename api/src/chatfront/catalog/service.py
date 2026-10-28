@@ -10,6 +10,7 @@ import unicodedata
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from difflib import SequenceMatcher
 from typing import Any
 
@@ -19,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.audit.service import Actor, record
 from chatfront.catalog import stock
 from chatfront.catalog.models import Product, ProductStatus, StockMovement, StockReason, Variant
+from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
@@ -66,8 +68,16 @@ class CatalogItem:
         return Minor(variant.price if variant.price is not None else self.product.price)
 
     @property
+    def preorder(self) -> date | None:
+        """The day a pre-order product ships from, while it is on pre-order (feature 16)."""
+        return self.product.ships_from if on_preorder(self.product) else None
+
+    @property
     def in_stock(self) -> bool:
-        return any(v.active and (v.stock is None or v.stock > 0) for v in self.variants)
+        """Something can be ordered now: a piece in stock, or the product is on pre-order."""
+        return self.preorder is not None or any(
+            v.active and (v.stock is None or v.stock > 0) for v in self.variants
+        )
 
     def catalog_id(self, variant: Variant) -> str:
         """The id a Facebook or Instagram shop knows this variant by: the product's code, or
@@ -78,6 +88,12 @@ class CatalogItem:
 
     def by_catalog_id(self, wanted: str) -> Variant | None:
         return next((v for v in self.variants if self.catalog_id(v) == wanted), None)
+
+
+def on_preorder(product: Product, day: date | None = None) -> bool:
+    """Sold before it arrives: the owner set the day it ships from, and that day has not
+    passed. Its order lines take their stock when packed, not when placed."""
+    return product.ships_from is not None and product.ships_from >= (day or utcnow().date())
 
 
 def by_catalog_id(items: Sequence[CatalogItem], wanted: str) -> tuple[CatalogItem, Variant] | None:
@@ -353,6 +369,10 @@ async def apply_changes(
         elif op["op"] in ("available", "unavailable"):
             available = op["op"] == "available"
             product.status = ProductStatus.ACTIVE if available else ProductStatus.ARCHIVED
+        elif op["op"] == "preorder":
+            day = op.get("ships_from")
+            product.ships_from = date.fromisoformat(day) if day else None
+            product.preorder_limit = op.get("limit") if day else None
         applied += 1
     tenant.profile = profile
     await session.flush()
