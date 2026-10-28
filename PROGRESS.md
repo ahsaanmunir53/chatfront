@@ -719,6 +719,51 @@ Not verified yet: Glimmer playing customers and the failover on real endpoints (
 `deploy/modal_glimmer.py` on Modal (needs Ahsaan's Modal account); an alert on a real phone
 (needs the deployed HTTPS site).
 
+## Done on 28 October: selling later (14, 15, 20, 21, 22, 96, 108)
+
+The first of the Later groups, built at Ahsaan's request to finish all 122.
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | CHECK_API |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 36 passed |
+| Browser tests, desktop and phone | CHECK_E2E |
+| Order agent evaluation set, replayed | CHECK_EVAL |
+
+What it delivered:
+
+- Consent log (108): every customer is asked once, after their first order, whether they want
+  offers; START and STOP (and "offers band" and the Urdu and Hindi words) work at any time and
+  are read by code before the model. The owner's yes or no to sharing fraud reports and the
+  sales history is kept the same way. Every answer is a new row with the words it answered.
+- Cart reminders (14): once, an hour after the customer went quiet and while the free window
+  has hours left; never after STOP; counted in the console with the carts that became orders.
+- Broadcasts (15): to the customers interested in a product or a kind of product who said yes,
+  at most one a week each; the offers template for closed WhatsApp chats when
+  `WHATSAPP_OFFER_TEMPLATE` is set; the orders each broadcast brought in the next week.
+- Referrals (20): a customer's own code for a friend's first order, sent by the agent with a
+  shop link that puts it in at checkout; points or a one-use code for the customer when the
+  friend's order is delivered.
+- Gifts (21): the recipient's address, a message and who it is from, paid by transfer, no
+  price in the parcel, and an A6 message card printed from the console.
+- Group orders (22): the organiser's part carries the address and the delivery charge; friends
+  add and pay for their own parts from a link; the group page shows first names only; the
+  parts are held off the pick list until the group closes.
+- Money from abroad (96): the receipt's currency is read and converted at the owner's own rate
+  with 3% either way; such a payment always goes to the owner.
+- Migration 0023. A unit test now fails when the code names a string key the catalogs lack.
+
+Decisions:
+
+- A coupon that took nothing off a placed order is not kept on it, so a code used where it
+  did not apply is not counted as used.
+- The offers question comes after the order's own message, once per customer, and never on a
+  second order.
+- A group part and a gift are paid by transfer; cash at the door does not fit either.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -769,6 +814,16 @@ Proposed order, the Meta platform first since it is what is judged:
 6. Packing and books: 102, 103, 51. Done on 28 October.
 7. Data and growth: 57, 59, 116, 66. Done on 28 October.
 8. Demo engineering: 110, 114, 115. Done on 28 October.
+
+## Phase 3 (Later, 41 features), at Ahsaan's request
+
+In groups, each committed and pushed when its checks pass:
+
+1. Selling later: 14, 15, 20, 21, 22, 96, 108. Done on 28 October.
+2. Posting and sales: 3, 7, 8, 78, 81, 82.
+3. Groups 3 and 4: 17, 18, 31, 32, 35, 36.
+4. Groups 5 and 6: 39, 41, 44, 47, 55, 58, 60, 62, 63, 64, 65.
+5. Groups 7 and 8: 53, 54, 56, 61, 67, 68, 69, 70, 71, 72, 73.
 
 ## Plan for 117 to 120
 

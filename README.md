@@ -140,6 +140,13 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, selling later:** a reminder about a cart left in a chat, once and inside the
+  free 24-hour window; broadcasts to the customers who showed interest and said yes to offers,
+  at most one a week, with the orders each brought back; "send to a friend" with a code good
+  on a first order and a thank-you on delivery; gifts with a printed message card; group
+  orders where friends add and pay for their own parts and it all ships together; gifts paid
+  from abroad, converted at the owner's own rate and always checked by the owner; and the
+  consent log behind all of it.
 - **28 October, demo engineering:** a busy day of up to fifty simulated customers in Urdu
   and Roman Urdu against a demo copy of a shop, played by Muse Glimmer or replayed from the
   evaluation set; failover across Baseten, Modal and Fireworks with a minute's rest for an
@@ -331,8 +338,9 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
 
 ## Roadmap
 
-Build features (47) work end to end by 2 November, Stretch features (34) follow, and Later
-features (41) stay on the roadmap. The demo shows only work built during the event.
+Build features (47) work end to end, Stretch features (34) followed, and the Later features
+(41) are being built in groups; [FEATURES.md](FEATURES.md) says which are done. The demo shows
+only work built during the event.
 
 ## Attribution
 
