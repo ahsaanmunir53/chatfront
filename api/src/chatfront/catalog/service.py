@@ -69,6 +69,16 @@ class CatalogItem:
     def in_stock(self) -> bool:
         return any(v.active and (v.stock is None or v.stock > 0) for v in self.variants)
 
+    def catalog_id(self, variant: Variant) -> str:
+        """The id a Facebook or Instagram shop knows this variant by: the product's code, or
+        the code and the variant's place for products with options ("K7Q2M-2")."""
+        if len(self.variants) == 1:
+            return self.product.code
+        return f"{self.product.code}-{variant.position + 1}"
+
+    def by_catalog_id(self, wanted: str) -> Variant | None:
+        return next((v for v in self.variants if self.catalog_id(v) == wanted), None)
+
 
 def actor_label(actor: Actor) -> str:
     return f"{actor.type}:{actor.id}" if actor.id else str(actor.type)

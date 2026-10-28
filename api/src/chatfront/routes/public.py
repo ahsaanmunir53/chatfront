@@ -49,6 +49,7 @@ class PublicShop(BaseModel):
 
 class VariantOut(BaseModel):
     id: uuid.UUID
+    catalog_id: str  # what a Facebook or Instagram shop link and the cart call it
     options: dict[str, str]
     price: int
     in_stock: bool
@@ -210,6 +211,7 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                 variants=[
                     VariantOut(
                         id=v.id,
+                        catalog_id=item.catalog_id(v),
                         options=v.options,
                         price=item.price_of(v),
                         in_stock=v.stock is None or v.stock > 0,

@@ -69,48 +69,59 @@ def _lock_key(text: str) -> int:
 async def identify(
     session: AsyncSession, tenant_id: uuid.UUID, msg: Inbound, keys: Keys
 ) -> Customer:
+    return await identify_sender(
+        session, tenant_id, Channel(msg.channel), msg.sender_id, keys, msg.profile_name
+    )
+
+
+async def identify_sender(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    channel: Channel,
+    sender_id: str,
+    keys: Keys,
+    profile_name: str | None = None,
+) -> Customer:
     """Find or create the customer behind a channel sender, without storing the id in clear."""
-    external_hash = hash_phone(f"{msg.channel}:{msg.sender_id}", keys.phone_hash_key)
+    external_hash = hash_phone(f"{channel}:{sender_id}", keys.phone_hash_key)
     await session.execute(select(func.pg_advisory_xact_lock(_lock_key(external_hash))))
     customer = await session.scalar(
         select(Customer)
         .join(CustomerIdentity, CustomerIdentity.customer_id == Customer.id)
         .where(
             CustomerIdentity.tenant_id == tenant_id,
-            CustomerIdentity.channel == msg.channel,
+            CustomerIdentity.channel == channel,
             CustomerIdentity.external_hash == external_hash,
         )
     )
     if customer is not None:
         return customer
     phone_hash = None
-    if msg.channel is Channel.WHATSAPP:  # a WhatsApp id is the phone number
-        phone_hash = hash_phone("+" + msg.sender_id.lstrip("+"), keys.phone_hash_key)
+    if channel is Channel.WHATSAPP:  # a WhatsApp id is the phone number
+        phone_hash = hash_phone("+" + sender_id.lstrip("+"), keys.phone_hash_key)
         customer = await session.scalar(
             select(Customer).where(
                 Customer.tenant_id == tenant_id, Customer.phone_hash == phone_hash
             )
         )
     if customer is None:
-        customer = Customer(
-            tenant_id=tenant_id, display_name=msg.profile_name, phone_hash=phone_hash
-        )
+        customer = Customer(tenant_id=tenant_id, display_name=profile_name, phone_hash=phone_hash)
         session.add(customer)
         await session.flush()
     session.add(
         CustomerIdentity(
             tenant_id=tenant_id,
             customer_id=customer.id,
-            channel=msg.channel,
+            channel=channel,
             external_hash=external_hash,
-            external_sealed=seal(msg.sender_id, keys.secret_key),
+            external_sealed=seal(sender_id, keys.secret_key),
         )
     )
     await session.flush()
     return customer
 
 
-async def _conversation(
+async def open_conversation(
     session: AsyncSession, tenant_id: uuid.UUID, customer_id: uuid.UUID, account_id: uuid.UUID
 ) -> Conversation:
     await session.execute(
@@ -152,7 +163,7 @@ async def accept(
     """Store an inbound message and queue the reply, atomically. None means a duplicate."""
     async with db.tenant(account.tenant_id) as session:
         customer = await identify(session, account.tenant_id, msg, keys)
-        conversation = await _conversation(session, account.tenant_id, customer.id, account.id)
+        conversation = await open_conversation(session, account.tenant_id, customer.id, account.id)
         payload = dict(msg.payload)
         if msg.kind in MEDIA_KINDS and msg.media_ref:
             payload["media_ref"] = msg.media_ref
