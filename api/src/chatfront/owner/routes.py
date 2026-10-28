@@ -105,6 +105,7 @@ class Me(BaseModel):
     languages: list[str]  # the customer languages product texts are written in, beside English
     role: str
     rights: list[str]
+    is_platform: bool = False  # Chatfront's own staff, who review fraud reports (feature 37)
 
 
 class OwnerVariant(BaseModel):
@@ -164,6 +165,7 @@ async def me(session: OwnerDep, services: ServicesDep) -> Me:
         languages=target_languages(tenant),
         role=staff.role,
         rights=sorted(rights(staff.role)),
+        is_platform=tenant.is_platform,
     )
 
 

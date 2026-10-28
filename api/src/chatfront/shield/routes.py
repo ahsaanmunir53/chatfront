@@ -1,5 +1,6 @@
-"""The shield in the console (features 38 and 104): what Chatfront may do on its own, the
-decisions waiting for the owner, and the shop's customers with their verified-buyer badge."""
+"""The shield in the console (features 38, 104 and 37): what Chatfront may do on its own, the
+decisions waiting for the owner, the shop's customers with their verified-buyer badge, and
+the buyers it reported for fraud."""
 
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ from chatfront.orders.states import OrderStatus
 from chatfront.owner.rights import Can, rights
 from chatfront.owner.routes import ServicesDep, StaffDep, needs
 from chatfront.owner.sessions import OwnerSession
-from chatfront.shield import approvals, autonomy, buyers, why
+from chatfront.shield import approvals, autonomy, buyers, fraud, why
+from chatfront.shield.models import FraudReason, FraudReport
 
 router = APIRouter(prefix="/api/owner")
 SettingsDep = Annotated[OwnerSession, needs(Can.SETTINGS)]
@@ -70,6 +72,24 @@ class CustomerOut(BaseModel):
     delivered: int
     returned: int
     owes: int
+    reported: str | None  # this shop's fraud report, by its status
+    listed_by: int  # shops whose confirmed reports put the number on the shared list
+
+
+class FraudIn(BaseModel):
+    reason: FraudReason
+    note: str = Field(default="", max_length=fraud.NOTE_CHARS)
+
+
+class FraudReportOut(BaseModel):
+    id: uuid.UUID
+    customer_id: uuid.UUID | None
+    name: str | None
+    reason: str
+    note: str
+    status: str
+    review_note: str | None
+    created_at: datetime
 
 
 class Verified(BaseModel):
@@ -218,6 +238,7 @@ async def remove_answer(
 
 @router.get("/customers")
 async def customers(session: OrdersDep, services: ServicesDep) -> list[CustomerOut]:
+    key = services.keys.phone_hash_key
     async with services.db.tenant(session.tenant_id) as db:
         rows = (
             await db.execute(
@@ -237,19 +258,30 @@ async def customers(session: OrdersDep, services: ServicesDep) -> list[CustomerO
                 .limit(CUSTOMER_LIMIT)
             )
         ).all()
-    return [
-        CustomerOut(
-            id=customer.id,
-            name=customer.display_name,
-            verified=customer.verified_buyer,
-            verified_by=customer.verified_by,
-            orders=orders,
-            delivered=delivered,
-            returned=returned,
-            owes=owes,
-        )
-        for customer, orders, delivered, returned, owes in rows
-    ]
+        found = []
+        for customer, orders, delivered, returned, owes in rows:
+            number = await fraud.number_of(db, customer, key)
+            report = (
+                await db.scalar(select(FraudReport).where(FraudReport.phone_hash == number))
+                if number
+                else None
+            )
+            flags = await fraud.flags(db, {number} if number else set())
+            found.append(
+                CustomerOut(
+                    id=customer.id,
+                    name=customer.display_name,
+                    verified=customer.verified_buyer,
+                    verified_by=customer.verified_by,
+                    orders=orders,
+                    delivered=delivered,
+                    returned=returned,
+                    owes=owes,
+                    reported=report.status if report else None,
+                    listed_by=flags.listed_by,
+                )
+            )
+    return found
 
 
 @router.put("/customers/{customer_id}/verified")
@@ -266,6 +298,67 @@ async def set_verified(
             db, tenant, customer, body.verified, Actor(ActorType.STAFF, str(session.staff_id))
         )
     return {"verified": body.verified}
+
+
+# -- fraud reports (feature 37) -------------------------------------------------------------
+
+
+@router.post("/customers/{customer_id}/fraud")
+async def report_fraud(
+    customer_id: uuid.UUID, body: FraudIn, session: TrustDep, services: ServicesDep
+) -> FraudReportOut:
+    """Counts for this shop at once; shared, as a hash, only once Chatfront has reviewed it."""
+    async with services.db.tenant(session.tenant_id) as db:
+        customer = await db.get(Customer, customer_id)
+        if customer is None or customer.staff_id is not None:
+            raise NotFound("customer")
+        found = await fraud.report(
+            db,
+            session.tenant_id,
+            customer,
+            body.reason,
+            body.note,
+            Actor(ActorType.STAFF, str(session.staff_id)),
+            staff_id=session.staff_id,
+            key=services.keys.phone_hash_key,
+        )
+        return _report_out(found, customer.display_name)
+
+
+def _report_out(found: FraudReport, name: str | None) -> FraudReportOut:
+    return FraudReportOut(
+        id=found.id,
+        customer_id=found.customer_id,
+        name=name,
+        reason=found.reason,
+        note=found.note,
+        status=found.status,
+        review_note=found.review_note,
+        created_at=found.created_at,
+    )
+
+
+@router.get("/fraud-reports")
+async def fraud_reports(session: TrustDep, services: ServicesDep) -> list[FraudReportOut]:
+    async with services.db.tenant(session.tenant_id) as db:
+        rows = await db.execute(
+            select(FraudReport, Customer.display_name)
+            .outerjoin(Customer, Customer.id == FraudReport.customer_id)
+            .order_by(FraudReport.created_at.desc())
+            .limit(CUSTOMER_LIMIT)
+        )
+        return [_report_out(found, name) for found, name in rows.all()]
+
+
+@router.post("/fraud-reports/{report_id}/withdraw")
+async def withdraw_report(
+    report_id: uuid.UUID, session: TrustDep, services: ServicesDep
+) -> dict[str, str]:
+    async with services.db.tenant(session.tenant_id) as db, services.db.system() as system:
+        found = await fraud.withdraw(
+            db, system, report_id, Actor(ActorType.STAFF, str(session.staff_id))
+        )
+        return {"status": found.status}
 
 
 # -- the why panel (feature 107) -----------------------------------------------------------

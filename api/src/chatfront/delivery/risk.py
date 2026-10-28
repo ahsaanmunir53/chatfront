@@ -3,7 +3,8 @@
 Code alone scores it, from what the shop has seen of this buyer (by customer and by phone
 number): orders returned, cancelled and delivered, other cash-on-delivery orders still open,
 whether the channel proved the phone number, whether it is a real number of the shop's
-country, a pin, and an order far bigger than the shop usually ships. Every point comes with
+country, a pin, an order far bigger than the shop usually ships, and whether the number was
+reported for fraud here or is on the shared fraud list (feature 37). Every point comes with
 its reason, so the owner sees why. A high score never blocks a buyer; at a shop that also
 takes transfers it asks for an advance on cash on delivery.
 """
@@ -24,6 +25,7 @@ from chatfront.core.models import Customer
 from chatfront.core.phone import hash_phone
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
+from chatfront.shield.fraud import Flags, flags, hashes
 
 HIGH = 60
 MEDIUM = 30
@@ -60,6 +62,7 @@ class RiskFacts:
     has_pin: bool
     total: int
     typical_total: int | None
+    fraud: Flags = field(default_factory=Flags)
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +107,11 @@ def score(facts: RiskFacts) -> Risk:
         found.append(("pin_shared", -5, None))
     if facts.typical_total and facts.total >= _BIG * facts.typical_total:
         found.append(("big_order", 15, None))
+    if facts.fraud.reported_here:
+        found.append(("reported_here", 60, None))
+    if facts.fraud.listed_by:
+        listed = facts.fraud.listed_by
+        found.append(("on_fraud_list", min(30 + 10 * listed, 60), listed))
     total = max(0, min(100, sum(points for _, points, _ in found)))
     reasons = [
         {"code": code, "points": points, **({"count": count} if count is not None else {})}
@@ -174,6 +182,7 @@ async def assess(
         has_pin=bool(address.get("pin")),
         total=order.total,
         typical_total=await typical_total(session, order.tenant_id),
+        fraud=await flags(session, hashes(customer, [order], phone_hash_key)),
     )
     risk = score(facts)
     order.risk_score, order.risk_reasons = risk.score, risk.reasons
