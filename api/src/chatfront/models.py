@@ -12,6 +12,7 @@ from chatfront.channels.models import (
     IdentityLink,
     Message,
     PostComment,
+    SavedAnswer,
     SocialPost,
 )
 from chatfront.core.db import Base
@@ -19,7 +20,17 @@ from chatfront.core.models import Customer, Staff, Tenant, TenantModule
 from chatfront.delivery.models import Shipment
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
-from chatfront.orders.models import Order, OrderItem, PriceOffer, ReturnRequest
+from chatfront.orders.models import (
+    Bundle,
+    Coupon,
+    CouponUse,
+    LoyaltyEntry,
+    Order,
+    OrderItem,
+    PriceOffer,
+    ReturnRequest,
+    WaitlistEntry,
+)
 from chatfront.owner.models import PendingAction
 from chatfront.payments.models import (
     Payment,
@@ -37,9 +48,12 @@ __all__ = [
     "AuditEntry",
     "Base",
     "BatchAllocation",
+    "Bundle",
     "ChannelAccount",
     "CommerceCatalog",
     "Conversation",
+    "Coupon",
+    "CouponUse",
     "CronRun",
     "Customer",
     "CustomerIdentity",
@@ -47,6 +61,7 @@ __all__ = [
     "IdentityLink",
     "Job",
     "LedgerEntry",
+    "LoyaltyEntry",
     "Media",
     "Message",
     "Order",
@@ -61,6 +76,7 @@ __all__ = [
     "Receipt",
     "Refund",
     "ReturnRequest",
+    "SavedAnswer",
     "Shipment",
     "SocialPost",
     "Staff",
@@ -70,5 +86,6 @@ __all__ = [
     "TenantModule",
     "UdhaarAccount",
     "Variant",
+    "WaitlistEntry",
     "WalletCredit",
 ]

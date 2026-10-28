@@ -55,6 +55,8 @@ HOLDS_STOCK = frozenset(
         OrderStatus.DELIVERED,
     }
 )
+# Where a pre-order line's pieces are out of stock: from packing on (feature 16).
+SHIPPING = frozenset({OrderStatus.PACKED, OrderStatus.DISPATCHED, OrderStatus.DELIVERED})
 CLOSED = frozenset({OrderStatus.DELIVERED, OrderStatus.RETURNED, OrderStatus.CANCELLED})
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -49,6 +49,10 @@ class Product(Base):
     price: Mapped[int] = mapped_column(BigInteger)  # minor units of the tenant's currency
     floor_price: Mapped[int | None] = mapped_column(BigInteger)  # lowest the agent may agree to
     low_stock_limit: Mapped[int | None]  # alert at or below this; None: the shop's default
+    # Pre-order (feature 16): sold before it arrives, shipping from this day; at most this
+    # many pieces waiting at once (None: no limit).
+    ships_from: Mapped[date | None]
+    preorder_limit: Mapped[int | None]
     # Name and description per language: {"ur": {"name": ..., "description": ..., "by": ...}}
     translations: Mapped[dict[str, Any]] = mapped_column(default=dict)
     image_media_id: Mapped[uuid.UUID | None] = mapped_column(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -45,6 +45,12 @@ class Order(Base):
     # unique_off: what the shop took off the total to make it unique.
     due_now: Mapped[int | None] = mapped_column(BigInteger)
     unique_off: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    # Offers code applied (features 13 and 19): bundles, a coupon and loyalty points, each
+    # [{"kind": ..., "label": ..., "amount": ..., "points": ...}]; offer_off is their sum.
+    offer_off: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    offers: Mapped[list[Any]] = mapped_column(default=list, server_default="[]")
+    coupon_code: Mapped[str | None] = mapped_column(String(24))
+    points_used: Mapped[int] = mapped_column(default=0, server_default="0")
     reminded_at: Mapped[datetime | None]  # the watcher's one reminder (feature 30)
     # How likely a cash-on-delivery order is to come back unpaid, 0 to 100, with the reasons
     # code found (feature 34): [{"code": ..., "points": ...}].
@@ -74,6 +80,8 @@ class OrderItem(Base):
     list_price: Mapped[int | None] = mapped_column(BigInteger)  # the catalog price, if bargained
     quantity: Mapped[int]
     line_total: Mapped[int] = mapped_column(BigInteger)
+    # A pre-order line (feature 16): its stock is taken when the order is packed, not placed.
+    preorder: Mapped[bool] = mapped_column(default=False, server_default="false")
 
 
 class PriceOffer(Base):
@@ -139,4 +147,117 @@ class ReturnRequest(Base):
     )
     decided_at: Mapped[datetime | None]
     received_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class WaitStatus(StrEnum):
+    WAITING = "waiting"
+    TOLD = "told"  # the back-in-stock message went out
+    MISSED = "missed"  # back in stock, but the chat could not reach them
+    CANCELLED = "cancelled"
+
+
+class WaitlistEntry(Base):
+    """ "Tell me when it is back" (feature 16): a customer waiting for a sold-out product, or
+    one of its options, in the chat they asked in."""
+
+    __tablename__ = "waitlist_entries"
+    __table_args__ = (
+        Index("ix_waitlist_tenant_product_status", "tenant_id", "product_id", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE")
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
+    variant_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("variants.id", ondelete="CASCADE")
+    )  # None: any option of the product
+    quantity: Mapped[int] = mapped_column(default=1)
+    status: Mapped[str] = mapped_column(String(10), default=WaitStatus.WAITING)
+    told_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class Bundle(Base):
+    """A set of products sold together for less (feature 13): money off each full set in a
+    cart, at catalog prices."""
+
+    __tablename__ = "bundles"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    product_ids: Mapped[list[Any]] = mapped_column(default=list)  # two to four product ids
+    off: Mapped[int] = mapped_column(BigInteger)  # minor units off each full set
+    active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class Coupon(Base):
+    """A discount code (feature 19): a percentage or an amount off the catalog-price part of a
+    cart, with a minimum, dates and a limit on uses. A shown coupon is the shop page's sale,
+    with its countdown (feature 95)."""
+
+    __tablename__ = "coupons"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    code: Mapped[str] = mapped_column(String(24))  # upper case
+    percent: Mapped[int | None]  # 1 to 90
+    amount: Mapped[int | None] = mapped_column(BigInteger)  # or minor units off
+    min_subtotal: Mapped[int] = mapped_column(BigInteger, default=0)
+    starts_on: Mapped[date | None]
+    ends_on: Mapped[date | None]  # the last day it works, in the shop's own time
+    max_uses: Mapped[int | None]
+    once_per_customer: Mapped[bool] = mapped_column(default=True)
+    show_on_page: Mapped[bool] = mapped_column(default=False)
+    active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class CouponUse(Base):
+    """A coupon on a placed order; a cancelled order gives the use back."""
+
+    __tablename__ = "coupon_uses"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    coupon_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("coupons.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), unique=True
+    )
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    amount: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class PointsReason(StrEnum):
+    EARNED = "earned"  # a delivered order
+    REDEEMED = "redeemed"  # spent on a placed order
+    CANCELLED = "cancelled"  # a cancelled order gives its points back
+    RETURNED = "returned"  # a returned order takes its earned points back
+
+
+class LoyaltyEntry(Base):
+    """Loyalty points (feature 19), append-only: the balance is their sum."""
+
+    __tablename__ = "loyalty_entries"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"))
+    points: Mapped[int]
+    reason: Mapped[str] = mapped_column(String(12))
     created_at: Mapped[datetime] = created_at_column()

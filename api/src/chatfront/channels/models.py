@@ -253,3 +253,24 @@ class PostComment(Base):
     commented_at: Mapped[datetime]
     replied_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
+
+
+class SavedAnswer(Base):
+    """An answer the owner gave in a handed-over chat and then approved for the assistant to
+    give again (feature 91). Only approved answers are ever reused."""
+
+    __tablename__ = "saved_answers"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    handover_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("handovers.id", ondelete="SET NULL")
+    )
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("staff.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = created_at_column()
