@@ -516,6 +516,61 @@ Decisions:
 Not verified yet: reading pictures, videos and shelves on the real model (they need a model
 key); a real Instagram account's posts and a real Meta catalog.
 
+## Done on 28 October: the shield (37, 40, 43, 45, 46)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 889 passed, 94.86% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 66 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Fraud-buyer list (37): Report fraud on a customer in the console, with a reason and a note;
+  code adds the evidence (their orders, rejected payment screenshots and their signals). It
+  counts at that shop at once: 60 risk points, so cash on delivery asks for an advance.
+  Chatfront's own staff confirm or reject it in the platform shop's console (signed in with
+  `python -m chatfront.owner.sign_in --shop chatfront`). A confirmed report puts only the
+  number's keyed hash on the shared list, which every shop's risk score reads: 40 points for
+  one shop, 50 for two, 60 for three or more. A shop can take its report back, and a reviewer
+  can take a number off the list.
+- Fake support links and code requests (40): every link in a customer's message is checked by
+  code, and by Google Safe Browsing when `SAFE_BROWSING_API_KEY` is set. A fake link, a
+  request for a code, or a support claim with a link that is not the brand's own never
+  reaches the assistant: the sender hears that the shop never asks for codes or sends login
+  links, and the owner gets a warning. Links the owner sends their own assistant come back
+  with a verdict each.
+- Privacy guard (43): customer photos are checked for ID and bank cards before anything else
+  (a new prompt, `private_photo`); a card is kept only as a blurred copy and the model never
+  sees it. CNIC and card numbers typed in chats are masked by code before they are stored.
+- Trust page numbers (45) and reviews (46): the delivered message carries a review link
+  signed for that order; the assistant can take the stars in chat too. Reviews show on the
+  shop page and trust page; the owner replies once in the console and gets a notice.
+- Migration 0018: fraud reports, the shared list (readable by every shop, written only by
+  Chatfront's review), reviews, and which photos were cards.
+
+Decisions:
+
+- The list holds hashes made with the platform's `PHONE_HASH_KEY`, the same key every shop's
+  numbers are hashed with, so a match works across shops and nobody can read a number back.
+  Reports, notes and evidence stay under the reporting shop's row-level security; reviewers
+  read them through the system role only.
+- A report never blocks a buyer and never refuses an order: it raises the risk score, which
+  asks for an advance, as the rules say (code decides; the owner can still verify a buyer).
+- One review per delivered order, from the signed link or the buyer's own chat; the owner
+  cannot change or remove it, only reply once. Numbers, links and card numbers are taken out.
+- A trust figure waits for five orders, replies or reviews behind it.
+- A bare mention of an OTP is not an alarm; asking for one, or telling of someone who did, is.
+- Without a model key, photos are kept as sent (nothing can check them); typed numbers are
+  masked without one.
+
+Not verified yet: the photo check on the real model (needs a key); Safe Browsing with a real
+key (Google allows the free API for non-commercial use).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -526,6 +581,7 @@ Never in the chat. Each key goes in one or more of these places, typed by Ahsaan
 | `FIREWORKS_API_KEY` | yes | yes | optional |
 | `MODAL_GLIMMER_BASE_URL`, `MODAL_GLIMMER_API_KEY` | yes | yes | optional |
 | `META_CATALOG_TOKEN` (feature 6, a system user token with catalog_management) | no | yes | optional |
+| `SAFE_BROWSING_API_KEY` (feature 40, optional; Google Cloud API key for the Safe Browsing API) | no | yes | optional |
 
 Then: Actions > "Live model evaluation" > Run workflow. It runs the language set and the
 order agent's 100 conversations against the real model; each results file is attached to the
@@ -561,7 +617,7 @@ Proposed order, the Meta platform first since it is what is judged:
 2. Payments and returns: 28, 29, 100, 92. Done on 28 October.
 3. Selling more: 13, 16, 19, 95, 91. Done on 28 October.
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88. Done on 28 October.
-5. Shield: 37, 40, 43, 45, 46.
+5. Shield: 37, 40, 43, 45, 46. Done on 28 October.
 6. Packing and books: 102, 103, 51.
 7. Data and growth: 57, 59, 116, 66.
 8. Demo engineering: 110, 114, 115.

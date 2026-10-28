@@ -129,6 +129,14 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, shield:** a buyer reported by a shop counts against them there at once and,
+  once Chatfront's own staff confirm it, at every shop, as a hash of the number that nobody
+  can read back; fake WhatsApp and Meta support links and requests for a one-time code caught
+  by code (and by Google Safe Browsing when its key is set) before the assistant answers,
+  with a warning to the owner, who can also send any link to hear what it is; photos of ID
+  and bank cards kept only blurred and card or CNIC numbers masked in chats; and reviews only
+  from buyers whose order was delivered, with the shop's record (orders delivered, returns,
+  first-reply time, rating) on its trust page.
 - **28 October, the catalog from what the shop already has:** a sheet, the shop's Meta
   catalog, its past Instagram posts or a video of its rack turned into drafts the owner adds
   in the console; stock counted from a shelf photo and set once the owner confirms; size
@@ -256,16 +264,22 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    `python -m chatfront.catalog.meta --shop <shop> --catalog-id <id> --token-env CATALOG_TOKEN`
    with a system user token that has catalog_management (or set `META_CATALOG_TOKEN` on
    Render). Products go to the catalog every 30 minutes, and on Send now in the console.
-9. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
+9. Fraud reports (feature 37): Chatfront's own staff review shops' reports in the console of
+   the platform shop `chatfront`. Make a sign-in link from Render's Shell (it reads
+   `DATABASE_URL` and `SECRET_KEY` from the environment):
+   `python -m chatfront.owner.sign_in --shop chatfront --hours 12`
+10. GitHub Pages (optional): Settings > Pages > Source: GitHub Actions; add the repository
    variable `API_BASE` = the Render URL; set `CORS_ORIGINS` on Render to
    `https://<user>.github.io` and `WEB_BASE_URL` to `https://<user>.github.io/chatfront`
    (so links sent in chats open the Pages app); then run the "Deploy the web app to GitHub
    Pages" workflow.
-10. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
+11. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
    come) in Render's Environment for the app, and as repository secrets for the manual
    "Live model evaluation" workflow. They never go in the repository or the chat. Until they
    come, set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
-   `https://<service>.onrender.com/health` shows `mock`, `live` or `no keys`.
+   `https://<service>.onrender.com/health` shows `mock`, `live` or `no keys`. Optional:
+   `SAFE_BROWSING_API_KEY` (where to get it is in `.env.example`) adds Google's lists of
+   phishing sites to the link check (feature 40); code catches fake support links without it.
 
 ## Roadmap
 
