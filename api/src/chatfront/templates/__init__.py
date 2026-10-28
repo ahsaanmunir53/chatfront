@@ -109,6 +109,8 @@ class BusinessTemplate(BaseModel):
     modules: list[str] = Field(default_factory=list)
     # Shipping weight of one piece when a product does not give its own (delivery charge, 94).
     default_weight_g: int = Field(default=500, ge=0)
+    # Days after delivery a customer may ask to swap or return (feature 92); 0 for none.
+    return_days: int = Field(default=7, ge=0, le=60)
     demo: DemoShop
 
 

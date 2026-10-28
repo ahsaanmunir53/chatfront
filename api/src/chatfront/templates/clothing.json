@@ -107,6 +107,7 @@
     }
   ],
   "default_weight_g": 500,
+  "return_days": 7,
   "demo": {
     "slug": "gulmohar-lawn",
     "name": "Gulmohar Lawn House",

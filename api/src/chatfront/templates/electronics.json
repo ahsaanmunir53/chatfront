@@ -69,6 +69,7 @@
     }
   ],
   "default_weight_g": 400,
+  "return_days": 7,
   "demo": {
     "slug": "indus-mobiles",
     "name": "Indus Mobile Zone",

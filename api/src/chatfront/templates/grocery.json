@@ -66,6 +66,7 @@
     "growth"
   ],
   "default_weight_g": 1000,
+  "return_days": 2,
   "demo": {
     "slug": "barkat-kiryana",
     "name": "Barkat Kiryana Store",

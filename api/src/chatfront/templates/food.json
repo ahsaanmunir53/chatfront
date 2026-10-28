@@ -73,6 +73,7 @@
     }
   ],
   "default_weight_g": 1200,
+  "return_days": 0,
   "demo": {
     "slug": "saffron-kitchen",
     "name": "Saffron Home Kitchen",

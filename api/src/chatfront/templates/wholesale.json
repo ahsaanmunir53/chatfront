@@ -55,6 +55,7 @@
     }
   ],
   "default_weight_g": 5000,
+  "return_days": 3,
   "demo": {
     "slug": "ravi-traders",
     "name": "Ravi Textile Traders",

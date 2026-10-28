@@ -40,11 +40,14 @@ from chatfront.modules.registry import ModuleRegistry, core_modules
 from chatfront.orders.agent import OrderAgent
 from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
+from chatfront.orders.returns import KIND as return_kind
+from chatfront.orders.returns import RETURN, return_tools
 from chatfront.orders.tools import order_tools
 from chatfront.owner.assistant import TRANSLATE_JOB, OwnerAssistant
 from chatfront.owner.onboarding import OnboardingAssistant
 from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
+from chatfront.payments.tools import payment_tools
 from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
 from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
 from chatfront.shield.approvals import tell_job as approval_tell_job
@@ -98,8 +101,10 @@ def build_registries() -> Registries:
     registries = Registries()
     catalog_tools, orders_tools = order_tools()
     registries.modules.modules["catalog"].tools.extend(catalog_tools)
-    registries.modules.modules["orders"].tools.extend(orders_tools)
+    registries.modules.modules["orders"].tools.extend([*orders_tools, *return_tools()])
+    registries.approvals[RETURN] = return_kind
     payments = registries.modules.modules["payments"]
+    payments.tools.extend(payment_tools())
     payments.jobs |= {REVIEW_JOB: review_job, WATCH_JOB: watch}
     payments.periodic.append(Periodic("payment-watch", EVERY, WATCH_JOB))
     registries.jobs.register(APPROVAL_JOB)(approval_tell_job)
