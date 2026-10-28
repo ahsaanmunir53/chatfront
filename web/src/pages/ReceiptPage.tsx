@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ReceiptCheck } from "../api";
 import { Page, Problem } from "../components/Shell";
-import { API_BASE } from "../config";
+import { API_BASE, STANDARD_URL } from "../config";
 import { isolate, scriptLang } from "../i18n";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
@@ -193,6 +193,11 @@ export function ReceiptPage() {
             <code dir="ltr">{receipt.public_key}</code>
             <p>{t("receipt.signed_text")}</p>
             <code dir="ltr">{receipt.signed_text}</code>
+            <p>
+              <a href={STANDARD_URL} target="_blank" rel="noreferrer">
+                {t("standard.how")}
+              </a>
+            </p>
           </details>
           <button type="button" className="action slip-print" onClick={() => window.print()}>
             {t("receipt.print")}

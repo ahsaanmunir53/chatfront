@@ -1819,5 +1819,6 @@
   "trust.check_button": "Check",
   "trust.check_failed": "Could not check just now. Try again.",
   "trust.check_yes": "Yes, this is {shop}'s official {channel}.",
-  "trust.check_no": "No, this is not one of {shop}'s channels. Do not send it money or codes."
+  "trust.check_no": "No, this is not one of {shop}'s channels. Do not send it money or codes.",
+  "standard.how": "How anyone can check this signature: the verified commerce standard"
 }

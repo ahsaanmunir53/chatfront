@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { PublicPassport } from "../api";
+import { STANDARD_URL } from "../config";
 import { Page, Problem } from "../components/Shell";
 import { useLang } from "../lang";
 import { formatMoney } from "../money";
@@ -146,6 +147,11 @@ export function PassportPage() {
           </code>
           <p dir="ltr">
             {t("passport.key")} {passport.public_key}
+          </p>
+          <p>
+            <a href={STANDARD_URL} target="_blank" rel="noreferrer">
+              {t("standard.how")}
+            </a>
           </p>
         </details>
       </section>

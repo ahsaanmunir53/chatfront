@@ -1819,5 +1819,6 @@
   "trust.check_button": "Check karein",
   "trust.check_failed": "Abhi check nahin ho saka. Dobara koshish karein.",
   "trust.check_yes": "Ji haan, ye {shop} ka official {channel} hai.",
-  "trust.check_no": "Nahin, ye {shop} ka channel nahin. Ise paise ya code na bhejein."
+  "trust.check_no": "Nahin, ye {shop} ka channel nahin. Ise paise ya code na bhejein.",
+  "standard.how": "Koi bhi yeh dastakhat kaise jaanch sakta hai: verified commerce ka standard"
 }
