@@ -1,15 +1,13 @@
-// The shield in the console: decisions waiting for the owner (feature 104), the shop's
-// customers with their verified-buyer badge (feature 38), and what the assistant may do on its
-// own, ask first, or never do (feature 104).
+// The shield in the console: decisions waiting for the owner (feature 104), and what the
+// assistant may do on its own, ask first, or never do (feature 104). The customers list, with
+// the verified-buyer badge (feature 38), is in Customers.tsx.
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
-import type { Approval, OwnerCustomer, OwnerMe, ShopSettings } from "../api";
+import type { Approval, ShopSettings } from "../api";
 import type { Key } from "../i18n";
-import { FraudBadges, ReportFraud } from "./Fraud";
 import { useLang } from "../lang";
 import { usePolled } from "../usePolled";
-import { formatMoney } from "../money";
 import { useServer } from "../server";
 
 const POLL_MS = 5000;
@@ -74,84 +72,6 @@ export function Approvals({
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-export function CustomersPanel({ me, token }: { me: OwnerMe; token: string }) {
-  const { t, lang } = useLang();
-  const { state } = useServer();
-  const [people, setPeople] = useState<OwnerCustomer[] | null>(null);
-  const canTrust = me.rights.includes("trust");
-  const load = useCallback(() => {
-    api.customers(token).then(setPeople, () => {
-      // Shown again on the next change.
-    });
-  }, [token]);
-  useEffect(() => {
-    if (state === "online") load();
-  }, [state, load]);
-
-  async function toggle(person: OwnerCustomer) {
-    await api.setVerified(token, person.id, !person.verified).catch(() => undefined);
-    load();
-  }
-
-  if (!people) return null;
-  return (
-    <section className="customers-panel" aria-labelledby="customers-title">
-      <h2 id="customers-title" className="section-title">
-        {t("console.customers_title")}
-        <span className="console-count">{people.length}</span>
-      </h2>
-      {people.length === 0 ? (
-        <p className="aside">{t("console.customers_none")}</p>
-      ) : (
-        <div className="pay-block">
-          <ul className="pay-rows customers">
-            {people.map((person) => (
-              <li key={person.id}>
-                <span dir="auto" className="khata-who">
-                  {person.name || t("console.customer_label")}
-                </span>
-                {person.verified && (
-                  <span className="verified-badge">
-                    {t("console.customers_verified")}
-                    <span className="pay-note">
-                      {person.verified_by === "owner"
-                        ? t("console.customers_by_owner")
-                        : t("console.customers_by_rule")}
-                    </span>
-                  </span>
-                )}
-                <span className="pay-note">
-                  {t("console.customers_counts", {
-                    orders: person.orders,
-                    delivered: person.delivered,
-                    returned: person.returned,
-                  })}
-                </span>
-                <FraudBadges person={person} />
-                {person.owes > 0 && (
-                  <span className="pay-note">
-                    {t("console.customers_owes", {
-                      amount: formatMoney(person.owes, me.country, lang),
-                    })}
-                  </span>
-                )}
-                {canTrust && (
-                  <button type="button" className="action" onClick={() => void toggle(person)}>
-                    {person.verified
-                      ? t("console.customers_unverify")
-                      : t("console.customers_verify")}
-                  </button>
-                )}
-                {canTrust && <ReportFraud token={token} person={person} onDone={load} />}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }

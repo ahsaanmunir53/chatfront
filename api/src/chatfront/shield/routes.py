@@ -1,6 +1,6 @@
 """The shield in the console (features 38, 104 and 37): what Chatfront may do on its own, the
-decisions waiting for the owner, the shop's customers with their verified-buyer badge, and
-the buyers it reported for fraud."""
+decisions waiting for the owner, the verified-buyer badge, and the buyers the shop reported
+for fraud. The customers list itself is the CRM's (crm/routes.py)."""
 
 from __future__ import annotations
 
@@ -11,17 +11,15 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from sqlalchemy import case, func, select
+from sqlalchemy import select
 
 from chatfront.audit.service import Actor, ActorType, record
-from chatfront.books.models import UdhaarAccount
 from chatfront.catalog.stock import SHOP_LIMIT, shop_limit
 from chatfront.channels import answers
 from chatfront.channels.models import SavedAnswer
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.orders.models import Order
-from chatfront.orders.states import OrderStatus
 from chatfront.owner.rights import Can, rights
 from chatfront.owner.routes import ServicesDep, StaffDep, needs
 from chatfront.owner.sessions import OwnerSession
@@ -61,19 +59,6 @@ class Waiting(BaseModel):
 
 class Decision(BaseModel):
     approve: bool
-
-
-class CustomerOut(BaseModel):
-    id: uuid.UUID
-    name: str | None
-    verified: bool
-    verified_by: str | None
-    orders: int
-    delivered: int
-    returned: int
-    owes: int
-    reported: str | None  # this shop's fraud report, by its status
-    listed_by: int  # shops whose confirmed reports put the number on the shared list
 
 
 class FraudIn(BaseModel):
@@ -234,54 +219,6 @@ async def remove_answer(
 
 
 # -- customers and the verified-buyer badge (feature 38) ---------------------------------
-
-
-@router.get("/customers")
-async def customers(session: OrdersDep, services: ServicesDep) -> list[CustomerOut]:
-    key = services.keys.phone_hash_key
-    async with services.db.tenant(session.tenant_id) as db:
-        rows = (
-            await db.execute(
-                select(
-                    Customer,
-                    func.count(Order.id),
-                    func.count(case((Order.status == OrderStatus.DELIVERED, 1))),
-                    func.count(case((Order.status == OrderStatus.RETURNED, 1))),
-                    func.coalesce(func.max(UdhaarAccount.balance), 0),
-                )
-                .join(Order, Order.customer_id == Customer.id)
-                .where(Order.placed_at.is_not(None))
-                .outerjoin(UdhaarAccount, UdhaarAccount.customer_id == Customer.id)
-                .where(Customer.staff_id.is_(None))
-                .group_by(Customer.id)
-                .order_by(func.max(Order.created_at).desc())
-                .limit(CUSTOMER_LIMIT)
-            )
-        ).all()
-        found = []
-        for customer, orders, delivered, returned, owes in rows:
-            number = await fraud.number_of(db, customer, key)
-            report = (
-                await db.scalar(select(FraudReport).where(FraudReport.phone_hash == number))
-                if number
-                else None
-            )
-            flags = await fraud.flags(db, {number} if number else set())
-            found.append(
-                CustomerOut(
-                    id=customer.id,
-                    name=customer.display_name,
-                    verified=customer.verified_buyer,
-                    verified_by=customer.verified_by,
-                    orders=orders,
-                    delivered=delivered,
-                    returned=returned,
-                    owes=owes,
-                    reported=report.status if report else None,
-                    listed_by=flags.listed_by,
-                )
-            )
-    return found
 
 
 @router.put("/customers/{customer_id}/verified")

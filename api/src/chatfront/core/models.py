@@ -105,4 +105,5 @@ class Customer(Base):
     verified_buyer: Mapped[bool] = mapped_column(default=False)
     verified_by: Mapped[str | None] = mapped_column(String(10))  # "rule" or "owner" (feature 38)
     risk_score: Mapped[int] = mapped_column(default=0)
+    greeted_at: Mapped[datetime | None]  # the shop's last greeting reached them (feature 59)
     created_at: Mapped[datetime] = created_at_column()
