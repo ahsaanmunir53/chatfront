@@ -52,7 +52,12 @@ _SCRIPT_LANGUAGE = {
     "Thai": "th",
     "Ethi": "am",
 }
-_NOISE = re.compile(r"\[[^\]]*\]|https?://\S+|www\.\S+|\S+@\S+|@\w+|#\w+")
+# Brackets, links, handles and codes in capitals with a digit (an order or product code, which
+# would otherwise read as Arabizi: "2SQVTJ").
+_NOISE = re.compile(
+    r"\[[^\]]*\]|https?://\S+|www\.\S+|\S+@\S+|@\w+|#\w+"
+    r"|\b(?=[A-Z0-9]*[0-9])(?=[A-Z0-9]*[A-Z])[A-Z0-9]{4,12}\b"
+)
 # Arabizi writes ع as 3, ح as 7, ء as 2, خ as 5, ق as 9, inside words.
 _ARABIZI = re.compile(r"^(?:[a-z]+[23579][a-z]*|[23579][a-z]{2,})$")
 _UNITS = re.compile(r"^\d+(?:pc|pcs|kg|g|gb|tb|mb|ml|l|k|din|day|days|x|m|cm|mm|ft|hr|hrs|min)$")

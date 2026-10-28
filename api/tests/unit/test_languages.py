@@ -183,6 +183,7 @@ class TestDetection:
             ("یہ کب تک مل جائے گا؟", "ur"),
             ("مجھے نیلا رنگ چاہیے", "ur"),
             ("دا سوټ په څو دی؟", "ps"),
+            ("دوپٹہ 1800 میں دے دیں", "ur"),  # de dein: Urdu, though "de" is also Punjabi
             ("هي سوٽ ڪيتري جو آهي؟", "sd"),
             ("यह सूट कितने का है?", "hi"),
             ("bhaiya ye kitne ka hai, namaste", "hi-Latn"),
@@ -223,6 +224,11 @@ class TestDetection:
         assert found.tag == "ur"
         assert script_of("a") == "Latn"
         assert script_of("1") is None
+
+    def test_order_codes_are_not_arabizi(self) -> None:
+        found = load_detector().detect("Please cancel my order 2SQVTJ", likely=PK)
+        assert found is not None
+        assert found.tag == "en"
 
     @pytest.mark.parametrize(
         ("text", "tag"),
@@ -280,6 +286,8 @@ class TestNumbers:
             ("ساڑھے تین ہزار", "ur", ["3500"]),
             ("مجھے دے دو", "ur", []),
             ("ڈیڈھ ہزار", "pa-Arab", ["1500"]),
+            ("تہانوں دس دیاں گے", "pa-Arab", []),  # dass: tell
+            ("دس ہزار", "pa-Arab", ["10000"]),
             ("ڏيڍ هزار", "sd", ["1500"]),
             ("دوه زره", "ps", ["2000"]),
             ("डेढ़ हज़ार", "hi", ["1500"]),
