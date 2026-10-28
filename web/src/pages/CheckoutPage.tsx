@@ -1,19 +1,24 @@
 // The shop page's checkout (feature 80): where a Facebook or Instagram shop link lands
 // (?products=<id>:<qty>,...&cart_origin=instagram) and where the shop page's cart goes. Prices,
 // the delivery charge and the total come from the API's quote; the order is placed by the API
-// alone and its payment instructions also go to the buyer's chat with the shop.
+// alone and its payment instructions also go to the buyer's chat with the shop. A buyer can
+// send it as a gift with a card (feature 21), start a group order with friends, or add their
+// part to a friend's (22); a friend's code from a shared link is put in for them (20).
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api";
-import type { DeliveryDetails, Placed, Quote } from "../api";
+import type { CheckoutRequest, DeliveryDetails, GroupView, Placed, Quote } from "../api";
 import { parseProducts, sourceOf, useCart, writeCart } from "../cart";
 import { Page, Problem } from "../components/Shell";
+import { ShareLink } from "../components/ShareLink";
+import { BASE_PATH } from "../config";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
 import { formatMoney } from "../money";
 import { useServer } from "../server";
 import { chatToken } from "../useChat";
+import { forgetGroup, groupLink, readGroup, readRef } from "../visit";
 import { dayLabel, useShop } from "./ShopPage";
 
 const QUOTE_DELAY_MS = 400;
@@ -37,6 +42,40 @@ const FIELD_ERRORS: Record<string, keyof DeliveryDetails> = {
   address_vague: "area",
   phone_invalid: "phone",
 };
+// What the API refuses with a reason the buyer can act on.
+const KNOWN_ERRORS = new Set([
+  "cart_problem",
+  "group_closed",
+  "group_full",
+  "gift_pays_transfer",
+  "group_pays_transfer",
+]);
+const GROUP_DAYS = [1, 2, 3, 7];
+const GIFT_MESSAGE = 200;
+type Gift = { on: boolean; message: string; from: string };
+
+/** The group order this buyer is adding a part to, when they came from its link. */
+function useJoining(slug: string) {
+  const [code, setCode] = useState(() => readGroup(slug));
+  const [group, setGroup] = useState<GroupView | null>(null);
+  useEffect(() => {
+    if (!code) return;
+    let current = true;
+    api.group(slug, code, null).then(
+      (found) => current && setGroup(found),
+      () => current && setCode(null),
+    );
+    return () => {
+      current = false;
+    };
+  }, [slug, code]);
+  const leave = () => {
+    forgetGroup(slug);
+    setCode(null);
+    setGroup(null);
+  };
+  return { code: group?.open ? code : null, group, leave };
+}
 
 /** The quote for the cart and city, asked again a moment after either changes. */
 function useQuote(
@@ -71,8 +110,17 @@ function useQuote(
   return { quote, failed };
 }
 
-function Confirmation({ slug, placed }: { slug: string; placed: Placed }) {
+function Confirmation({
+  slug,
+  placed,
+  started,
+}: {
+  slug: string;
+  placed: Placed;
+  started: boolean;
+}) {
   const { t } = useLang();
+  const group = placed.group;
   return (
     <section className="checkout-done" aria-labelledby="checkout-done-title">
       <h1 id="checkout-done-title" className="title">
@@ -82,6 +130,21 @@ function Confirmation({ slug, placed }: { slug: string; placed: Placed }) {
         {placed.message}
       </p>
       <p className="pay-note">{t("checkout.chat_note")}</p>
+      {group && started && (
+        <div className="pay-block group-lead">
+          <h2 className="pay-block-title">{t("group.share_title")}</h2>
+          <p className="aside">{t("checkout.group_started")}</p>
+          <ShareLink
+            url={groupLink(window.location.origin, BASE_PATH, slug, group)}
+            title={t("group.share_title")}
+          />
+        </div>
+      )}
+      {group && (
+        <p>
+          <Link to={`/s/${slug}/g/${group}`}>{t("group.see")}</Link>
+        </p>
+      )}
       <div className="checkout-done-actions">
         <Link to={`/s/${slug}/chat`} className="button button-ink">
           {t("checkout.continue_chat")}
@@ -105,9 +168,15 @@ export function CheckoutPage() {
   const [method, setMethod] = useState<"cod" | "transfer" | null>(null);
   const [state, setState] = useState<"idle" | "placing" | string>("idle");
   const [placed, setPlaced] = useState<Placed | null>(null);
-  const [code, setCode] = useState("");
-  const [coupon, setCoupon] = useState<string | null>(null);
-  const { quote, failed } = useQuote(slug, cart.lines, details.city, coupon);
+  const [code, setCode] = useState(() => readRef(slug) ?? "");
+  const [coupon, setCoupon] = useState<string | null>(() => readRef(slug));
+  const [gift, setGift] = useState<Gift>({ on: false, message: "", from: "" });
+  const [withFriends, setWithFriends] = useState(false);
+  const [days, setDays] = useState(2);
+  const [member, setMember] = useState("");
+  const joining = useJoining(slug);
+  const city = joining.code ? "" : details.city;
+  const { quote, failed } = useQuote(slug, cart.lines, city, coupon);
   const country = profile?.country;
   const money = (minor: number) => formatMoney(minor, country, lang);
   const linked = params.get("products");
@@ -118,7 +187,10 @@ export function CheckoutPage() {
     if (lines.length > 0) writeCart(slug, lines);
   }, [slug, linked]);
 
-  const methods = quote?.methods ?? [];
+  const offered = quote?.methods ?? [];
+  // A gift and a friend's part of a group order are paid by transfer before they ship.
+  const transferOnly = gift.on || joining.code !== null;
+  const methods = transferOnly ? offered.filter((m) => m === "transfer") : offered;
   const chosen = method && methods.includes(method) ? method : (methods[0] ?? null);
   const ready = useMemo(
     () => quote !== null && quote.lines.every((line) => line.problem === null),
@@ -131,15 +203,20 @@ export function CheckoutPage() {
     setState("placing");
     try {
       const token = await chatToken(slug);
-      const order = await api.checkout(slug, token, {
+      const request: CheckoutRequest = {
         lines: cart.lines,
-        details,
+        details: joining.code ? null : details,
+        join: joining.code ? { code: joining.code, name: member.trim() } : null,
+        start_group: !joining.code && withFriends ? days : null,
+        gift: gift.on ? { message: gift.message.trim(), from_name: gift.from.trim() } : null,
         payment_method: chosen,
         coupon: quote?.coupon_problem ? null : coupon,
         source,
         lang,
-      });
+      };
+      const order = await api.checkout(slug, token, request);
       writeCart(slug, []);
+      if (joining.code) forgetGroup(slug);
       setPlaced(order);
     } catch (error) {
       setState(error instanceof ApiError ? error.code : "failed");
@@ -156,7 +233,7 @@ export function CheckoutPage() {
   if (placed) {
     return (
       <Page>
-        <Confirmation slug={slug} placed={placed} />
+        <Confirmation slug={slug} placed={placed} started={withFriends && !joining.code} />
       </Page>
     );
   }
@@ -240,13 +317,15 @@ export function CheckoutPage() {
                   <div>
                     <dt>{t("checkout.delivery")}</dt>
                     <dd>
-                      {quote.free_delivery
-                        ? t("checkout.delivery_free")
-                        : quote.delivery !== null
-                          ? money(quote.delivery)
-                          : details.city.trim()
-                            ? t("checkout.delivery_later")
-                            : t("checkout.delivery_city")}
+                      {joining.code
+                        ? t("checkout.delivery_group")
+                        : quote.free_delivery
+                          ? t("checkout.delivery_free")
+                          : quote.delivery !== null
+                            ? money(quote.delivery)
+                            : details.city.trim()
+                              ? t("checkout.delivery_later")
+                              : t("checkout.delivery_city")}
                     </dd>
                   </div>
                   {quote.offers.map((offer) => (
@@ -299,39 +378,129 @@ export function CheckoutPage() {
             </div>
             <div className="pay-block checkout-details">
               <h2 className="pay-block-title">{t("checkout.details")}</h2>
-              <div className="books-form">
-                {FIELDS.map((field) => (
-                  <label key={field.name}>
-                    <span>{t(field.key)}</span>
+              {joining.code && joining.group && (
+                <div className="visit-note">
+                  <p>
+                    {t("checkout.joining", {
+                      name: joining.group.organiser,
+                      city: joining.group.city,
+                    })}
+                  </p>
+                  <button type="button" className="action" onClick={joining.leave}>
+                    {t("checkout.leave_group")}
+                  </button>
+                </div>
+              )}
+              {joining.code ? (
+                <div className="books-form">
+                  <label>
+                    <span>{t("checkout.your_name")}</span>
                     <input
-                      name={field.name}
-                      type={field.type ?? "text"}
-                      value={details[field.name]}
-                      required={field.required}
-                      maxLength={field.name === "address" ? 200 : 120}
-                      dir={field.type === "tel" ? "ltr" : "auto"}
-                      autoComplete={
-                        field.name === "name"
-                          ? "name"
-                          : field.name === "phone"
-                            ? "tel"
-                            : field.name === "city"
-                              ? "address-level2"
-                              : field.name === "address"
-                                ? "address-line1"
-                                : "off"
-                      }
-                      aria-invalid={fieldError === field.name || undefined}
-                      onChange={(e) => setDetails({ ...details, [field.name]: e.target.value })}
+                      value={member}
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      dir="auto"
+                      autoComplete="name"
+                      onChange={(e) => setMember(e.target.value)}
                     />
-                    {fieldError === field.name && (
-                      <span className="field-error" role="alert">
-                        {t(`checkout.err.${state}` as Key)}
-                      </span>
-                    )}
                   </label>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="books-form">
+                  {FIELDS.map((field) => (
+                    <label key={field.name}>
+                      <span>{t(field.key)}</span>
+                      <input
+                        name={field.name}
+                        type={field.type ?? "text"}
+                        value={details[field.name]}
+                        required={field.required}
+                        maxLength={field.name === "address" ? 200 : 120}
+                        dir={field.type === "tel" ? "ltr" : "auto"}
+                        autoComplete={
+                          field.name === "name"
+                            ? "name"
+                            : field.name === "phone"
+                              ? "tel"
+                              : field.name === "city"
+                                ? "address-level2"
+                                : field.name === "address"
+                                  ? "address-line1"
+                                  : "off"
+                        }
+                        aria-invalid={fieldError === field.name || undefined}
+                        onChange={(e) => setDetails({ ...details, [field.name]: e.target.value })}
+                      />
+                      {fieldError === field.name && (
+                        <span className="field-error" role="alert">
+                          {t(`checkout.err.${state}` as Key)}
+                        </span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+              {!joining.code && offered.includes("transfer") && (
+                <fieldset className="checkout-extras">
+                  <legend className="sr-only">{t("checkout.extras")}</legend>
+                  <label className="offer-check">
+                    <input
+                      type="checkbox"
+                      checked={gift.on}
+                      onChange={(e) => setGift({ ...gift, on: e.target.checked })}
+                    />
+                    <span>{t("checkout.gift")}</span>
+                  </label>
+                  {gift.on && (
+                    <div className="books-form">
+                      <p className="aside">{t("checkout.gift_note")}</p>
+                      <label>
+                        <span>{t("checkout.gift_message")}</span>
+                        <textarea
+                          value={gift.message}
+                          rows={3}
+                          maxLength={GIFT_MESSAGE}
+                          dir="auto"
+                          onChange={(e) => setGift({ ...gift, message: e.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>{t("checkout.gift_from")}</span>
+                        <input
+                          value={gift.from}
+                          maxLength={80}
+                          dir="auto"
+                          onChange={(e) => setGift({ ...gift, from: e.target.value })}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <label className="offer-check">
+                    <input
+                      type="checkbox"
+                      checked={withFriends}
+                      onChange={(e) => setWithFriends(e.target.checked)}
+                    />
+                    <span>{t("checkout.with_friends")}</span>
+                  </label>
+                  {withFriends && (
+                    <div className="books-form">
+                      <p className="aside">{t("checkout.with_friends_note")}</p>
+                      <label>
+                        <span>{t("checkout.group_days")}</span>
+                        <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+                          {GROUP_DAYS.map((count) => (
+                            <option key={count} value={count}>
+                              {t("checkout.group_days_option", { count })}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                </fieldset>
+              )}
               {methods.length > 0 && (
                 <fieldset className="checkout-pay">
                   <legend>{t("checkout.pay")}</legend>
@@ -359,7 +528,9 @@ export function CheckoutPage() {
               {state !== "idle" && state !== "placing" && !fieldError && (
                 <Problem
                   message={t(
-                    state === "cart_problem" ? "checkout.err.cart_problem" : "checkout.err.failed",
+                    KNOWN_ERRORS.has(state)
+                      ? (`checkout.err.${state}` as Key)
+                      : "checkout.err.failed",
                   )}
                 />
               )}

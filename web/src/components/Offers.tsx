@@ -1,6 +1,7 @@
 // Offers in the console: discount codes and sales (features 19 and 95), bundles sold together
-// for less (feature 13), loyalty points (feature 19) and the shop's own big days, which the shop
-// page counts down to (feature 95). Code applies all of them; nothing here is a model's.
+// for less (feature 13), loyalty points (feature 19), the shop's own big days, which the shop
+// page counts down to (feature 95), and the ways to bring customers back (OfferExtras). Code
+// applies all of them; nothing here is a model's.
 import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../api";
@@ -18,38 +19,10 @@ import { useLang } from "../lang";
 import { formatMoney, parseAmount, toMinor } from "../money";
 import { dayLabel } from "../pages/ShopPage";
 import { usePolled } from "../usePolled";
+import { OfferExtras } from "./OfferExtras";
+import { Status, useSave } from "./Saving";
 
 const POLL_MS = 30_000;
-type Saving = "idle" | "saving" | "saved" | "failed";
-
-function Status({ state }: { state: Saving }) {
-  const { t } = useLang();
-  if (state === "saved") return <span role="status">{t("console.saved")}</span>;
-  if (state === "failed") return <span role="alert">{t("console.offers_failed")}</span>;
-  return null;
-}
-
-/** Runs a save and keeps its state for the form's status line. */
-function useSave(onDone: () => void) {
-  const [state, setState] = useState<Saving>("idle");
-  const run = useCallback(
-    async (step: () => Promise<unknown>) => {
-      setState("saving");
-      try {
-        await step();
-        setState("saved");
-        onDone();
-        return true;
-      } catch {
-        setState("failed");
-        return false;
-      }
-    },
-    [onDone],
-  );
-  return { state, run };
-}
-
 function CouponRow({
   me,
   token,
@@ -569,6 +542,7 @@ export function OffersPanel({
           <LoyaltyForm me={me} token={token} current={data.loyalty} onSaved={refresh} />
           <EventsForm token={token} current={data.events} onSaved={refresh} />
         </div>
+        <OfferExtras me={me} token={token} data={data} onSaved={refresh} />
       </div>
     </section>
   );

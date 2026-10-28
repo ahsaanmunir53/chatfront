@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useCart } from "../cart";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ChannelLink, Countdown } from "../api";
 import { bundledProducts, fromApi, productText } from "../catalog";
@@ -18,6 +18,7 @@ import { useLang } from "../lang";
 import { DEFAULT_COUNTRY, formatMoney } from "../money";
 import { saveOwnerToken } from "../owner";
 import { useServer } from "../server";
+import { readGroup, readRef, rememberVisit } from "../visit";
 
 type Profile = {
   name: string;
@@ -232,6 +233,38 @@ function AddToCart({ slug, product, name }: { slug: string; product: ShopProduct
       )}
     </div>
   );
+}
+
+/** What a friend's link brought: their code for a first order (feature 20), or the group
+ * order this visitor is adding a part to (feature 22). */
+function VisitNote({ slug }: { slug: string }) {
+  const { t } = useLang();
+  const [params] = useSearchParams();
+  const [kept, setKept] = useState<{ ref: string | null; group: string | null }>({
+    ref: null,
+    group: null,
+  });
+  const wanted = params.toString();
+  useEffect(() => {
+    rememberVisit(slug, new URLSearchParams(wanted));
+    setKept({ ref: readRef(slug), group: readGroup(slug) });
+  }, [slug, wanted]);
+  if (kept.group) {
+    return (
+      <p className="visit-note" role="status">
+        {t("shop.group_adding")}{" "}
+        <Link to={`/s/${slug}/g/${kept.group}`}>{t("shop.group_see")}</Link>
+      </p>
+    );
+  }
+  if (kept.ref) {
+    return (
+      <p className="visit-note" role="status">
+        {t("shop.friend_code", { code: kept.ref })}
+      </p>
+    );
+  }
+  return null;
 }
 
 /** What is in the cart, and the way to the checkout. */
@@ -464,6 +497,7 @@ export function ShopPage() {
         </div>
       </section>
 
+      <VisitNote slug={slug} />
       <Countdowns list={countdowns} country={profile.country} />
       <Catalog slug={slug} profile={profile} />
       <ShopReviewsSection slug={slug} />

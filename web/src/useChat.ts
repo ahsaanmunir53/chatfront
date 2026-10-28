@@ -13,7 +13,8 @@ const RETRY_MS = 3000;
 
 export type SendProblem = "network" | "type" | "size" | "signed_out";
 
-function storedToken(slug: string): string | null {
+/** This browser's chat token for the shop, if it has one; never makes one. */
+export function storedChatToken(slug: string): string | null {
   try {
     return localStorage.getItem(`chatfront.chat.${slug}`);
   } catch {
@@ -32,7 +33,7 @@ function storeToken(slug: string, token: string): void {
 /** This browser's chat token for the shop, made on first need: the shop page's checkout
  * places its order into the same chat (feature 80). */
 export async function chatToken(slug: string): Promise<string> {
-  const stored = storedToken(slug);
+  const stored = storedChatToken(slug);
   if (stored) return stored;
   const { token } = await api.startChat(slug);
   storeToken(slug, token);
@@ -50,7 +51,9 @@ function problemOf(error: unknown): { problem: SendProblem; drop: boolean } {
 export function useChat(slug: string, ownerToken: string | null, onSignedOut?: () => void) {
   const { state } = useServer();
   const online = state === "online";
-  const [customerToken, setCustomerToken] = useState(() => (ownerToken ? null : storedToken(slug)));
+  const [customerToken, setCustomerToken] = useState(() =>
+    ownerToken ? null : storedChatToken(slug),
+  );
   const auth: ChatAuth | null = ownerToken
     ? { token: ownerToken, owner: true }
     : customerToken

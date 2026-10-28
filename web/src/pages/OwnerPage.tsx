@@ -7,10 +7,12 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
+import { BroadcastsPanel } from "../components/Broadcasts";
 import { BusyDayPanel } from "../components/BusyDay";
 import { PhoneAlerts } from "../components/PhoneAlerts";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
+import { ConsentsPanel } from "../components/Consents";
 import { DashboardPanel } from "../components/Dashboard";
 import { FraudReportsPanel, FraudReviewPanel } from "../components/Fraud";
 import { ImportsPanel } from "../components/Imports";
@@ -384,6 +386,7 @@ function Console({
       {can("catalog") && <CatalogSyncPanel token={token} />}
       {can("catalog") && <SizeChartsPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
+      {can("chats") && <BroadcastsPanel me={me} token={token} products={products ?? []} />}
       {can("orders") && <ReviewsPanel token={token} canReply={can("chats")} />}
       {can("trust") && <FraudReportsPanel token={token} />}
       {me.is_platform && can("trust") && <FraudReviewPanel token={token} />}
@@ -392,6 +395,7 @@ function Console({
       {can("settings") && <AnswersPanel token={token} />}
       <PhoneAlerts token={token} />
       {can("settings") && <SettingsPanel token={token} />}
+      {can("audit") && <ConsentsPanel token={token} canChange={can("settings")} />}
       {can("audit") && <ActivityPanel token={token} />}
     </Page>
   );

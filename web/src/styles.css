@@ -33,10 +33,9 @@
   --tone-ink: #33478f;
 
   --font: "Anek Latin", "Segoe UI", system-ui, sans-serif;
-  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Anek Latin", system-ui,
-    sans-serif;
-  --font-arabic: "Noto Sans Arabic", "Noto Naskh Arabic", "Segoe UI", Tahoma, "Anek Latin",
-    system-ui, sans-serif;
+  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Anek Latin", system-ui, sans-serif;
+  --font-arabic:
+    "Noto Sans Arabic", "Noto Naskh Arabic", "Segoe UI", Tahoma, "Anek Latin", system-ui, sans-serif;
   --font-devanagari: "Noto Sans Devanagari", "Anek Latin", system-ui, sans-serif;
   --font-bengali: "Noto Sans Bengali", "Anek Latin", system-ui, sans-serif;
   --gutter: 20px;
@@ -114,7 +113,8 @@ body {
 }
 
 /* Naskh and Sindhi letters sit taller than Latin: headlines need more room between lines. */
-:is(:lang(pa-Arab), :lang(ps), :lang(sd), :lang(skr), :lang(afb), :lang(arz)) :is(.hero-title, .title),
+:is(:lang(pa-Arab), :lang(ps), :lang(sd), :lang(skr), :lang(afb), :lang(arz))
+  :is(.hero-title, .title),
 :lang(ar):not(:lang(ar-Latn)) :is(.hero-title, .title) {
   line-height: 1.55;
 }
@@ -398,7 +398,9 @@ button {
   font-weight: 650;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 120ms ease, background-color 120ms ease;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease;
 }
 
 .button:active {
@@ -572,8 +574,7 @@ button {
   padding: 14px 12px 18px;
   border-radius: 0 0 26px 26px;
   background:
-    repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule) 27px 28px),
-    var(--paper);
+    repeating-linear-gradient(to bottom, transparent 0 27px, var(--rule) 27px 28px), var(--paper);
 }
 
 .hero-msg {
@@ -757,8 +758,7 @@ button {
   padding-inline-start: 40px;
   border-radius: 18px;
   background:
-    repeating-linear-gradient(to bottom, transparent 0 47px, var(--rule) 47px 48px),
-    var(--card);
+    repeating-linear-gradient(to bottom, transparent 0 47px, var(--rule) 47px 48px), var(--card);
   border: 1px solid var(--line);
 }
 
@@ -2000,6 +2000,15 @@ button {
 }
 
 /* The cart: a slip pinned to the bottom of the shop page while something is in it. */
+/* A friend's link: their code, or the group order being added to. */
+.visit-note {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border-inline-start: 4px solid var(--saffron);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--saffron) 12%, var(--card));
+}
+
 .cart-bar {
   position: sticky;
   bottom: 12px;
@@ -2028,8 +2037,7 @@ button {
   padding: 22px 24px;
   border-radius: 22px;
   background:
-    repeating-linear-gradient(to bottom, transparent 0 23px, var(--ink-line) 23px 24px),
-    var(--ink);
+    repeating-linear-gradient(to bottom, transparent 0 23px, var(--ink-line) 23px 24px), var(--ink);
   color: var(--on-ink);
 }
 
@@ -3368,7 +3376,8 @@ button {
 }
 
 .slip {
-  --tear: radial-gradient(circle at 8px 0, transparent 6px, #000 6.5px) top / 16px 12px repeat-x,
+  --tear:
+    radial-gradient(circle at 8px 0, transparent 6px, #000 6.5px) top / 16px 12px repeat-x,
     radial-gradient(circle at 8px 12px, transparent 6px, #000 6.5px) bottom / 16px 12px repeat-x,
     linear-gradient(#000, #000) center / 100% calc(100% - 22px) no-repeat;
   margin-bottom: 40px;
@@ -3614,6 +3623,15 @@ button {
 
 .order-pin {
   display: inline-flex;
+  color: var(--muted);
+}
+
+/* A gift or a part of a group order: a quiet outline, never mistaken for the status. */
+.order-badge {
+  padding: 0 9px 1px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
   color: var(--muted);
 }
 

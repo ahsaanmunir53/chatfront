@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { parseProducts, readCart, sourceOf, writeCart } from "./cart";
+import { MemoryStorage } from "./testing";
 
 describe("a Facebook or Instagram checkout link", () => {
   it("reads ids and quantities, adding repeats and skipping junk", () => {
@@ -19,22 +20,6 @@ describe("a Facebook or Instagram checkout link", () => {
     expect(sourceOf(null)).toBe("shop_page");
   });
 });
-
-class MemoryStorage {
-  private items = new Map<string, string>();
-  getItem(name: string): string | null {
-    return this.items.get(name) ?? null;
-  }
-  setItem(name: string, value: string): void {
-    this.items.set(name, value);
-  }
-  removeItem(name: string): void {
-    this.items.delete(name);
-  }
-  clear(): void {
-    this.items.clear();
-  }
-}
 
 describe("the cart in this browser", () => {
   beforeEach(() => {

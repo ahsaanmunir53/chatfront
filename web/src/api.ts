@@ -173,7 +173,10 @@ export type DeliveryDetails = {
 };
 export type CheckoutRequest = {
   lines: { item: string; quantity: number }[];
-  details: DeliveryDetails;
+  details: DeliveryDetails | null;
+  join: { code: string; name: string } | null;
+  start_group: number | null;
+  gift: { message: string; from_name: string } | null;
   payment_method: "cod" | "transfer";
   coupon: string | null;
   source: "shop_page" | "facebook" | "instagram" | "assistant";
@@ -186,6 +189,7 @@ export type Placed = {
   due_now: number | null;
   payment_method: string;
   message: string;
+  group: string | null;
 };
 
 export type OwnerMe = {
@@ -333,12 +337,63 @@ export type LoyaltySettings = {
   max_share: number;
 };
 export type ShopEvent = { name: string; date: string };
+export type ReferralSettings = {
+  on: boolean;
+  friend_percent: number;
+  reward_points: number;
+  reward_percent: number;
+};
 export type Offers = {
   currency: string;
   coupons: OwnerCoupon[];
   bundles: OwnerBundle[];
   loyalty: LoyaltySettings | null;
   events: ShopEvent[];
+  referral: ReferralSettings | null;
+  referral_stats: { codes: number; friends: number; delivered: number };
+  reminders: { on: boolean; reminded: number; placed: number; value: number };
+  rates: Record<string, number>;
+  currencies: string[];
+};
+export type BroadcastResult = {
+  text: string;
+  product: string | null;
+  category: string | null;
+  created_at: string;
+  sent: number;
+  templated: number;
+  closed: number;
+  orders: number;
+  value: number;
+  with_product: number;
+};
+export type Broadcasts = { categories: string[]; template: boolean; results: BroadcastResult[] };
+export type BroadcastAbout = { product_code: string | null; category: string | null };
+export type Audience = { interested: number; agreed: number };
+export type ConsentRow = {
+  purpose: "offers" | "fraud_list" | "credit_passport";
+  granted: boolean;
+  via: string;
+  wording: string;
+  who: string;
+  at: string;
+};
+export type Consents = {
+  offers_yes: number;
+  offers_no: number;
+  fraud_list: boolean | null;
+  credit_passport: boolean | null;
+  rows: ConsentRow[];
+};
+export type GroupPart = { name: string; items: number; paid: boolean | null; organiser: boolean };
+export type GroupView = {
+  code: string;
+  organiser: string;
+  city: string;
+  closes_at: string;
+  open: boolean;
+  mine: boolean;
+  parts: GroupPart[];
 };
 export type Waiting = {
   id: string;
@@ -437,6 +492,9 @@ export type OwnerOrder = {
     return_charge: number | null;
   } | null;
   packing: PackingCheck | null;
+  gift: boolean;
+  group: string | null;
+  group_member: string;
 };
 export type PackingLine = { name: string; quantity: number; seen: number | null; sure: boolean };
 export type PackingCheck = {
@@ -452,6 +510,7 @@ export type PickList = {
   pieces: number;
   lines: { name: string; quantity: number; orders: string; short: number }[];
   waiting: { code: string; ships_from: string }[];
+  grouped: { code: string; group: string; closes_on: string }[];
 };
 export type Parcel = {
   shop: string;
@@ -863,6 +922,15 @@ export const api = {
       headers: { "X-Chat-Token": chatToken },
       body: JSON.stringify(order),
     }),
+  group: (slug: string, code: string, chatToken: string | null) =>
+    call<GroupView>(`${shopPath(slug)}/groups/${encodeURIComponent(code)}`, {
+      headers: chatToken ? { "X-Chat-Token": chatToken } : {},
+    }),
+  closeGroup: (slug: string, code: string, chatToken: string) =>
+    call<GroupView>(`${shopPath(slug)}/groups/${encodeURIComponent(code)}/close`, {
+      method: "POST",
+      headers: { "X-Chat-Token": chatToken },
+    }),
   startChat: (slug: string) =>
     call<{ token: string }>(`${shopPath(slug)}/chat/session`, { method: "POST" }),
   postChat: (slug: string, auth: ChatAuth, message: ChatText) =>
@@ -978,6 +1046,8 @@ export const api = {
   },
   pickList: (token: string) => call<PickList>("/api/owner/pick-list", { headers: bearer(token) }),
   pickListPdf: (token: string) => pdf(token, "/api/owner/pick-list.pdf"),
+  giftCardPdf: (token: string, code: string) =>
+    pdf(token, `/api/owner/orders/${encodeURIComponent(code)}/gift-card.pdf`),
   label: (token: string, code: string) =>
     pdf(token, `/api/owner/orders/${encodeURIComponent(code)}/label.pdf`),
   returnLabel: (token: string, returnId: string) =>
@@ -1027,6 +1097,45 @@ export const api = {
       method: "PUT",
       headers: bearer(token),
       body: JSON.stringify(events),
+    }),
+  setReferral: (token: string, referral: ReferralSettings) =>
+    call<ReferralSettings>("/api/owner/offers/referral", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(referral),
+    }),
+  setCartReminders: (token: string, on: boolean) =>
+    call<{ on: boolean }>("/api/owner/offers/cart-reminders", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ on }),
+    }),
+  setRates: (token: string, rates: Record<string, number>) =>
+    call<{ rates: Record<string, number> }>("/api/owner/offers/rates", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ rates }),
+    }),
+  broadcasts: (token: string) =>
+    call<Broadcasts>("/api/owner/broadcasts", { headers: bearer(token) }),
+  audience: (token: string, about: BroadcastAbout) =>
+    call<Audience>("/api/owner/broadcasts/audience", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(about),
+    }),
+  broadcast: (token: string, about: BroadcastAbout, text: string) =>
+    call<Audience>("/api/owner/broadcasts", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ ...about, text }),
+    }),
+  consents: (token: string) => call<Consents>("/api/owner/consents", { headers: bearer(token) }),
+  shopConsent: (token: string, purpose: "fraud_list" | "credit_passport", granted: boolean) =>
+    call<Consents>("/api/owner/consents/shop", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ purpose, granted }),
     }),
   waitlist: (token: string) => call<Waiting[]>("/api/owner/waitlist", { headers: bearer(token) }),
   answers: (token: string) => call<SavedAnswer[]>("/api/owner/answers", { headers: bearer(token) }),

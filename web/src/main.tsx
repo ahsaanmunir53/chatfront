@@ -7,6 +7,7 @@ import { BASE_PATH } from "./config";
 import { LangProvider } from "./lang";
 import { ChatPage } from "./pages/ChatPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
+import { GroupPage } from "./pages/GroupPage";
 import { HomePage } from "./pages/HomePage";
 import { NotFoundPage, TrustPage } from "./pages/InfoPages";
 import { ReceiptPage } from "./pages/ReceiptPage";
@@ -43,6 +44,7 @@ createRoot(root).render(
             <Route path="/s/:slug" element={<ShopPage />} />
             <Route path="/s/:slug/chat" element={<ChatPage />} />
             <Route path="/s/:slug/checkout" element={<CheckoutPage />} />
+            <Route path="/s/:slug/g/:code" element={<GroupPage />} />
             <Route path="/s/:slug/trust" element={<TrustPage />} />
             <Route path="/s/:slug/review/:code" element={<ReviewPage />} />
             <Route path="/start" element={<StartPage />} />

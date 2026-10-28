@@ -1,7 +1,8 @@
 // The owner's orders: where each one stands, what is paid and what the rider collects, the
 // risk of a cash-on-delivery order coming back with its reasons (feature 34), the next moves,
 // the shipping label (feature 101), what the courier charged (51), the packing check (102),
-// the day's pick list and slips (103), and why each decision was made (feature 107).
+// the day's pick list and slips (103), why each decision was made (feature 107), and a gift's
+// message card (21) and a group order's parts (22).
 import { useCallback, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { ApiError, api } from "../api";
@@ -28,6 +29,27 @@ export function useOrders(token: string, enabled: boolean) {
 
 async function downloadLabel(token: string, code: string) {
   saveFile(await api.label(token, code), `label-${code}.pdf`);
+}
+
+async function downloadGiftCard(token: string, code: string) {
+  saveFile(await api.giftCardPdf(token, code), `gift-card-${code}.pdf`);
+}
+
+/** A gift (feature 21) and a group order's part (feature 22), next to the order's code. */
+function Badges({ order }: { order: OwnerOrder }) {
+  const { t } = useLang();
+  return (
+    <>
+      {order.gift && <span className="order-badge">{t("console.order_gift")}</span>}
+      {order.group && (
+        <span className="order-badge" dir="auto">
+          {order.group_member
+            ? t("console.order_group_part", { group: order.group, name: order.group_member })
+            : t("console.order_group_lead", { group: order.group })}
+        </span>
+      )}
+    </>
+  );
 }
 
 function Risk({ order }: { order: OwnerOrder }) {
@@ -277,6 +299,7 @@ function OrderRow({
         <span className={`order-status status-${order.status}`}>
           {t(`order.status.${order.status}` as Key)}
         </span>
+        <Badges order={order} />
         {order.pin && (
           <span className="order-pin" title={t("console.order_pin")}>
             <PinIcon size={15} />
@@ -313,7 +336,7 @@ function OrderRow({
       {order.packing && <PackingResult check={order.packing} />}
       <Risk order={order} />
       <WhyDetails me={me} token={token} code={order.code} />
-      {(order.next.length > 0 || order.label) && (
+      {(order.next.length > 0 || order.label || order.gift) && (
         <div className="waiting-actions">
           {order.next.map((to) =>
             to === "dispatched" ? (
@@ -339,6 +362,15 @@ function OrderRow({
               onClick={() => void downloadLabel(token, order.code).catch(() => setFailed(true))}
             >
               {t("console.order_label")}
+            </button>
+          )}
+          {order.gift && (
+            <button
+              type="button"
+              className="action"
+              onClick={() => void downloadGiftCard(token, order.code).catch(() => setFailed(true))}
+            >
+              {t("console.order_gift_card")}
             </button>
           )}
           {canShip && CHECKABLE.has(order.status) && (
@@ -376,7 +408,8 @@ function PickListPanel({ token }: { token: string }) {
   const load = useCallback(() => api.pickList(token), [token]);
   const { data } = usePolled(load, PICK_POLL_MS);
   const [failed, setFailed] = useState(false);
-  if (!data || (data.lines.length === 0 && data.waiting.length === 0)) return null;
+  const empty = data && !data.lines.length && !data.waiting.length && !data.grouped.length;
+  if (!data || empty) return null;
   async function print() {
     try {
       saveFile(await api.pickListPdf(token), `pick-list-${data?.day ?? "today"}.pdf`);
@@ -385,6 +418,7 @@ function PickListPanel({ token }: { token: string }) {
     }
   }
   const waiting = data.waiting.map((w) => `${w.code} (${w.ships_from})`).join(", ");
+  const grouped = data.grouped.map((g) => `${g.code} (${g.group}, ${g.closes_on})`).join(", ");
   return (
     <section className="pick-list" aria-labelledby="pick-list-title">
       <h3 id="pick-list-title" className="pay-block-title">
@@ -419,6 +453,11 @@ function PickListPanel({ token }: { token: string }) {
       {waiting && (
         <p className="pay-note">
           {t("pick.waiting", { count: data.waiting.length, orders: waiting })}
+        </p>
+      )}
+      {grouped && (
+        <p className="pay-note">
+          {t("pick.grouped", { count: data.grouped.length, orders: grouped })}
         </p>
       )}
       {data.lines.length > 0 && (
