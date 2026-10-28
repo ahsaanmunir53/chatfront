@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ahsaanmunir53/chatfront/docs/verified-commerce/passport.schema.json",
+  "title": "Verified commerce credit passport, version 1",
+  "type": "object",
+  "required": ["version", "code", "shop", "shop_page", "country", "currency", "made_on", "months", "totals"],
+  "$defs": {
+    "figures": {
+      "type": "object",
+      "required": ["orders_delivered", "delivered_value", "orders_returned", "paid_matched_to_sms", "paid_approved_by_owner", "cash_at_door"],
+      "properties": {
+        "orders_delivered": {"type": "integer", "minimum": 0},
+        "delivered_value": {"type": "integer", "minimum": 0},
+        "orders_returned": {"type": "integer", "minimum": 0},
+        "paid_matched_to_sms": {"type": "integer", "minimum": 0, "description": "Checked by code against a wallet or bank SMS"},
+        "paid_approved_by_owner": {"type": "integer", "minimum": 0, "description": "The owner's word"},
+        "cash_at_door": {"type": "integer", "minimum": 0, "description": "The owner's word that the rider collected it"}
+      }
+    }
+  },
+  "properties": {
+    "version": {"const": 1},
+    "code": {"type": "string"},
+    "shop": {"type": "string"},
+    "shop_page": {"type": "string"},
+    "country": {"type": "string", "pattern": "^[A-Z]{2}$"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "selling_since": {"type": ["string", "null"], "format": "date"},
+    "made_on": {"type": "string", "format": "date"},
+    "months": {
+      "type": "array",
+      "items": {"allOf": [{"$ref": "#/$defs/figures"}, {"type": "object", "required": ["month"], "properties": {"month": {"type": "string", "pattern": "^\\d{4}-\\d{2}$"}}}]}
+    },
+    "totals": {"$ref": "#/$defs/figures"}
+  }
+}

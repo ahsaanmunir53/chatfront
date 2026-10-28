@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ahsaanmunir53/chatfront/docs/verified-commerce/receipt.schema.json",
+  "title": "Verified commerce receipt, version 1",
+  "type": "object",
+  "required": ["v", "receipt", "shop", "shop_slug", "country", "order", "items", "currency", "minor_digits", "amount", "order_total", "issued_at"],
+  "properties": {
+    "v": {"const": 1},
+    "kind": {"enum": ["refund"], "description": "Present only on a refund receipt"},
+    "receipt": {"type": "string", "description": "The receipt's own code"},
+    "shop": {"type": "string"},
+    "shop_slug": {"type": "string"},
+    "country": {"type": "string", "pattern": "^[A-Z]{2}$"},
+    "order": {"type": "string"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "quantity"],
+        "properties": {"name": {"type": "string"}, "quantity": {"type": "integer", "minimum": 1}}
+      }
+    },
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "minor_digits": {"type": "integer", "minimum": 0, "maximum": 3},
+    "amount": {"type": "integer", "description": "Minor units paid (or refunded) by this receipt"},
+    "order_total": {"type": "integer"},
+    "paid_so_far": {"type": "integer"},
+    "balance": {"type": "integer"},
+    "refunded_so_far": {"type": "integer"},
+    "method": {"type": ["string", "null"]},
+    "verified_by": {"enum": ["sms", "owner", "proof"], "description": "sms: matched to a wallet or bank SMS by code; owner: the owner's word; proof: a transfer screenshot checked by code"},
+    "transaction_id": {"type": ["string", "null"]},
+    "reason": {"enum": ["cancelled", "returned", "overpaid"]},
+    "to": {"type": ["string", "null"], "description": "Refund only: the name on the account the money was sent back to"},
+    "issued_at": {"type": "string", "format": "date-time"}
+  }
+}

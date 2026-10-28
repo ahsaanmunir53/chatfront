@@ -1,0 +1,70 @@
+{
+  "about": "Test vectors for the verified commerce standard, v1. The private key is the 32 bytes 00 01 02 ... 1f: published for testing, never for real use.",
+  "private_key_seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+  "documents": [
+    {
+      "kind": "receipt",
+      "payload": {
+        "v": 1,
+        "receipt": "TESTRC1",
+        "shop": "Test Lawn House",
+        "shop_slug": "test-lawn",
+        "country": "PK",
+        "order": "ORD12345",
+        "items": [
+          {
+            "name": "Printed lawn 3-piece",
+            "quantity": 1
+          }
+        ],
+        "currency": "PKR",
+        "minor_digits": 2,
+        "amount": 485000,
+        "order_total": 485000,
+        "paid_so_far": 485000,
+        "balance": 0,
+        "method": "transfer",
+        "verified_by": "sms",
+        "transaction_id": "TX123456",
+        "issued_at": "2026-10-28T10:00:00+05:00"
+      },
+      "canonical": "{\"amount\":485000,\"balance\":0,\"country\":\"PK\",\"currency\":\"PKR\",\"issued_at\":\"2026-10-28T10:00:00+05:00\",\"items\":[{\"name\":\"Printed lawn 3-piece\",\"quantity\":1}],\"method\":\"transfer\",\"minor_digits\":2,\"order\":\"ORD12345\",\"order_total\":485000,\"paid_so_far\":485000,\"receipt\":\"TESTRC1\",\"shop\":\"Test Lawn House\",\"shop_slug\":\"test-lawn\",\"transaction_id\":\"TX123456\",\"v\":1,\"verified_by\":\"sms\"}",
+      "signature": "BELRdnxjubXkANldIdoUrP3Bhos7J6JNoHdZ8bYMEkYBTJkxoDqSug3dX3HACQiU2v43ytS-cJZL3iAhcjWNAQ"
+    },
+    {
+      "kind": "credit_passport",
+      "statement": {
+        "version": 1,
+        "code": "CPTEST01",
+        "shop": "Test Lawn House",
+        "shop_page": "test-lawn",
+        "country": "PK",
+        "currency": "PKR",
+        "selling_since": "2026-01-15",
+        "made_on": "2026-10-28",
+        "months": [
+          {
+            "month": "2026-09",
+            "orders_delivered": 12,
+            "delivered_value": 5820000,
+            "orders_returned": 1,
+            "paid_matched_to_sms": 2425000,
+            "paid_approved_by_owner": 485000,
+            "cash_at_door": 2910000
+          }
+        ],
+        "totals": {
+          "orders_delivered": 12,
+          "delivered_value": 5820000,
+          "orders_returned": 1,
+          "paid_matched_to_sms": 2425000,
+          "paid_approved_by_owner": 485000,
+          "cash_at_door": 2910000
+        }
+      },
+      "canonical": "{\"code\":\"CPTEST01\",\"country\":\"PK\",\"currency\":\"PKR\",\"made_on\":\"2026-10-28\",\"months\":[{\"cash_at_door\":2910000,\"delivered_value\":5820000,\"month\":\"2026-09\",\"orders_delivered\":12,\"orders_returned\":1,\"paid_approved_by_owner\":485000,\"paid_matched_to_sms\":2425000}],\"selling_since\":\"2026-01-15\",\"shop\":\"Test Lawn House\",\"shop_page\":\"test-lawn\",\"totals\":{\"cash_at_door\":2910000,\"delivered_value\":5820000,\"orders_delivered\":12,\"orders_returned\":1,\"paid_approved_by_owner\":485000,\"paid_matched_to_sms\":2425000},\"version\":1}",
+      "signature": "-e1WH9nY-Ub_BqM0EX2_vK4LhCy8FDTinGktfl0OiDykEavmEfkJWMO51mwO7wI4p2OkVibF8FCYaWTa_FGRAg"
+    }
+  ]
+}
