@@ -23,6 +23,7 @@ from chatfront.ai.client import ModelUnavailable
 from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest
 from chatfront.audit.service import AGENT, Actor, ActorType, record
+from chatfront.bookings import tools as booking_tools
 from chatfront.books.ledger import today
 from chatfront.catalog import sales
 from chatfront.catalog.models import Product, ProductStatus
@@ -53,7 +54,7 @@ from chatfront.delivery import pins
 from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
 from chatfront.offers import seasons
-from chatfront.orders import live_claims
+from chatfront.orders import custom, live_claims
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.catalog_cart import take_catalog_cart
@@ -139,6 +140,9 @@ class OrderAgent:
         live = await self._live_sale(turn, tapped)
         if live is not None:
             return live
+        tapped_more = await self._tapped(turn, tapped)
+        if tapped_more is not None:
+            return tapped_more
         if (turn.message.payload or {}).get("attachment_type") == "story_mention":
             return await mentions.thank(
                 self.services, turn.tenant, turn.conversation.customer_id, turn.lang
@@ -206,6 +210,7 @@ class OrderAgent:
             phone_hash_key=services.keys.phone_hash_key,
             trusted=trusted,
             web_url=services.settings.web_url,
+            booking_flow_id=services.settings.whatsapp_flow_booking_id or "",
         )
         prompt = load_prompt("order_agent")
         system = prompt.render(
@@ -480,6 +485,25 @@ class OrderAgent:
         if ask:
             placed.append(consent.offers_question(lang, tenant.name))
         return placed
+
+    async def _tapped(self, turn: Turn, tapped: str | None) -> list[Outbound] | None:
+        """A time tapped to book (feature 18), or a custom order's price accepted or declined
+        (feature 17); None when the tap is not one of these."""
+        flow = (turn.message.payload or {}).get("flow") or {}
+        time = booking_tools.parse_button(tapped) or booking_tools.parse_flow(tapped, flow)
+        answer = custom.parse_button(tapped)
+        if time is None and answer is None:
+            return None
+        chat = turn.conversation
+        async with self.services.db.tenant(turn.tenant.id) as session:
+            if time is not None:
+                return await booking_tools.tap(
+                    session, turn.tenant, chat.customer_id, chat.id, *time, turn.lang
+                )
+            assert answer is not None
+            return await custom.answer(
+                session, turn.tenant, chat.customer_id, chat.id, *answer, turn.lang
+            )
 
     async def _live_sale(self, turn: Turn, tapped: str | None) -> list[Outbound] | None:
         """A number written, or a colour tapped, to take a piece in a live sale (feature 8);

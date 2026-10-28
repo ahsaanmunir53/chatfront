@@ -92,7 +92,7 @@ def cleaned(photo: bytes) -> Image.Image:
     return image.filter(ImageFilter.UnsharpMask(radius=2, percent=60, threshold=3))
 
 
-def _script_font(text: str, size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont:
+def script_font(text: str, size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont:
     """A bundled Noto font that has the text's script."""
     name = "NotoSans-Bold.ttf" if bold else "NotoSans-Regular.ttf"
     for char in text:
@@ -120,10 +120,10 @@ def _fitted(
 ) -> tuple[ImageFont.FreeTypeFont, str]:
     """The largest font, down to two thirds of `size`, that fits the text; then the text cut."""
     for step in range(size, size * 2 // 3, -4):
-        font = _script_font(text, step, bold=bold)
+        font = script_font(text, step, bold=bold)
         if draw.textlength(text, font=font) <= width:
             return font, text
-    font = _script_font(text, size * 2 // 3, bold=bold)
+    font = script_font(text, size * 2 // 3, bold=bold)
     while text and draw.textlength(text + "…", font=font) > width:
         text = text[:-1]
     return font, text.rstrip() + "…"
@@ -158,7 +158,7 @@ class TemplateImages:
         ImageDraw.Draw(mask).rounded_rectangle((0, 0, side, side), radius=26, fill=255)
         canvas.paste(picture, (left, top), mask)
         if card.badge and drawable(card.badge):
-            font = _script_font(card.badge, 44, bold=True)
+            font = script_font(card.badge, 44, bold=True)
             pad = 22
             label = draw.textlength(card.badge, font=font)
             box = (left + 28, top + 28, left + 28 + label + 2 * pad, top + 28 + 76)
@@ -168,7 +168,7 @@ class TemplateImages:
         if drawable(card.name):
             font, name = _fitted(draw, card.name, frame, 64, bold=True)
             draw.text((width // 2, y), name, font=font, fill=INK, anchor="mm")
-        price_font = _script_font(card.price, 84, bold=True)
+        price_font = script_font(card.price, 84, bold=True)
         draw.text((width // 2, y + 96), card.price, font=price_font, fill=INK, anchor="mm")
         if drawable(card.shop):
             font, shop = _fitted(draw, card.shop, frame, 40, bold=False)
