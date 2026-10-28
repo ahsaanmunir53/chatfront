@@ -27,13 +27,25 @@ describe("catalog", () => {
       translations: { ur: { name: "لینن کرتا", description: "" } },
       image_url: null,
       in_stock: false,
+      ships_from: null,
       variants: [
         { id: "a", catalog_id: "KRT01-1", options: { size: "M" }, price: 275_000, in_stock: false },
-        { id: "b", catalog_id: "KRT01-2", options: { size: "XL" }, price: 299_000, in_stock: false },
+        {
+          id: "b",
+          catalog_id: "KRT01-2",
+          options: { size: "XL" },
+          price: 299_000,
+          in_stock: false,
+        },
       ],
     };
     const shown = fromApi(product);
-    expect(shown).toMatchObject({ key: "KRT01", price: 275_000, priceVaries: true, inStock: false });
+    expect(shown).toMatchObject({
+      key: "KRT01",
+      price: 275_000,
+      priceVaries: true,
+      inStock: false,
+    });
     expect(shown.options).toEqual(["M", "XL"]);
     expect(shown.variants).toEqual([
       { catalogId: "KRT01-1", label: "M", inStock: false },
