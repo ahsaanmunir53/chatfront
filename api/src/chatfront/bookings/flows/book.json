@@ -1,0 +1,54 @@
+{
+  "version": "6.0",
+  "screens": [
+    {
+      "id": "BOOK",
+      "title": "Chatfront",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "service": { "type": "string", "__example__": "Haircut and blow-dry" },
+        "slots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": { "id": { "type": "string" }, "title": { "type": "string" } }
+          },
+          "__example__": [
+            { "id": "1761904800", "title": "4:00 PM" },
+            { "id": "1761906600", "title": "4:30 PM" }
+          ]
+        },
+        "label_time": { "type": "string", "__example__": "Times" },
+        "label_book": { "type": "string", "__example__": "Book" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          { "type": "TextHeading", "text": "${data.service}" },
+          {
+            "type": "Form",
+            "name": "booking",
+            "children": [
+              {
+                "type": "RadioButtonsGroup",
+                "name": "slot",
+                "label": "${data.label_time}",
+                "required": true,
+                "data-source": "${data.slots}"
+              },
+              {
+                "type": "Footer",
+                "label": "${data.label_book}",
+                "on-click-action": {
+                  "name": "complete",
+                  "payload": { "slot": "${form.slot}" }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

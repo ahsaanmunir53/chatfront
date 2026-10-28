@@ -204,5 +204,54 @@
     "match": "place it now",
     "step": 1,
     "content": "[mock reply] Here is your order. Tap Place order to confirm it."
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "haircut kal",
+    "tool_calls": [
+      {
+        "name": "find_times",
+        "arguments": {
+          "service_code": "Haircut and blow-dry",
+          "day": "tomorrow"
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "haircut kal",
+    "step": 1,
+    "content": "[mock reply] Here are the free times for tomorrow. Tap the one that suits you."
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "birthday cake banwana",
+    "tool_calls": [
+      {
+        "name": "custom_order",
+        "arguments": {
+          "kind": "cake",
+          "text": "Happy Birthday Ali",
+          "colours": [
+            "pink",
+            "white"
+          ],
+          "size": "two pounds",
+          "needed_by": "Saturday",
+          "notes": "chocolate inside"
+        }
+      }
+    ]
+  },
+  {
+    "prompt": "order_agent",
+    "role": "*",
+    "match": "birthday cake banwana",
+    "step": 1,
+    "content": "[mock reply] Noted. A sketch of your cake is on its way, and the shop will send you the price here."
   }
 ]

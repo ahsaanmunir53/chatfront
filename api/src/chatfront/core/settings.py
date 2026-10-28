@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     whatsapp_offer_template_lang: str = "en"
     # The owner panel's WhatsApp Flow, once published in WhatsApp Manager (feature 118).
     whatsapp_flow_product_id: str | None = None
+    whatsapp_flow_booking_id: str | None = None  # the booking form (feature 18)
     # Instagram API with Instagram Login signs webhooks with its own app secret.
     instagram_app_secret: SecretStr | None = None
     instagram_graph_base_url: str = "https://graph.instagram.com"
