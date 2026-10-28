@@ -13,7 +13,10 @@ import { DashboardPanel } from "../components/Dashboard";
 import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
+import { AnswersPanel } from "../components/Answers";
+import { OffersPanel } from "../components/Offers";
 import { RefundsPanel, ReturnsPanel } from "../components/Returns";
+import { WaitingPanel } from "../components/Waiting";
 import { PostsPanel } from "../components/Posts";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
 import { Alerts, StockPanel, useNotices } from "../components/Stock";
@@ -366,6 +369,7 @@ function Console({
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
       {can("orders") && <ReturnsPanel token={token} canShip={can("ship")} />}
+      {can("orders") && <WaitingPanel token={token} />}
       {can("payments") && (
         <PaymentsPanel me={me} token={token} data={payments.data} onChange={payments.refresh} />
       )}
@@ -377,6 +381,8 @@ function Console({
       {can("catalog") && <CatalogSyncPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
       {can("team") && <TeamPanel token={token} />}
+      {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
+      {can("settings") && <AnswersPanel token={token} />}
       {can("settings") && <SettingsPanel token={token} />}
       {can("audit") && <ActivityPanel token={token} />}
     </Page>

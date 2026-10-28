@@ -6,7 +6,11 @@ import { chain } from "./i18n";
 import type { Lang } from "./i18n";
 import { packOf } from "./money";
 
-type DemoVariant = { options?: Record<string, string>; price?: number | null; stock?: number | null };
+type DemoVariant = {
+  options?: Record<string, string>;
+  price?: number | null;
+  stock?: number | null;
+};
 type DemoProduct = {
   name: string;
   price: number;
@@ -26,6 +30,7 @@ export type ShopProduct = {
   options: string[]; // one label per variant: "M", "Sea green"
   imageUrl: string | null;
   inStock: boolean;
+  shipsFrom: string | null; // on pre-order: orderable now, ships from this day (YYYY-MM-DD)
   // What can go in the cart; empty until the live catalog answers.
   variants: { catalogId: string; label: string; inStock: boolean }[];
 };
@@ -66,6 +71,7 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       options: variants.map((v) => optionLabel(v.options)).filter(Boolean),
       imageUrl: null,
       inStock: variants.some((v) => v.stock == null || v.stock > 0),
+      shipsFrom: null,
       variants: [],
     };
   });
@@ -86,6 +92,7 @@ export function fromApi(product: PublicProduct): ShopProduct {
     options: product.variants.map((v) => optionLabel(v.options)).filter(Boolean),
     imageUrl: product.image_url,
     inStock: product.in_stock,
+    shipsFrom: product.ships_from,
     variants: product.variants.map((v) => ({
       catalogId: v.catalog_id,
       label: optionLabel(v.options),

@@ -26,6 +26,21 @@ export type Shop = {
   is_demo: boolean;
   attribution: string;
   channels: ChannelLink[];
+  countdowns: Countdown[];
+};
+
+/** A deadline on the shop page: the last day to order for delivery before a big day, or a
+ * sale's last day (feature 95). `ends_at` is the end of that day in the shop's time. */
+export type Countdown = {
+  kind: "delivery" | "sale";
+  event: string | null;
+  name: string | null;
+  day: string;
+  ends_at: string;
+  expected: boolean;
+  code: string | null;
+  percent: number | null;
+  amount: number | null;
 };
 
 export type TrustInfo = { slug: string; name: string; channels: ChannelLink[] };
@@ -66,6 +81,7 @@ export type PublicProduct = {
   translations: Record<string, { name?: string; description?: string }>;
   image_url: string | null;
   in_stock: boolean;
+  ships_from: string | null;
   variants: PublicVariant[];
 };
 
@@ -78,12 +94,16 @@ export type QuoteLine = {
   line_total: number;
   problem: "not_found" | "sold_out" | "not_enough" | null;
   left: number | null;
+  ships_from: string | null;
 };
+export type QuoteOffer = { kind: "bundle" | "coupon"; label: string; amount: number };
 export type Quote = {
   lines: QuoteLine[];
   subtotal: number;
   delivery: number | null;
   free_delivery: boolean;
+  offers: QuoteOffer[];
+  coupon_problem: string | null;
   total: number;
   methods: ("cod" | "transfer")[];
   currency: string;
@@ -100,6 +120,7 @@ export type CheckoutRequest = {
   lines: { item: string; quantity: number }[];
   details: DeliveryDetails;
   payment_method: "cod" | "transfer";
+  coupon: string | null;
   source: "shop_page" | "facebook" | "instagram";
   lang: string;
 };
@@ -225,6 +246,50 @@ export type RefundResult = {
   receipt_code: string | null;
   customer_told: boolean;
 };
+export type CouponIn = {
+  code: string;
+  percent: number | null;
+  amount: number | null;
+  min_subtotal: number;
+  starts_on: string | null;
+  ends_on: string | null;
+  max_uses: number | null;
+  once_per_customer: boolean;
+  show_on_page: boolean;
+};
+export type OwnerCoupon = CouponIn & { id: string; uses: number; active: boolean };
+export type OwnerBundle = {
+  id: string;
+  name: string;
+  products: { code: string; name: string; price: number }[];
+  off: number;
+  active: boolean;
+};
+export type LoyaltySettings = {
+  on: boolean;
+  earn_per: number;
+  point_value: number;
+  max_share: number;
+};
+export type ShopEvent = { name: string; date: string };
+export type Offers = {
+  currency: string;
+  coupons: OwnerCoupon[];
+  bundles: OwnerBundle[];
+  loyalty: LoyaltySettings | null;
+  events: ShopEvent[];
+};
+export type Waiting = {
+  id: string;
+  product_code: string;
+  name: string;
+  customer: string;
+  quantity: number;
+  status: "waiting" | "missed";
+  created_at: string;
+  told_at: string | null;
+};
+export type SavedAnswer = { id: string; question: string; answer: string; created_at: string };
 export type ReturnLine = { name: string; quantity: number; to: string | null };
 export type ReturnStatus = "requested" | "approved" | "rejected" | "received" | "closed";
 export type OwnerReturn = {
@@ -601,10 +666,15 @@ export const api = {
   shop: (slug: string) => call<Shop>(shopPath(slug)),
   products: (slug: string) => call<PublicProduct[]>(`${shopPath(slug)}/products`),
   trust: (slug: string) => call<TrustInfo>(`${shopPath(slug)}/trust`),
-  quote: (slug: string, lines: { item: string; quantity: number }[], city: string) =>
+  quote: (
+    slug: string,
+    lines: { item: string; quantity: number }[],
+    city: string,
+    coupon: string | null = null,
+  ) =>
     call<Quote>(`${shopPath(slug)}/checkout/quote`, {
       method: "POST",
-      body: JSON.stringify({ lines, city: city.trim() || null }),
+      body: JSON.stringify({ lines, city: city.trim() || null, coupon }),
     }),
   checkout: (slug: string, chatToken: string, order: CheckoutRequest) =>
     call<Placed>(`${shopPath(slug)}/checkout`, {
@@ -717,6 +787,43 @@ export const api = {
       headers: bearer(token),
     }),
   returns: (token: string) => call<OwnerReturn[]>("/api/owner/returns", { headers: bearer(token) }),
+  offers: (token: string) => call<Offers>("/api/owner/offers", { headers: bearer(token) }),
+  addCoupon: (token: string, coupon: CouponIn) =>
+    call<{ code: string }>("/api/owner/offers/coupons", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(coupon),
+    }),
+  addBundle: (token: string, bundle: { name: string; product_codes: string[]; off: number }) =>
+    call<OwnerBundle>("/api/owner/offers/bundles", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(bundle),
+    }),
+  switchOff: (token: string, kind: "coupons" | "bundles", id: string) =>
+    call<{ active: boolean }>(`/api/owner/offers/${kind}/${encodeURIComponent(id)}/off`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  setLoyalty: (token: string, loyalty: LoyaltySettings) =>
+    call<LoyaltySettings>("/api/owner/offers/loyalty", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(loyalty),
+    }),
+  setEvents: (token: string, events: ShopEvent[]) =>
+    call<ShopEvent[]>("/api/owner/offers/events", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(events),
+    }),
+  waitlist: (token: string) => call<Waiting[]>("/api/owner/waitlist", { headers: bearer(token) }),
+  answers: (token: string) => call<SavedAnswer[]>("/api/owner/answers", { headers: bearer(token) }),
+  removeAnswer: (token: string, id: string) =>
+    call<{ removed: boolean }>(`/api/owner/answers/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: bearer(token),
+    }),
   returnReceived: (token: string, returnId: string) =>
     call<{ code: string; refund: number }>(
       `/api/owner/returns/${encodeURIComponent(returnId)}/received`,

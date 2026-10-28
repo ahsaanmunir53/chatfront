@@ -5131,3 +5131,173 @@ button {
     border-top-color: var(--on-ink-muted);
   }
 }
+
+/* Big days and sales on the shop page: what to order by, and the time left (feature 95). -- */
+
+.countdowns {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.countdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--line);
+  border-inline-start: 6px solid var(--saffron);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.countdown.is-sale {
+  border-inline-start-color: var(--chili);
+}
+
+.countdown-what {
+  font-weight: 600;
+}
+
+.countdown-note {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.countdown-left {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-preorder {
+  margin: 0;
+  color: color-mix(in srgb, var(--tone-plum) 70%, var(--text));
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* The checkout's code field, its offers and pre-order lines (features 16 and 19). --------- */
+
+.checkout-line-note {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.checkout-offer dd {
+  color: color-mix(in srgb, var(--stamp) 80%, var(--text));
+  font-weight: 650;
+}
+
+.checkout-coupon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 10px;
+  margin-top: 14px;
+}
+
+.checkout-coupon label {
+  display: grid;
+  flex: 1 1 10em;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkout-coupon input {
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.checkout-coupon .field-error {
+  flex-basis: 100%;
+}
+
+/* Offers, the waitlist and saved answers in the console (features 13, 16, 19, 91, 95). --- */
+
+@media (min-width: 960px) {
+  .offer-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Loyalty points and the shop's big days share a column; a rule keeps them apart. */
+.offer-columns .books-form + .books-form {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.books-form label.offer-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.offer-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+
+.offer-products {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.offer-products legend {
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.offer-stop {
+  margin-inline-start: auto;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+.waiting-status {
+  margin-inline-start: auto;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.waiting-status.is-missed {
+  color: var(--chili);
+}
+
+.answer-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.answer-item p {
+  margin: 0 0 6px;
+}
+
+.answer-item p span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}

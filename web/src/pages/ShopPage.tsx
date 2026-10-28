@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "../cart";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
-import type { ChannelLink } from "../api";
+import type { ChannelLink, Countdown } from "../api";
 import { bundledProducts, fromApi, productText } from "../catalog";
 import type { ShopProduct } from "../catalog";
 import { Avatar, initials, templateTone } from "../components/Avatar";
@@ -10,7 +10,7 @@ import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
 import { Page, Problem } from "../components/Shell";
 import { demoShop } from "../demo";
 import { pick, scriptLang } from "../i18n";
-import type { Text3 } from "../i18n";
+import type { Key, Text3 } from "../i18n";
 import { useLang } from "../lang";
 import { DEFAULT_COUNTRY, formatMoney } from "../money";
 import { saveOwnerToken } from "../owner";
@@ -37,14 +37,26 @@ const CHANNEL_ORDER = Object.keys(CHANNEL_NAMES);
 export function useShop(slug: string) {
   const { state } = useServer();
   const bundled = demoShop(slug);
-  const [live, setLive] = useState<{ profile: Profile; channels: ChannelLink[]; demo: boolean }>();
+  const [live, setLive] = useState<{
+    profile: Profile;
+    channels: ChannelLink[];
+    countdowns: Countdown[];
+    demo: boolean;
+  }>();
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     if (state !== "online") return;
     let current = true;
     api.shop(slug).then(
-      (shop) => current && setLive({ profile: shop, channels: shop.channels, demo: shop.is_demo }),
+      (shop) =>
+        current &&
+        setLive({
+          profile: shop,
+          channels: shop.channels,
+          countdowns: shop.countdowns,
+          demo: shop.is_demo,
+        }),
       (error: unknown) => {
         if (current && error instanceof ApiError && error.status === 404) setMissing(true);
       },
@@ -59,6 +71,7 @@ export function useShop(slug: string) {
   return {
     profile: profile && { ...profile, template: bundled?.template ?? profile.template },
     channels: live?.channels ?? [],
+    countdowns: live?.countdowns ?? [],
     // Only the demo shops themselves can be copied; a visitor's copy cannot be copied again.
     copyable: Boolean(bundled) && live?.demo !== false,
     missing: missing && !bundled,
@@ -125,6 +138,11 @@ function ProductCard({
         {product.options.length > 0 && (
           <p className="product-options" dir="auto">
             {product.options.join(", ")}
+          </p>
+        )}
+        {product.shipsFrom && (
+          <p className="product-preorder">
+            {t("shop.preorder", { date: dayLabel(product.shipsFrom, lang) })}
           </p>
         )}
         <div className="product-actions">
@@ -278,10 +296,81 @@ function TryAsOwner({ slug }: { slug: string }) {
   );
 }
 
+/** A day as the reader says it: "Fri 6 Nov". */
+export function dayLabel(day: string, lang: string): string {
+  return new Date(`${day}T12:00:00`).toLocaleDateString(lang, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/** The time left to an end, kept fresh once a minute. */
+function useLeft(endsAt: string): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), MINUTE);
+    return () => window.clearInterval(timer);
+  }, []);
+  return Date.parse(endsAt) - now;
+}
+
+function CountdownLine({ item, country }: { item: Countdown; country: string }) {
+  const { t, lang } = useLang();
+  const left = useLeft(item.ends_at);
+  if (left <= 0) return null;
+  const what =
+    item.kind === "sale"
+      ? item.percent !== null
+        ? t("shop.sale_percent", { code: item.code ?? "", percent: item.percent })
+        : t("shop.sale_amount", {
+            code: item.code ?? "",
+            amount: formatMoney(item.amount ?? 0, country, lang),
+          })
+      : t("shop.order_by", {
+          event: item.event ? t(`season.${item.event}` as Key) : (item.name ?? ""),
+          date: dayLabel(item.ends_at.slice(0, 10), lang),
+        });
+  return (
+    <li className={`countdown is-${item.kind}`}>
+      <span className="countdown-what" dir="auto">
+        {what}
+        {item.expected && <span className="countdown-note"> {t("shop.moon_note")}</span>}
+      </span>
+      <strong className="countdown-left">
+        {left < DAY
+          ? t("shop.hours_left", { hours: Math.max(Math.floor(left / HOUR), 1) })
+          : t("shop.days_left", { days: Math.floor(left / DAY) })}
+      </strong>
+    </li>
+  );
+}
+
+/** The next big day's order-by deadline and the shop's sales, with the time left. */
+function Countdowns({ list, country }: { list: Countdown[]; country: string }) {
+  const { t } = useLang();
+  if (list.length === 0) return null;
+  return (
+    <ul className="countdowns" aria-label={t("shop.countdowns")}>
+      {list.map((item) => (
+        <CountdownLine
+          key={`${item.kind}-${item.code ?? item.day}`}
+          item={item}
+          country={country}
+        />
+      ))}
+    </ul>
+  );
+}
+
 export function ShopPage() {
   const { slug = "" } = useParams();
   const { lang, t } = useLang();
-  const { profile, channels, copyable, missing } = useShop(slug);
+  const { profile, channels, countdowns, copyable, missing } = useShop(slug);
 
   if (missing) {
     return (
@@ -339,6 +428,7 @@ export function ShopPage() {
         </div>
       </section>
 
+      <Countdowns list={countdowns} country={profile.country} />
       <Catalog slug={slug} profile={profile} />
       <CartBar slug={slug} />
 

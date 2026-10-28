@@ -14,7 +14,7 @@ import { useLang } from "../lang";
 import { formatMoney } from "../money";
 import { useServer } from "../server";
 import { chatToken } from "../useChat";
-import { useShop } from "./ShopPage";
+import { dayLabel, useShop } from "./ShopPage";
 
 const QUOTE_DELAY_MS = 400;
 const EMPTY: DeliveryDetails = {
@@ -39,16 +39,21 @@ const FIELD_ERRORS: Record<string, keyof DeliveryDetails> = {
 };
 
 /** The quote for the cart and city, asked again a moment after either changes. */
-function useQuote(slug: string, lines: { item: string; quantity: number }[], city: string) {
+function useQuote(
+  slug: string,
+  lines: { item: string; quantity: number }[],
+  city: string,
+  coupon: string | null,
+) {
   const { state } = useServer();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [failed, setFailed] = useState(false);
-  const wanted = JSON.stringify([lines, city.trim()]);
+  const wanted = JSON.stringify([lines, city.trim(), coupon]);
   useEffect(() => {
     if (state !== "online" || lines.length === 0) return;
     let current = true;
     const timer = window.setTimeout(() => {
-      api.quote(slug, lines, city).then(
+      api.quote(slug, lines, city, coupon).then(
         (fresh) => {
           if (!current) return;
           setQuote(fresh);
@@ -61,7 +66,7 @@ function useQuote(slug: string, lines: { item: string; quantity: number }[], cit
       current = false;
       window.clearTimeout(timer);
     };
-    // `wanted` stands for the lines and the city by value: the same cart asks only once.
+    // `wanted` stands for the lines, city and code by value: the same cart asks only once.
   }, [slug, state, wanted]);
   return { quote, failed };
 }
@@ -100,7 +105,9 @@ export function CheckoutPage() {
   const [method, setMethod] = useState<"cod" | "transfer" | null>(null);
   const [state, setState] = useState<"idle" | "placing" | string>("idle");
   const [placed, setPlaced] = useState<Placed | null>(null);
-  const { quote, failed } = useQuote(slug, cart.lines, details.city);
+  const [code, setCode] = useState("");
+  const [coupon, setCoupon] = useState<string | null>(null);
+  const { quote, failed } = useQuote(slug, cart.lines, details.city, coupon);
   const country = profile?.country;
   const money = (minor: number) => formatMoney(minor, country, lang);
   const linked = params.get("products");
@@ -128,6 +135,7 @@ export function CheckoutPage() {
         lines: cart.lines,
         details,
         payment_method: chosen,
+        coupon: quote?.coupon_problem ? null : coupon,
         source,
         lang,
       });
@@ -214,6 +222,11 @@ export function CheckoutPage() {
                           {t(`checkout.problem.${shown.problem}` as Key, { left: shown.left ?? 0 })}
                         </span>
                       )}
+                      {shown?.ships_from && (
+                        <span className="checkout-line-note">
+                          {t("shop.preorder", { date: dayLabel(shown.ships_from, lang) })}
+                        </span>
+                      )}
                     </li>
                   );
                 })}
@@ -236,12 +249,52 @@ export function CheckoutPage() {
                             : t("checkout.delivery_city")}
                     </dd>
                   </div>
+                  {quote.offers.map((offer) => (
+                    <div key={`${offer.kind}-${offer.label}`} className="checkout-offer">
+                      <dt dir="auto">
+                        {offer.kind === "coupon"
+                          ? t("checkout.coupon_line", { code: offer.label })
+                          : offer.label}
+                      </dt>
+                      <dd>−{money(offer.amount)}</dd>
+                    </div>
+                  ))}
                   <div className="checkout-total">
                     <dt>{t("checkout.total")}</dt>
                     <dd>{money(quote.total)}</dd>
                   </div>
                 </dl>
               )}
+              <div className="checkout-coupon">
+                <label>
+                  <span>{t("checkout.coupon")}</span>
+                  <input
+                    value={code}
+                    maxLength={24}
+                    dir="ltr"
+                    autoCapitalize="characters"
+                    onChange={(e) => setCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault(); // Enter applies the code; it never places the order
+                      if (code.trim()) setCoupon(code.trim().toUpperCase());
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="action"
+                  disabled={!code.trim()}
+                  onClick={() => setCoupon(code.trim().toUpperCase())}
+                >
+                  {t("checkout.coupon_apply")}
+                </button>
+                {coupon && quote?.coupon_problem && (
+                  <span className="field-error" role="alert">
+                    {t(`checkout.coupon_problem.${quote.coupon_problem}` as Key)}
+                  </span>
+                )}
+              </div>
               {failed && <Problem message={t("checkout.err.failed")} />}
             </div>
             <div className="pay-block checkout-details">
