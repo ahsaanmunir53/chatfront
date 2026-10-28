@@ -75,6 +75,30 @@ class CustomerIdentity(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+class IdentityLink(Base):
+    """A code a customer asked for on one channel, to send from WhatsApp and so join the two
+    records (feature 79). Only its keyed hash is kept; it works once, for a short while."""
+
+    __tablename__ = "identity_links"
+    __table_args__ = (Index("ix_identity_links_code", "tenant_id", "code_hash"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), index=True
+    )
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL")
+    )
+    channel: Mapped[str] = mapped_column(String(20))  # where the code was asked for
+    code_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime]
+    used_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class Conversation(Base):
     __tablename__ = "conversations"
     __table_args__ = (UniqueConstraint("customer_id", "channel_account_id"),)

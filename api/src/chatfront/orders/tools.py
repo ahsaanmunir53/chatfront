@@ -22,11 +22,14 @@ from chatfront.audit.service import Actor, ActorType
 from chatfront.catalog.models import Product, Variant
 from chatfront.catalog.search import Found, best, search
 from chatfront.catalog.service import CatalogItem, load_items
+from chatfront.channels import identity
 from chatfront.channels.models import Channel
-from chatfront.channels.types import Outbound
+from chatfront.channels.types import Outbound, OutText
+from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
 from chatfront.core.errors import AppError
+from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.delivery.address import Address
 from chatfront.delivery.pins import pin_request
@@ -587,6 +590,37 @@ async def change_order(ctx: AgentContext, params: OrderChange) -> dict[str, Any]
 # -- a person (feature 90) --------------------------------------------------------------------
 
 
+# -- one customer across channels (feature 79) ------------------------------------------------
+
+
+async def link_whatsapp(ctx: AgentContext, params: NoArguments) -> dict[str, Any]:
+    """A link that opens the shop's WhatsApp with a one-time code typed in; sending it joins
+    this chat's record to the customer's WhatsApp one."""
+    del params
+    if ctx.channel == Channel.WHATSAPP:
+        return _error("already_whatsapp")
+    async with ctx.db.tenant(ctx.tenant.id) as session:
+        number = await identity.whatsapp_number(session)
+        if number is None:
+            return _error("no_whatsapp", next_step="say the shop has no WhatsApp number yet")
+        code = await identity.start_link(
+            session,
+            ctx.tenant.id,
+            ctx.customer_id,
+            ctx.conversation_id,
+            ctx.channel,
+            key=ctx.phone_hash_key,
+            now=utcnow(),
+        )
+    link = identity.wa_link(number, code)
+    ctx.cards.append(OutText(t("link.join", ctx.lang, link=link)))
+    return {
+        "ok": True,
+        "link_card": "sent; it works once, for 30 minutes",
+        "next_step": "tell the customer to open the link and press send in WhatsApp",
+    }
+
+
 class HandOver(BaseModel):
     reason: str = Field(min_length=3, max_length=300, description="Why a person should take over")
 
@@ -616,6 +650,14 @@ def order_tools() -> tuple[list[Tool], list[Tool]]:
             "orders",
         ),
         Tool("add_to_cart", "Add a product to the cart.", CartLine, add_to_cart, "orders"),
+        Tool(
+            "link_whatsapp",
+            "Send the customer a link that joins this chat to their WhatsApp chat with the shop,"
+            " so their orders, khata and verified status are the same on both.",
+            NoArguments,
+            link_whatsapp,
+            "orders",
+        ),
         Tool(
             "update_cart",
             "Change how many of a product are in the cart; 0 removes it.",

@@ -9,6 +9,7 @@ from chatfront.channels.models import (
     Conversation,
     CustomerIdentity,
     Handover,
+    IdentityLink,
     Message,
 )
 from chatfront.core.db import Base
@@ -34,6 +35,7 @@ __all__ = [
     "Customer",
     "CustomerIdentity",
     "Handover",
+    "IdentityLink",
     "Job",
     "LedgerEntry",
     "Media",

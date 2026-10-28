@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.channels.base import AccountRef, ChannelAdapter, check_sendable
+from chatfront.channels.codes import link_code_of
 from chatfront.channels.language import note_language
 from chatfront.channels.models import (
     Channel,
@@ -170,7 +171,11 @@ async def accept(
         tenant = await session.get(Tenant, account.tenant_id)
         assert tenant is not None
         conversation.party = await _party(session, tenant, customer, msg)
-        detected = note_language(conversation, msg.text, get_pack(tenant.country).languages)
+        detected = (
+            None
+            if link_code_of(msg.text)  # a code for Chatfront, not words in a language
+            else note_language(conversation, msg.text, get_pack(tenant.country).languages)
+        )
         if detected is not None:
             payload["lang"] = detected.tag
         message_id = await session.scalar(

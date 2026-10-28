@@ -783,5 +783,10 @@
   "checkout.err.address_vague": "Add the area, and a house number or a landmark, so the rider can find it.",
   "checkout.err.phone_invalid": "That phone number does not look right.",
   "checkout.err.cart_problem": "Something in your cart has changed. Check it and try again.",
-  "checkout.err.failed": "The order could not be placed. Try again in a moment."
+  "checkout.err.failed": "The order could not be placed. Try again in a moment.",
+  "link.join": "To join this chat with your WhatsApp chat with us, open this link and press send in WhatsApp: {link}\nIt works once, for 30 minutes.",
+  "link.done": "Done: this WhatsApp chat and your other chat with us are now one. Your orders, khata and verified status are the same on both.",
+  "link.done_there": "Your WhatsApp is now joined to this chat. Your orders, khata and verified status are the same on both.",
+  "link.already": "These chats are already joined.",
+  "link.unknown": "That code is not right or has expired. Ask for a new link in the chat where you got it."
 }

@@ -24,6 +24,8 @@ from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest
 from chatfront.audit.service import AGENT, Actor, ActorType, record
 from chatfront.catalog.service import CatalogItem, OutOfStock, load_items
+from chatfront.channels import identity
+from chatfront.channels.codes import link_code_of
 from chatfront.channels.conversation import (
     CHANNEL_NAMES,
     Turn,
@@ -34,8 +36,11 @@ from chatfront.channels.conversation import (
     shop_details,
 )
 from chatfront.channels.handover import HANDOVER, start_handover
+from chatfront.channels.language import reply_language
 from chatfront.channels.models import Channel, Conversation
+from chatfront.channels.notify import send_to
 from chatfront.channels.types import Kind, Outbound, OutText
+from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
@@ -100,6 +105,9 @@ class OrderAgent:
         button = actions.parse_button((turn.message.payload or {}).get("button_id"))
         if button is not None:
             return await self._tap(turn, *button)
+        code = link_code_of(turn.message.body)
+        if code is not None and turn.message.channel == Channel.WHATSAPP:
+            return await self._link(turn, code)
         if wants_a_person(turn.message.body):
             return await self._hand_over(turn, "the customer asked for a person", "customer")
         if turn.media is not None:
@@ -297,6 +305,38 @@ class OrderAgent:
             self.services, turn.tenant, turn.conversation.id, reason=reason, requested_by=by
         )
         return [OutText(t("order.handed_over", turn.lang))]
+
+    async def _link(self, turn: Turn, code: str) -> list[Outbound]:
+        """A "LINK K7Q2M9" sent from WhatsApp joins the chat that asked for it (feature 79)."""
+        services, tenant = self.services, turn.tenant
+        customer_id = turn.conversation.customer_id
+        async with services.db.tenant(tenant.id) as session:
+            found = await identity.redeem(
+                session,
+                tenant.id,
+                customer_id,
+                code,
+                key=services.keys.phone_hash_key,
+                now=utcnow(),
+            )
+            if found.outcome is identity.Linked.DONE:
+                await record(
+                    session,
+                    tenant.id,
+                    Actor(ActorType.CUSTOMER, str(customer_id)),
+                    "customer.linked",
+                    entity=("customer", str(customer_id)),
+                    data={"from": found.channel, "moved": found.moved},
+                )
+            there = (
+                await session.get(Conversation, found.conversation_id)
+                if found.outcome is identity.Linked.DONE and found.conversation_id
+                else None
+            )
+        if there is not None:  # the chat where the code was asked for hears it worked
+            lang = reply_language(there, tenant)
+            await send_to(services, tenant.id, there.id, OutText(t("link.done_there", lang)), lang)
+        return [OutText(t(f"link.{found.outcome.value}", turn.lang))]
 
     # -- taps on cards: code alone --------------------------------------------------------
 

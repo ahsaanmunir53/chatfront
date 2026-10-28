@@ -783,5 +783,10 @@
   "checkout.err.address_vague": "Ilaqa likhein, aur ghar number ya koi mashhoor jagah, taake rider dhoond sake.",
   "checkout.err.phone_invalid": "Yeh phone number theek nahin lag raha.",
   "checkout.err.cart_problem": "Aap ke cart mein kuch badal gaya hai. Dekh kar dobara koshish karein.",
-  "checkout.err.failed": "Order nahin ho saka. Thori der baad dobara koshish karein."
+  "checkout.err.failed": "Order nahin ho saka. Thori der baad dobara koshish karein.",
+  "link.join": "Is chat ko hamare saath apni WhatsApp chat se jorne ke liye yeh link kholein aur WhatsApp mein send dabayein: {link}\nYeh ek baar, 30 minute ke liye chalta hai.",
+  "link.done": "Ho gaya: yeh WhatsApp chat aur hamare saath aap ki doosri chat ab ek hain. Aap ke orders, khata aur verified status dono jagah ek jaise hain.",
+  "link.done_there": "Aap ka WhatsApp ab is chat se jur gaya hai. Aap ke orders, khata aur verified status dono jagah ek jaise hain.",
+  "link.already": "Yeh chats pehle hi juri hui hain.",
+  "link.unknown": "Yeh code sahi nahi ya is ki muddat khatam ho gayi hai. Jis chat se link mila tha wahan se naya link mangwayein."
 }
