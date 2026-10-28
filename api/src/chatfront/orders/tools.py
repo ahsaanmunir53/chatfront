@@ -73,6 +73,8 @@ class AgentContext:
     trusted: bool = False  # a verified buyer (feature 38)
     web_url: str = ""  # where the shop page is, for links code writes (feature 20)
     booking_flow_id: str = ""  # the published booking form, when there is one (feature 18)
+    api_url: str = ""  # where this server answers, for links to files code makes (feature 44)
+    link_secret: str = ""  # signs those links
     cards: list[Outbound] = field(default_factory=list)
     handover: str | None = None  # the reason, when the agent asked for a person
 
