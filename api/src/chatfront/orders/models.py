@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import BigInteger, ForeignKey, Index, String, Text, UniqueConstraint, func
@@ -94,4 +95,48 @@ class PriceOffer(Base):
     offered: Mapped[int] = mapped_column(BigInteger)
     answer: Mapped[int] = mapped_column(BigInteger)  # the price code agreed to or countered with
     outcome: Mapped[str] = mapped_column(String(12))  # see bargain.Outcome
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class ReturnKind(StrEnum):
+    EXCHANGE = "exchange"
+    RETURN = "return"
+
+
+class ReturnStatus(StrEnum):
+    REQUESTED = "requested"  # waiting for the owner
+    APPROVED = "approved"  # the customer sends it back
+    REJECTED = "rejected"
+    RECEIVED = "received"  # it came back; stock is in again
+    CLOSED = "closed"  # exchanged or refunded
+
+
+class ReturnRequest(Base):
+    """A customer sends something back (feature 92): to swap it (a size, a colour) or for
+    their money. Code checks the policy window and the order; the owner decides."""
+
+    __tablename__ = "return_requests"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    code: Mapped[str] = mapped_column(String(12))  # written on the parcel coming back
+    kind: Mapped[str] = mapped_column(String(10))
+    reason_code: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(Text, default="")  # the customer's words
+    # [{"item": order item id, "quantity": n, "variant": the new variant for a swap}]
+    lines: Mapped[list[Any]] = mapped_column(default=list)
+    photo_media_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("media.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(String(10), default=ReturnStatus.REQUESTED)
+    exchange_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("orders.id", ondelete="SET NULL")
+    )
+    decided_at: Mapped[datetime | None]
+    received_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()

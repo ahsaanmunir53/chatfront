@@ -8,7 +8,15 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import BigInteger, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chatfront.core.db import Base, created_at_column, id_column
@@ -120,18 +128,70 @@ class Payment(Base):
 
 class Receipt(Base):
     """A receipt signed with the shop's own Ed25519 key; its code opens the public check
-    page (feature 26)."""
+    page (feature 26). It is for a payment or for a refund, never both."""
 
     __tablename__ = "receipts"
+    __table_args__ = (
+        CheckConstraint("(payment_id IS NULL) <> (refund_id IS NULL)", name="one_source"),
+    )
 
     id: Mapped[uuid.UUID] = id_column()
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tenants.id", ondelete="CASCADE"), index=True
     )
-    payment_id: Mapped[uuid.UUID] = mapped_column(
+    payment_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("payments.id", ondelete="CASCADE"), unique=True
+    )
+    refund_id: Mapped[uuid.UUID | None] = mapped_column(  # a refund's receipt (feature 28)
+        ForeignKey("refunds.id", ondelete="CASCADE"), unique=True
     )
     code: Mapped[str] = mapped_column(String(16), unique=True)
     payload: Mapped[dict[str, Any]]
     signature: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class RefundReason(StrEnum):
+    CANCELLED = "cancelled"  # a paid order was cancelled
+    RETURNED = "returned"  # an item came back (feature 92)
+    OVERPAID = "overpaid"  # more arrived than the order cost
+
+
+class RefundStatus(StrEnum):
+    DUE = "due"
+    SENT = "sent"
+
+
+class Refund(Base):
+    """Money owed back to a customer (feature 28). It is closed only with proof: the owner's
+    transfer screenshot, checked by code against the amount and against the person the money
+    came from, or the owner's own word when the check cannot pass, which is recorded."""
+
+    __tablename__ = "refunds"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    return_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("return_requests.id", ondelete="SET NULL")
+    )
+    reason: Mapped[str] = mapped_column(String(12))
+    amount: Mapped[int] = mapped_column(BigInteger)
+    to_name: Mapped[str | None] = mapped_column(String(120))  # who the money came from
+    to_provider: Mapped[str | None] = mapped_column(String(60))  # and through which wallet
+    status: Mapped[str] = mapped_column(String(10), default=RefundStatus.DUE)
+    proof_media_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("media.id", ondelete="SET NULL")
+    )
+    proof_tid: Mapped[str | None] = mapped_column(String(60))
+    proof_signals: Mapped[list[Any]] = mapped_column(default=list)
+    verified_by: Mapped[str | None] = mapped_column(String(10))  # proof or owner
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("staff.id", ondelete="SET NULL")
+    )
+    sent_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()

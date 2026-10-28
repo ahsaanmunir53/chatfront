@@ -19,9 +19,15 @@ from chatfront.core.models import Customer, Staff, Tenant, TenantModule
 from chatfront.delivery.models import Shipment
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
-from chatfront.orders.models import Order, OrderItem, PriceOffer
+from chatfront.orders.models import Order, OrderItem, PriceOffer, ReturnRequest
 from chatfront.owner.models import PendingAction
-from chatfront.payments.models import Payment, PaymentClaim, Receipt, WalletCredit
+from chatfront.payments.models import (
+    Payment,
+    PaymentClaim,
+    Receipt,
+    Refund,
+    WalletCredit,
+)
 from chatfront.shield.models import Approval
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
@@ -53,6 +59,8 @@ __all__ = [
     "PriceOffer",
     "Product",
     "Receipt",
+    "Refund",
+    "ReturnRequest",
     "Shipment",
     "SocialPost",
     "Staff",

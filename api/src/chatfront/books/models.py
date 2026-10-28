@@ -19,6 +19,7 @@ class EntryKind(StrEnum):
     UDHAAR_GIVEN = "udhaar_given"  # goods given on credit
     UDHAAR_PAID = "udhaar_paid"  # credit paid back
     WRITE_OFF = "write_off"  # stock thrown away: a loss, though no cash moved
+    REFUND = "refund"  # money sent back to a customer (feature 28)
 
 
 class Category(StrEnum):
