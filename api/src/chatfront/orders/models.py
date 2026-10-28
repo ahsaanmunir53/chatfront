@@ -28,6 +28,8 @@ class Order(Base):
     )
     status: Mapped[str] = mapped_column(String(20), default="cart")
     payment_method: Mapped[str | None] = mapped_column(String(20))
+    # Where it was placed when not in a chat: shop_page, facebook or instagram (feature 80).
+    source: Mapped[str | None] = mapped_column(String(20))
     currency: Mapped[str] = mapped_column(String(3))
     subtotal: Mapped[int] = mapped_column(BigInteger, default=0)
     delivery_fee: Mapped[int] = mapped_column(BigInteger, default=0)

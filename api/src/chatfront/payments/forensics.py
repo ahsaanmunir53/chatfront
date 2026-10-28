@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict
 
 from chatfront.ai.client import AiClient
 from chatfront.ai.prompts import load_prompt
-from chatfront.ai.types import ChatMessage, ChatRequest, Effort, Part, Role, TextPart
+from chatfront.ai.types import ChatMessage, ChatRequest, Part, Role, TextPart
 
 HASH_SIDE = 16  # a 16 x 16 difference hash: 256 bits
 SAME_PICTURE = 12  # bits that may differ between two copies of one screenshot
@@ -73,8 +73,7 @@ async def read_screenshot(
             ChatMessage("user", [picture, TextPart("(a customer sent this picture)")]),
         ],
         tenant_id=tenant_id,
-        prompt=prompt.ref,
-        effort=Effort.HIGH,  # the deepest reading is for money
+        prompt=prompt.ref,  # routed to the deepest reasoning: money is at stake (feature 113)
         ref=ref,
     )
     reading, _ = await ai.complete_json(request, PaymentReading)

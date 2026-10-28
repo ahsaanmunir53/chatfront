@@ -30,4 +30,5 @@ class AiCall(Base):
     error: Mapped[str | None] = mapped_column(Text)
     ref_type: Mapped[str | None] = mapped_column(String(30))
     ref_id: Mapped[str | None] = mapped_column(String(80))
+    effort: Mapped[str | None] = mapped_column(String(10))  # the reasoning setting it ran with
     created_at: Mapped[datetime] = created_at_column()

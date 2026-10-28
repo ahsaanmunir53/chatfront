@@ -12,15 +12,18 @@ from pydantic import BaseModel, SecretStr
 
 from chatfront.ai.client import AiClient, CallRecord, ModelUnavailable
 from chatfront.ai.config import (
+    JOB_ROUTES,
     SPARK_OPEN_PRICE,
     Endpoint,
     RoleConfig,
     build_roles,
     cost_millipaisa,
+    job_of,
+    route,
 )
 from chatfront.ai.factory import build_ai_client
 from chatfront.ai.mock import Fixture, MockMiss, MockProvider, load_fixtures, tool_rounds
-from chatfront.ai.prompts import load_prompt
+from chatfront.ai.prompts import PROMPTS_DIR, load_prompt
 from chatfront.ai.provider import OpenAICompatibleProvider, build_payload, parse_response
 from chatfront.ai.tools import Tool, ToolRegistry
 from chatfront.ai.types import (
@@ -125,6 +128,37 @@ class TestConfig:
         # 1M input tokens at $1.25 and Rs 280/$ = Rs 350 = 35,000 paisa
         assert cost_millipaisa(BASETEN, 1_000_000, 0, Decimal(280)) == 35_000_000
         assert cost_millipaisa(BASETEN, 1000, 200, Decimal(280)) == 58_800  # Rs 0.588
+
+
+class TestRouting:
+    """Reasoning routing (feature 113): light for chat, deepest for payment forensics."""
+
+    def test_jobs_take_their_own_setting(self) -> None:
+        vision = RoleConfig((), Effort.MEDIUM, 8192)
+        chat_role = RoleConfig((), Effort.LOW, 4096)
+        assert route(chat_role, "order_agent@v7") == (Effort.LOW, 4096)
+        assert route(vision, "payment_screenshot@v2") == (Effort.XHIGH, 16384)
+        assert route(vision, "product_draft@v3") == (Effort.MEDIUM, 8192)
+        assert route(chat_role, "payment_evidence@v1") == (Effort.HIGH, 4096)
+        assert route(vision, "handover_summary@v1") == (Effort.LOW, 8192)  # media needs room
+        assert route(vision, "something_new@v1") == (Effort.MEDIUM, 8192)
+        assert route(chat_role, None) == (Effort.LOW, 4096)
+        assert job_of("translate@v2") == "translate"
+
+    def test_every_prompt_is_routed_and_forensics_is_deepest(self) -> None:
+        prompts = {path.stem for path in PROMPTS_DIR.glob("*.md")}
+        assert prompts == set(JOB_ROUTES)
+        deepest = max(JOB_ROUTES.values(), key=lambda pair: list(Effort).index(pair[0]))
+        assert JOB_ROUTES["payment_screenshot"] == deepest
+
+    async def test_the_call_carries_and_records_its_setting(self) -> None:
+        mock = MockProvider([Fixture("*", "*", "*", content="ok")])
+        client, meter = client_for(use_mock=True, mock=mock)
+        await client.complete(replace(chat(), prompt="payment_screenshot@v2"))
+        await client.complete(replace(chat(), prompt="order_agent@v7", effort=Effort.HIGH))
+        assert [r.effort for r in meter.records] == ["xhigh", "high"]
+        assert mock.requests[0].effort is Effort.XHIGH
+        assert mock.requests[0].max_tokens == 16384
 
 
 class TestProvider:

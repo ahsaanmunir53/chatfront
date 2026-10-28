@@ -1,4 +1,4 @@
-"""Which endpoint serves which role, with what reasoning effort, and what it costs.
+"""Which endpoint serves which role, how hard it reasons for each job, and what it costs.
 
 Spark Open fails over Baseten -> Fireworks (both bill per token). Glimmer runs on our own
 Modal deployment; the watcher and simulator fall back to Spark Open when Modal is absent.
@@ -42,6 +42,43 @@ _ROLE_SETTINGS: dict[Role, tuple[Effort, int, bool]] = {
     Role.WATCHER: (Effort.MEDIUM, 4096, True),
     Role.SIMULATOR: (Effort.LOW, 2048, True),
 }
+
+
+# Reasoning routing (feature 113): how hard the model thinks follows the job. Customer chat
+# stays light so replies come fast; reading what a photo or bill says is medium; the watcher's
+# note on a payment is high; reading a payment screenshot, where money is at stake, gets the
+# deepest setting. A job not listed takes its role's setting; a call may still set its own.
+JOB_ROUTES: dict[str, tuple[Effort, int]] = {
+    # job (prompt name): (effort, max_tokens incl. reasoning)
+    "order_agent": (Effort.LOW, 4096),
+    "shop_assistant": (Effort.LOW, 4096),
+    "owner_message": (Effort.LOW, 4096),
+    "onboarding": (Effort.LOW, 4096),
+    "handover_summary": (Effort.LOW, 2048),
+    "translate": (Effort.LOW, 2048),
+    "translate_product": (Effort.LOW, 4096),
+    "map_columns": (Effort.LOW, 2048),
+    "product_draft": (Effort.MEDIUM, 8192),
+    "read_bill": (Effort.MEDIUM, 8192),
+    "read_purchase": (Effort.MEDIUM, 8192),
+    "payment_evidence": (Effort.HIGH, 4096),
+    "payment_screenshot": (Effort.XHIGH, 16384),
+}
+
+
+def job_of(prompt_ref: str | None) -> str | None:
+    """'order_agent@v7' -> 'order_agent'."""
+    return prompt_ref.split("@")[0] if prompt_ref else None
+
+
+def route(config: RoleConfig, prompt_ref: str | None) -> tuple[Effort, int]:
+    """The effort and token budget for a call: its job's, else its role's. Media may need
+    more room than the job's own budget, so the larger of the two is kept."""
+    job = job_of(prompt_ref)
+    if job is None or job not in JOB_ROUTES:
+        return config.effort, config.max_tokens
+    effort, max_tokens = JOB_ROUTES[job]
+    return effort, max(max_tokens, config.max_tokens)
 
 
 def _secret(value: object) -> str | None:

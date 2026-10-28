@@ -13,7 +13,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from chatfront.ai.config import Endpoint, RoleConfig, cost_millipaisa
+from chatfront.ai.config import Endpoint, RoleConfig, cost_millipaisa, route
 from chatfront.ai.mock import MOCK_ENDPOINT
 from chatfront.ai.provider import Provider
 from chatfront.ai.types import ChatMessage, ChatRequest, ChatResult, JsonSchema, Role
@@ -46,6 +46,7 @@ class CallRecord:
     ok: bool
     error: str | None
     ref: tuple[str, str] | None
+    effort: str | None = None
 
 
 Meter = Callable[[CallRecord], Awaitable[None]]
@@ -76,8 +77,10 @@ class AiClient:
 
     async def complete(self, req: ChatRequest) -> ChatResult:
         config = self.roles[req.role]
-        effort = req.effort or config.effort
-        max_tokens = req.max_tokens or config.max_tokens
+        routed_effort, routed_tokens = route(config, req.prompt)
+        effort = req.effort or routed_effort
+        max_tokens = req.max_tokens or routed_tokens
+        req = replace(req, effort=effort, max_tokens=max_tokens)
         if self.use_mock:
             result = await self.mock.complete(MOCK_ENDPOINT, req, effort, max_tokens)
             await self._meter(req, MOCK_ENDPOINT, result, None)
@@ -143,6 +146,7 @@ class AiClient:
             ok=error is None,
             error=redact(error)[:500] if error else None,
             ref=req.ref,
+            effort=req.effort.value if req.effort else None,
         )
         try:
             await self.meter(record)
