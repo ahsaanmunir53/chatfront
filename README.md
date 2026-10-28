@@ -43,6 +43,23 @@ You need Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22 and PostgreS
    Add `BASETEN_API_KEY` to `api/.env` for real answers.
 10. Tests: `cd api && uv run pytest --cov`, then `cd web && npm test && npm run e2e`.
 
+## Evaluation
+
+| Set | What it checks | Replay (CI, every push) | Live (the real model) |
+|---|---|---|---|
+| Order agent, 100 conversations in six languages | the tool calls a good answer makes and the state the shop ends in | 100/100 | not run yet: needs a model key |
+| Languages, 10 conversations per Tier 1 language (14), plus 2 voice notes each once recorded | the customer's language is recognised and answered in | 140/140 | not run yet: needs a model key |
+
+The order agent's set (`api/src/chatfront/eval/data/agent/cases.json`) covers finding,
+adding, shopping lists, bargaining, checkout with the tap on Place order, order status,
+cancelling and changing orders, handover, prompt injection and the cart. Each conversation
+runs in a fresh demo shop copy through the same path as a real message. The replay sends the
+scripted tool calls in place of the model, so it checks the tools, cards, taps and the answer
+and language checks, and CI fails on anything short of 100/100; only the live run says how
+well the model chooses. Run them with `uv run python -m chatfront.eval.agent` (add `--live`
+with a key) and `uv run python -m chatfront.eval.languages`, or from the "Live model
+evaluation" workflow.
+
 ## Architecture
 
 ```
@@ -101,10 +118,10 @@ api/src/chatfront/
   templates/  business-type JSON
   payments/   screenshot checks, SMS parsers and webhook, matching, receipts, watcher
   delivery/   addresses and pins, COD risk, parcels, shipping labels and their fonts
-  eval/       evaluation sets (the language set runs in CI on the mock)
+  eval/       evaluation sets: languages, and the order agent's 100 conversations
 i18n/         language registry, catalogs, number words, detector hints, country packs
-web/src/      React app: shop page and catalog, try-it chat, start page, owner console, trust page,
-              receipt check, parcel tracking, dashboard
+web/src/      React app: shop page with cart and checkout, try-it chat, start page, owner console
+              with the dashboard, trust page, receipt check, parcel tracking
 ```
 
 ## Built during the hackathon
@@ -112,6 +129,12 @@ web/src/      React app: shop page and catalog, try-it chat, start page, owner c
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **27 October, dashboard, shop checkout and the evaluation set:** the owner console opens on
+  the shop at a glance (orders and where they came from, money in and waiting, fraud, the
+  books, orders per day, the model's cost per order); a cart and checkout on every shop page,
+  which is also where Facebook and Instagram shop links land, with no model in the way; the
+  order agent's evaluation set of 100 conversations in six languages, replayed in CI on every
+  push; reasoning effort chosen per job, deepest for payment forensics.
 - **27 October, restock, batches and expiry:** stock that came in by chat, voice note, a
   supplier's bill photo, a CSV or Excel sheet or the console's form, always shown as before
   and after and saved on Confirm; every delivery kept as a batch with its exact cost, sold
@@ -183,7 +206,9 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    `SUPABASE_SERVICE_KEY`.
 3. Render: New > Blueprint > this repository. Fill the values marked "sync: false".
 4. cron-job.org: POST `https://<service>.onrender.com/internal/cron` every 5 minutes with the
-   header `X-Cron-Secret` set to the `CRON_SECRET` Render generated.
+   header `X-Cron-Secret` set to the `CRON_SECRET` Render generated. This runs the periodic
+   jobs and also keeps the free service awake, which matters from 5 to 9 November while the
+   judges try it.
 5. Meta: in the app dashboard set one webhook URL for WhatsApp, Instagram and Messenger:
    `https://<service>.onrender.com/webhooks/meta`, with `META_VERIFY_TOKEN` as the verify
    token. Subscribe WhatsApp to `messages`, Instagram to `messages` and
@@ -205,7 +230,9 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    Pages" workflow.
 9. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
    come) in Render's Environment for the app, and as repository secrets for the manual
-   "Live model evaluation" workflow. They never go in the repository or the chat.
+   "Live model evaluation" workflow. They never go in the repository or the chat. Until they
+   come, set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
+   `https://<service>.onrender.com/health` shows `mock`, `live` or `no keys`.
 
 ## Roadmap
 

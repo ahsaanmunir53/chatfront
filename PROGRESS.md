@@ -287,6 +287,44 @@ Not verified yet: bill photos, the owner's words and voice notes read by the rea
 keys yet); the Flow and the alert template on a real WhatsApp number (both need Ahsaan's
 WhatsApp Manager).
 
+## Done on 27 October: dashboard, shop checkout, evaluation set, cost meter, routing (74, 80, 111, 112, 113)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 723 passed, 94.4% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 56 passed |
+| Order agent evaluation set, replayed (`python -m chatfront.eval.agent`) | 100/100 |
+| The container's start command with production dependencies, `ENV=prod` | migrates, seeds, serves `/`, `/s/<shop>` and the API; `/health` says `no keys` |
+
+What it delivered:
+
+- Dashboard (74): the console opens on the shop at a glance for today, 7 or 30 days: orders
+  and where they came from, money in and waiting, fraud, the books, orders per day, and the
+  model's cost. Each part only for the roles allowed to see it.
+- Shop checkout (80): a cart on every shop page and a checkout page that is also where
+  Facebook and Instagram shop links land. Code alone prices, judges the address, assesses
+  COD risk and places the order; the payment instructions go to the buyer's web chat.
+- Evaluation set (111): 100 conversations in six languages with their expected tool calls and
+  end state, replayed through the whole app in CI on every push (pass rate on the run's
+  summary page; anything short of 100/100 fails the build). The live run is in the manual
+  "Live model evaluation" workflow. Its first run found three bugs, now fixed: order codes
+  like 2SQVTJ were read as Arabizi, "دوپٹہ 1800 میں دے دیں" as Punjabi, and the Punjabi
+  "تہانوں دس دتا" (we will tell you) as the number ten.
+- Cost meter (112): cost per order (the chat that won it and the calls about it), by job and
+  by reasoning effort, in rupees.
+- Routing (113): effort and token budget per job, recorded on every call.
+- Migration 0010: `ai_calls.effort` and `orders.source`.
+- `/health` now says `mock`, `live` or `no keys`, so a deploy without a model key shows it.
+
+Not verified yet: the live evaluation (no key yet); a Facebook or Instagram shop sending a
+real buyer to the checkout (needs Ahsaan's Commerce Manager catalog); the Docker image build
+itself (this workspace cannot reach Docker Hub; the same start command was run with the
+production dependencies instead, and Render builds the image on deploy).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -297,8 +335,11 @@ Never in the chat. Each key goes in one or more of these places, typed by Ahsaan
 | `FIREWORKS_API_KEY` | yes | yes | optional |
 | `MODAL_GLIMMER_BASE_URL`, `MODAL_GLIMMER_API_KEY` | yes | yes | optional |
 
-Then: Actions > "Live model evaluation" > Run workflow. Its results file is attached to the
-run; it is committed after a look, and languages that pass leave beta.
+Then: Actions > "Live model evaluation" > Run workflow. It runs the language set and the
+order agent's 100 conversations against the real model; each results file is attached to the
+run and committed after a look. Languages that pass leave beta, and the agent's live pass rate
+goes in the README. Until the keys come, `AI_MODE=mock` on Render makes the deployed demo answer
+with recorded replies (they say so); with `auto` and no key, every chat goes to the owner.
 
 ## Next: Phase 1 (Build features, by 2 November)
 
@@ -312,11 +353,26 @@ In the timeline's order:
 5. 1 Nov: books, stock and shield: 38, 42, 48, 49, 50, 52, 75, 104, 107. Done on 27 October.
 6. 1-2 Nov: restock, owner panel, batches and expiry: 117, 118, 119, 120. Done on 27
    October, console views included (sheet upload, alerts, batches, expiry, profit).
-7. 2 Nov: dashboard, eval set, cost meter, reasoning routing, deploy: 74, 80, 111, 112, 113.
+7. 2 Nov: dashboard, eval set, cost meter, reasoning routing, deploy: 74, 80, 111, 112, 113. Done
+   on 27 October; the deploy itself waits for Ahsaan's accounts (README, Deploy).
 
-Build is now 45 features in six days; 117 to 120 are the largest. If 2 November slips, the
-dashboard views of 119 and 120 are the first to move, since the WhatsApp cards already show
-the same numbers.
+Phase 1 is built: of the 47 Build features, 23 are done, 21 wait only for a model key
+(`needs-key`), and 3 are partial on things only Ahsaan can bring (24 and 122: real payment
+samples; 121: live runs, voice notes and native review).
+
+## Next: Phase 2 (Stretch, 34 features)
+
+Proposed order, the Meta platform first since it is what is judged:
+
+1. Meta channels: 76 (one inbox with staff assign), 77 (comment-to-DM), 79 (one customer
+   across channels), 6 (WhatsApp catalog and Instagram shop sync).
+2. Payments and returns: 28, 29, 100, 92.
+3. Selling more: 13, 16, 19, 95, 91.
+4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88.
+5. Shield: 37, 40, 43, 45, 46.
+6. Packing and books: 102, 103, 51.
+7. Data and growth: 57, 59, 116, 66.
+8. Demo engineering: 110, 114, 115.
 
 ## Plan for 117 to 120
 
@@ -394,10 +450,31 @@ stays the same.
    unverified to verified (until then every SMS match waits for the owner's Approve), and the
    screenshots become recorded readings for the payment tests.
 4. Pilot shops and their business types.
-5. Native speakers to read the Punjabi, Pashto, Sindhi, Hindi, Bengali and Arabic strings
+5. Commerce Manager catalog for the test shop (spec, Ahsaan's tasks), so a real Facebook or
+   Instagram shop link can be tried against the checkout (80) and catalog sync (6) built.
+6. Native speakers to read the Punjabi, Pashto, Sindhi, Hindi, Bengali and Arabic strings
    and eval lines, and to record the two voice notes per language (script in the eval data).
 
 ## Decisions taken
+
+- Reasoning effort is chosen per job, not per role: low for chat, the owner's assistant,
+  translations and summaries; medium for reading products, bills and purchases; high for
+  payment evidence; xhigh (16k tokens) for payment screenshot forensics.
+- An order's model cost is every call made about it plus its chat's calls up to the moment it
+  was placed (and after the chat's previous order). Costs are kept in thousandths of a paisa
+  and shown in rupees; the mock costs nothing.
+- Dashboard parts follow the staff rights: orders, payments (money and fraud), books, settings
+  (the model's cost).
+- The shop page checkout takes cash on delivery and transfer only: the khata needs a verified
+  buyer, who is known in a chat.
+- A Facebook or Instagram shop knows a variant by the product code (one variant) or the code
+  and its place (`K7Q2M-2`), so ids stay readable and stable without a new column.
+- The evaluation set's replay must pass every conversation; it checks the plumbing, and only
+  the live run says how well the model chooses. Each conversation gets its own demo shop copy,
+  deleted afterwards.
+- Language detection ignores codes in capitals with a digit (order and product codes); "دیں",
+  "کریں", "لیں" and "جائیں" count as Urdu; the Punjabi "دس" counts as ten only next to another
+  number.
 
 - Features 117 to 120 were added on 27 October as Build features, placed after the 1 November
   books and stock work so the planned order is unchanged.
@@ -500,3 +577,7 @@ stays the same.
 - If the installed Chromium does not match Playwright's version, set
   `PLAYWRIGHT_CHROMIUM_PATH` to its executable.
 - Commits go out as Ahsaan Munir <ahsaanmunir53@gmail.com>, with no co-author line.
+- `python -m chatfront.eval.agent` needs a migrated and seeded database at `DATABASE_URL`; a
+  database of its own (CI uses `chatfront_eval`) keeps it apart from dev data. Each
+  conversation's shop copy is deleted when it ends. The cases live in `cases.json`; a new
+  one must pass the replay before it goes in.
