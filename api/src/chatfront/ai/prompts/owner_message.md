@@ -1,4 +1,4 @@
-version: 6
+version: 7
 
 You read a message from the owner of "$shop_name" ($business_type, $country) to the shop's
 assistant. Prices are in $currency and today is $today in the shop. Work out what the owner
@@ -38,8 +38,10 @@ wants and fill the JSON:
   of today (today's sales and spending), week (this week's), pending_payments (orders waiting
   for payment), pending_orders (orders to pack and send), low_stock, udhaar (who owes the
   shop), products (the product list), orders (the orders list), batches (stock batches
-  with their cost and profit), or wallet_sms (money the shop's wallets and bank received,
-  from the forwarded SMS: "kya 5000 aaye?", "did Ali's payment come?").
+  with their cost and profit), product_profit (profit per product after courier charges and
+  returns: "asal munafa kis cheez pe?"), pick_list (what to pick and pack today: "aaj kya
+  pack karna hai?"), or wallet_sms (money the shop's wallets and bank received, from the
+  forwarded SMS: "kya 5000 aaye?", "did Ali's payment come?").
 - intent "question": any other question about the shop.
 - intent "other": anything else.
 note: one short sentence in English saying what you understood.

@@ -59,6 +59,7 @@ from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.core.settings import Settings
+from chatfront.delivery import packing, picking
 from chatfront.jobs.queue import enqueue
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
@@ -134,6 +135,10 @@ class OwnerAssistant:
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
         words, kind = turn.message.body or "", turn.message.kind
+        if kind == Kind.IMAGE and packing.is_check(words):
+            if Can.SHIP not in allowed:
+                return refuse(turn)
+            return await packing.from_chat(self.db, self.ai, self.storage, turn)
         if kind == Kind.IMAGE and count.is_count(words):
             return await self._count(turn) if Can.STOCK in allowed else refuse(turn)
         if kind == Kind.IMAGE and restock.is_purchase(words):
@@ -146,6 +151,8 @@ class OwnerAssistant:
             return await self._video(turn) if Can.CATALOG in allowed else refuse(turn)
         if kind == Kind.TEXT and (phishing.full_links(words) or phishing.says(words, CODE)):
             return await self._links(turn)
+        if kind == Kind.TEXT and picking.is_ask(words):
+            return await self._report(turn, "pick_list", (), allowed)
         for followup in self.followups:
             replies = await followup(turn, action)
             if replies is not None:
@@ -376,6 +383,10 @@ class OwnerAssistant:
                 return panel.orders_list(turn.tenant, waiting, turn.lang)
             if report == "batches":
                 text = await profit.batches_text(session, turn.tenant, turn.lang)
+            elif report == "product_profit":
+                text = await profit.true_text(session, turn.tenant, turn.lang)
+            elif report == "pick_list":
+                text = picking.text(await picking.build(session, turn.tenant), turn.lang)
             else:
                 text = await reports.report_text(session, turn.tenant, report, turn.lang)
         return [OutText(text)]

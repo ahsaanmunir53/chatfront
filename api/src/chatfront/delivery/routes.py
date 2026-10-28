@@ -1,23 +1,29 @@
 """Delivery endpoints: the owner's orders with their risk and next moves (feature 34), the
-shipping label (101), and the public tracking page a label's QR code opens."""
+shipping label (101), what the courier charged (51), the day's pick list and slips (103), the
+packing check (102), and the public tracking page a label's QR code opens."""
 
 from __future__ import annotations
 
-from datetime import datetime
+import uuid
+from datetime import date, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.audit.service import Actor, ActorType
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Tenant
-from chatfront.delivery import shipping
+from chatfront.delivery import packing, picking, shipping
 from chatfront.delivery.labels import LabelData, label_pdf
-from chatfront.delivery.models import Shipment
+from chatfront.delivery.models import PackingCheck, Shipment
 from chatfront.delivery.risk import band
+from chatfront.media import service as media_service
+from chatfront.media.models import MediaKind
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
@@ -25,17 +31,39 @@ from chatfront.owner.rights import Can
 from chatfront.owner.routes import ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession
 from chatfront.payments.models import Payment
+from chatfront.services import Services
 
 router = APIRouter()
 ShipDep = Annotated[OwnerSession, needs(Can.SHIP)]
 
 ORDER_LIMIT = 50
+MAX_CHARGE = 10**10  # minor units; far above any parcel
 
 
 class ShipmentOut(BaseModel):
     courier: str | None
     tracking_number: str | None
     public_code: str
+    courier_charge: int | None
+    return_charge: int | None
+
+
+class CheckOut(BaseModel):
+    verdict: str
+    lines: list[dict[str, Any]]
+    extra: list[str]
+    asked_owner: bool = False
+    created_at: datetime
+
+
+def _check_out(check: PackingCheck, *, asked_owner: bool = False) -> CheckOut:
+    return CheckOut(
+        verdict=check.verdict,
+        lines=check.lines,
+        extra=check.extra,
+        asked_owner=asked_owner,
+        created_at=check.created_at,
+    )
 
 
 class RiskOut(BaseModel):
@@ -59,9 +87,15 @@ class OrderOut(BaseModel):
     next: list[str]
     label: bool
     shipment: ShipmentOut | None
+    packing: CheckOut | None = None  # the latest packing check (feature 102)
 
 
-def _order_out(order: Order, name: str | None, shipment: Shipment | None) -> OrderOut:
+def _order_out(
+    order: Order,
+    name: str | None,
+    shipment: Shipment | None,
+    check: PackingCheck | None = None,
+) -> OrderOut:
     address = order.address or {}
     return OrderOut(
         code=order.code,
@@ -83,10 +117,27 @@ def _order_out(order: Order, name: str | None, shipment: Shipment | None) -> Ord
             courier=shipment.courier,
             tracking_number=shipment.tracking_number,
             public_code=shipment.public_code,
+            courier_charge=shipment.courier_charge,
+            return_charge=shipment.return_charge,
         )
         if shipment
         else None,
+        packing=_check_out(check) if check else None,
     )
+
+
+async def _latest_checks(
+    db: AsyncSession, order_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, PackingCheck]:
+    rows = await db.scalars(
+        select(PackingCheck)
+        .where(PackingCheck.order_id.in_(order_ids))
+        .order_by(PackingCheck.created_at.desc())
+    )
+    latest: dict[uuid.UUID, PackingCheck] = {}
+    for check in rows:
+        latest.setdefault(check.order_id, check)
+    return latest
 
 
 @router.get("/api/owner/orders")
@@ -102,13 +153,24 @@ async def list_orders(
             .order_by(Order.placed_at.desc().nulls_last())
             .limit(ORDER_LIMIT)
         )
-        return [_order_out(order, name, shipment) for order, name, shipment in rows.all()]
+        found = rows.all()
+        checks = await _latest_checks(db, [order.id for order, _, _ in found])
+        return [
+            _order_out(order, name, shipment, checks.get(order.id))
+            for order, name, shipment in found
+        ]
 
 
 class MoveIn(BaseModel):
     to: OrderStatus
     courier: str = Field(default="", max_length=60)
     tracking: str = Field(default="", max_length=60)
+    charge: int | None = Field(default=None, ge=0, le=MAX_CHARGE)  # minor units
+
+
+class ChargesIn(BaseModel):
+    there: int | None = Field(default=None, ge=0, le=MAX_CHARGE)
+    back: int | None = Field(default=None, ge=0, le=MAX_CHARGE)
 
 
 @router.post("/api/owner/orders/{code}/status")
@@ -121,8 +183,120 @@ async def move_order(code: str, body: MoveIn, session: ShipDep, services: Servic
         session.staff_id,
         courier=body.courier,
         tracking=body.tracking,
+        charge=body.charge,
     )
     return _order_out(moved.order, None, moved.shipment)
+
+
+@router.put("/api/owner/orders/{code}/charges")
+async def set_charges(
+    code: str, body: ChargesIn, session: ShipDep, services: ServicesDep
+) -> ShipmentOut:
+    """What the courier charged for the parcel, out and back (feature 51)."""
+    async with services.db.tenant(session.tenant_id) as db:
+        order = await shipping.order_by_code(db, code)
+        shipment = await shipping.set_charges(
+            db, order, body.there, body.back, Actor(ActorType.STAFF, str(session.staff_id))
+        )
+        return ShipmentOut(
+            courier=shipment.courier,
+            tracking_number=shipment.tracking_number,
+            public_code=shipment.public_code,
+            courier_charge=shipment.courier_charge,
+            return_charge=shipment.return_charge,
+        )
+
+
+@router.post("/api/owner/orders/{code}/packing-check")
+async def packing_check(
+    code: str, session: ShipDep, services: ServicesDep, file: Annotated[UploadFile, File()]
+) -> CheckOut:
+    """A photo of the packed order, checked against it (feature 102)."""
+    data = await file.read(services.settings.max_upload_bytes + 1)
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await db.get(Tenant, session.tenant_id)
+        assert tenant is not None
+        order = await shipping.order_by_code(db, code)
+        if order.status not in packing.CHECKABLE:
+            raise AppError(
+                "not_ready", "Only an order being packed can be checked", status_code=409
+            )
+        media = await media_service.store(
+            db,
+            services.storage,
+            session.tenant_id,
+            data,
+            source="console",
+            max_bytes=services.settings.max_upload_bytes,
+        )
+    if media.kind != MediaKind.IMAGE:
+        raise AppError("not_an_image", "Send a photo", status_code=415)
+    checked = await packing.check(
+        services.db, services.ai, services.storage, tenant, order.id, media.id, session.staff_id
+    )
+    if checked is None:
+        raise AppError("no_model", "Photo checks need the model", status_code=503)
+    return _check_out(checked.check, asked_owner=checked.asked_owner)
+
+
+# -- the day's pick list and slips (feature 103) ------------------------------------------------
+
+
+class PickLineOut(BaseModel):
+    name: str
+    quantity: int
+    orders: str
+    short: int
+
+
+class WaitingOut(BaseModel):
+    code: str
+    ships_from: date
+
+
+class PickListOut(BaseModel):
+    day: date
+    orders: int
+    pieces: int
+    lines: list[PickLineOut]
+    waiting: list[WaitingOut]
+
+
+async def _pick_list(services: Services, tenant_id: uuid.UUID) -> tuple[Tenant, picking.PickList]:
+    async with services.db.tenant(tenant_id) as db:
+        tenant = await db.get(Tenant, tenant_id)
+        assert tenant is not None
+        return tenant, await picking.build(db, tenant)
+
+
+@router.get("/api/owner/pick-list")
+async def pick_list(session: ShipDep, services: ServicesDep) -> PickListOut:
+    _, picks = await _pick_list(services, session.tenant_id)
+    return PickListOut(
+        day=picks.day,
+        orders=len(picks.slips),
+        pieces=picks.pieces,
+        lines=[
+            PickLineOut(
+                name=line.name,
+                quantity=line.quantity,
+                orders=line.orders_text(),
+                short=line.short,
+            )
+            for line in picks.lines
+        ],
+        waiting=[WaitingOut(code=code, ships_from=day) for code, day in picks.waiting],
+    )
+
+
+@router.get("/api/owner/pick-list.pdf")
+async def pick_list_pdf(session: ShipDep, services: ServicesDep) -> Response:
+    tenant, picks = await _pick_list(services, session.tenant_id)
+    return Response(
+        picking.pdf_bytes(tenant, picks),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="pick-list-{picks.day}.pdf"'},
+    )
 
 
 @router.get("/api/owner/orders/{code}/label.pdf")

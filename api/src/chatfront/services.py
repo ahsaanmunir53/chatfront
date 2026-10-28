@@ -34,6 +34,7 @@ from chatfront.channels.whatsapp import WhatsAppAdapter
 from chatfront.core.db import Database
 from chatfront.core.ratelimit import RateLimiter
 from chatfront.core.settings import Settings
+from chatfront.delivery import packing, picking
 from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
@@ -132,6 +133,10 @@ def build_registries() -> Registries:
         expiry.DAY_JOB: expiry.day_job,
     }
     growth.periodic.append(Periodic("stock-mornings", expiry.EVERY, expiry.DAILY_JOB))
+    delivery = registries.modules.modules["delivery"]
+    delivery.jobs |= {picking.DAILY_JOB: picking.daily_job, picking.SEND_JOB: picking.send_job}
+    delivery.periodic.append(Periodic("pick-lists", picking.EVERY, picking.DAILY_JOB))
+    registries.approvals[packing.KIND] = packing.APPROVAL
     registries.jobs.register(REPLY_JOB)(handle_reply)
     registries.jobs.register(COMMENT_JOB)(reply_to_comment)
     registries.jobs.register(meta.SYNC_JOB)(meta.sync_job)
@@ -213,6 +218,7 @@ def build_services(settings: Settings, registries: Registries) -> Services:
                 partial(approval_button, services),
                 partial(stock_button, services),
                 partial(panel.panel_button, services),
+                partial(packing.packing_button, services),
             ),
             followups=(partial(panel.panel_followup, services),),
         ),

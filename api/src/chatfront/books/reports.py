@@ -59,6 +59,8 @@ NEEDS: dict[str, Can] = {
     "orders": Can.ORDERS,
     "batches": Can.BOOKS,
     "wallet_sms": Can.PAYMENTS,
+    "pick_list": Can.SHIP,  # feature 103
+    "product_profit": Can.BOOKS,  # feature 51
 }
 
 

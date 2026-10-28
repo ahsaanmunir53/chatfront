@@ -291,11 +291,19 @@ async def _order_panel(services: Services, turn: Turn, code: str) -> list[Outbou
     ]
 
 
-async def _move(services: Services, turn: Turn, code: str, to: str, **extra: str) -> list[Outbound]:
+async def _move(
+    services: Services, turn: Turn, code: str, to: str, *, courier: str = "", tracking: str = ""
+) -> list[Outbound]:
     assert turn.staff_id is not None
     try:
         moved = await shipping.move(
-            services, turn.tenant.id, code, OrderStatus(to), turn.staff_id, **extra
+            services,
+            turn.tenant.id,
+            code,
+            OrderStatus(to),
+            turn.staff_id,
+            courier=courier,
+            tracking=tracking,
         )
     except AppError:
         return _reply(turn, "console.move_failed")
