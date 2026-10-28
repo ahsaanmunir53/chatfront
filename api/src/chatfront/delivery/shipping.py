@@ -25,11 +25,12 @@ from chatfront.core.errors import AppError, NotFound
 from chatfront.core.i18n import t
 from chatfront.core.ids import short_code
 from chatfront.core.models import Tenant
+from chatfront.core.settings import Settings
 from chatfront.delivery.models import Shipment
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus, can_move
-from chatfront.shield import buyers
+from chatfront.shield import buyers, reviews
 
 if TYPE_CHECKING:
     from chatfront.services import Services
@@ -114,7 +115,7 @@ async def move(
             await buyers.review(session, tenant, order.customer_id, actor)
         _stamp(shipment, wanted, courier=courier, tracking=tracking)
         lang = await chat_language(session, tenant, order.conversation_id)
-        tell = _update(tenant, order, shipment, wanted, lang, services.settings.web_url)
+        tell = _update(tenant, order, shipment, wanted, lang, services.settings)
     if tell and order.conversation_id:
         await send_to(services, tenant_id, order.conversation_id, OutText(tell), lang)
     return Moved(order, shipment)
@@ -162,10 +163,12 @@ def _update(
     shipment: Shipment,
     wanted: OrderStatus,
     lang: str,
-    web_url: str,
+    settings: Settings,
 ) -> str | None:
-    """The customer hears when the parcel leaves, when it arrives, and when the shop
-    cancels; packing and returns are the shop's own business."""
+    """The customer hears when the parcel leaves, when it arrives (with the link to review
+    it, feature 46), and when the shop cancels; packing and returns are the shop's own
+    business."""
+    web_url = settings.web_url
     if wanted == OrderStatus.DISPATCHED:
         lines = [t("delivery.dispatched", lang, code=order.code)]
         if shipment.courier or shipment.tracking_number:
@@ -183,7 +186,13 @@ def _update(
         lines.append(t("delivery.track", lang, url=track_url(web_url, shipment)))
         return "\n".join(lines)
     if wanted == OrderStatus.DELIVERED:
-        return t("delivery.delivered", lang, code=order.code, shop=tenant.name)
+        secret = settings.secret_key.get_secret_value()
+        return "\n".join(
+            [
+                t("delivery.delivered", lang, code=order.code, shop=tenant.name),
+                t("reviews.ask", lang, url=reviews.link(web_url, tenant, order, secret)),
+            ]
+        )
     if wanted == OrderStatus.CANCELLED:
         return t("delivery.cancelled_by_shop", lang, code=order.code)
     return None

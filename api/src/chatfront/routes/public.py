@@ -113,7 +113,8 @@ def _limit(services: Services, request: Request) -> None:
     services.limiter.check(f"shop:{client}")
 
 
-async def _tenant(services: Services, slug: str) -> Tenant:
+async def shop_by_slug(services: Services, slug: str) -> Tenant:
+    """A shop open to the public, by its slug."""
     async with services.db.system() as session:  # public lookup by slug, before any tenant
         tenant = await session.scalar(select(Tenant).where(Tenant.slug == slug))
     expired = tenant is not None and tenant.expires_at is not None and tenant.expires_at < utcnow()
@@ -173,14 +174,14 @@ async def demo_shops(request: Request, services: ServicesDep) -> list[ShopSummar
 async def trust(slug: str, request: Request, services: ServicesDep) -> TrustInfo:
     """The shop's official channels, so nobody can run a fake shop in its name."""
     _limit(services, request)
-    tenant = await _tenant(services, slug)
+    tenant = await shop_by_slug(services, slug)
     return TrustInfo(slug=tenant.slug, name=tenant.name, channels=await _channels(services, tenant))
 
 
 @router.get("/api/shops/{slug}")
 async def get_shop(slug: str, request: Request, services: ServicesDep) -> PublicShop:
     _limit(services, request)
-    tenant = await _tenant(services, slug)
+    tenant = await shop_by_slug(services, slug)
     profile: dict[str, Any] = tenant.profile or {}
     template = get_template(tenant.template)
     return PublicShop(
@@ -251,7 +252,7 @@ async def _countdowns(services: Services, tenant: Tenant) -> list[Countdown]:
 async def list_products(slug: str, request: Request, services: ServicesDep) -> list[ProductOut]:
     """The shop's products on sale, newest first, with short-lived photo links."""
     _limit(services, request)
-    tenant = await _tenant(services, slug)
+    tenant = await shop_by_slug(services, slug)
     async with services.db.tenant(tenant.id) as session:
         items = await load_items(session)
         photos = {
@@ -307,7 +308,7 @@ async def product_photo(slug: str, code: str, request: Request, services: Servic
     """A stable link to a product's photo for the Meta catalog (feature 6), which keeps the
     link while the stored photo's own links expire: each visit gets a fresh one."""
     _limit(services, request)
-    tenant = await _tenant(services, slug)
+    tenant = await shop_by_slug(services, slug)
     async with services.db.tenant(tenant.id) as session:
         photo = await session.scalar(
             select(Media)

@@ -36,6 +36,8 @@ from chatfront.payments.routes import router as payments_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
+from chatfront.shield.platform_routes import router as platform_router
+from chatfront.shield.review_routes import router as reviews_router
 from chatfront.shield.routes import router as shield_router
 from chatfront.stock.routes import router as stock_router
 
@@ -94,6 +96,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(team_router)
     app.include_router(books_router)
     app.include_router(shield_router)
+    app.include_router(platform_router)
+    app.include_router(reviews_router)
     app.include_router(stock_router)
     app.include_router(payments_router)
     app.include_router(delivery_router)
