@@ -55,8 +55,12 @@ from chatfront.owner.sandbox import REMOVE_EXPIRED_JOB, remove_expired_shops
 from chatfront.payments.review import REVIEW_JOB, payment_button, review_job
 from chatfront.payments.tools import payment_tools
 from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
+from chatfront.push.alerts import PUSH_JOB
+from chatfront.push.alerts import send_job as push_job
 from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
 from chatfront.shield.approvals import tell_job as approval_tell_job
+from chatfront.sim.runner import TURN_JOB as SIM_TURN_JOB
+from chatfront.sim.runner import take_turn as sim_turn
 from chatfront.stock import expiry, panel
 from chatfront.stock.chat import stock_button
 from chatfront.stock.notices import NOTICE_JOB, notice_job
@@ -148,6 +152,8 @@ def build_registries() -> Registries:
     registries.jobs.register(REQUEUE_STALE_JOB)(_requeue_stale)
     registries.jobs.register(TRANSLATE_JOB)(translate_product)
     registries.jobs.register(REMOVE_EXPIRED_JOB)(remove_expired_shops)
+    registries.jobs.register(SIM_TURN_JOB)(sim_turn)
+    registries.jobs.register(PUSH_JOB)(push_job)
     registries.cron.add(Periodic("requeue-stale", timedelta(minutes=5), REQUEUE_STALE_JOB))
     registries.cron.add(Periodic("remove-expired-shops", timedelta(hours=6), REMOVE_EXPIRED_JOB))
     return registries

@@ -26,7 +26,7 @@ from chatfront.crm.routes import router as crm_router
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.mcp.routes import router as mcp_router
 from chatfront.offers.routes import router as offers_router
-from chatfront.orders.checkout import router as checkout_router
+from chatfront.orders.checkout_routes import router as checkout_router
 from chatfront.orders.return_routes import router as returns_router
 from chatfront.orders.waitlist_routes import router as waitlist_router
 from chatfront.owner.dashboard import router as dashboard_router
@@ -36,12 +36,14 @@ from chatfront.owner.routes import router as owner_router
 from chatfront.owner.team import router as team_router
 from chatfront.payments.refund_routes import router as refunds_router
 from chatfront.payments.routes import router as payments_router
+from chatfront.push.routes import router as push_router
 from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
 from chatfront.shield.platform_routes import router as platform_router
 from chatfront.shield.review_routes import router as reviews_router
 from chatfront.shield.routes import router as shield_router
+from chatfront.sim.routes import router as busy_day_router
 from chatfront.stock.routes import router as stock_router
 
 
@@ -93,6 +95,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(checkout_router)
     app.include_router(owner_router)
     app.include_router(dashboard_router)
+    app.include_router(busy_day_router)
+    app.include_router(push_router)
     app.include_router(inbox_router)
     app.include_router(posts_router)
     app.include_router(catalog_sync_router)

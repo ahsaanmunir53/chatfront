@@ -609,6 +609,7 @@ export type Dashboard = {
         live: boolean;
         per_order_millipaisa: number | null;
         efforts: Record<string, number>;
+        endpoints: { name: string; answered: number; failed: number }[];
         jobs: (Usage & { job: string })[];
       })
     | null;
@@ -649,6 +650,20 @@ export type OwnerCustomer = {
   phone: string | null;
 };
 export type Segment = "new" | "repeat" | "loyal" | "quiet" | "none";
+/** A busy day of simulated customers in a demo copy (feature 110). */
+export type BusyDayRun = {
+  mode: "live" | "replay";
+  customers: number;
+  started_at: string;
+  finished_at: string | null;
+  active: number;
+  ordered: number;
+  handover: number;
+  left: number;
+  stuck: number;
+  messages: number;
+};
+export type BusyDay = { mode: "live" | "replay" | null; run: BusyDayRun | null };
 export type CustomerSummary = {
   buyers: number;
   came_back: number;
@@ -1061,6 +1076,33 @@ export const api = {
     }),
   customers: (token: string) =>
     call<OwnerCustomer[]>("/api/owner/customers", { headers: bearer(token) }),
+  pushKey: (token: string) =>
+    call<{ public_key: string | null }>("/api/owner/push/key", { headers: bearer(token) }),
+  pushOn: (token: string, subscription: PushSubscriptionJSON) =>
+    call<{ on: boolean }>("/api/owner/push", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(subscription),
+    }),
+  pushOff: (token: string, endpoint: string) =>
+    call<{ on: boolean }>("/api/owner/push/off", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ endpoint }),
+    }),
+  pushTest: (token: string, text: string, lang: string) =>
+    call<{ queued: boolean }>("/api/owner/push/test", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ text, lang }),
+    }),
+  busyDay: (token: string) => call<BusyDay>("/api/owner/busy-day", { headers: bearer(token) }),
+  startBusyDay: (token: string, customers: 10 | 20 | 50) =>
+    call<BusyDay>("/api/owner/busy-day", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ customers }),
+    }),
   customerSummary: (token: string) =>
     call<CustomerSummary>("/api/owner/customers/summary", { headers: bearer(token) }),
   greet: (token: string, text: string, segment: Segment | "all") =>

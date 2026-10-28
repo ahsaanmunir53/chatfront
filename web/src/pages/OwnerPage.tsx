@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { LowStock, OwnerMe, OwnerProduct } from "../api";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
+import { BusyDayPanel } from "../components/BusyDay";
+import { PhoneAlerts } from "../components/PhoneAlerts";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { DashboardPanel } from "../components/Dashboard";
@@ -324,6 +326,7 @@ function Console({
         </div>
       </header>
       {me.is_demo && <p className="console-demo">{t("console.demo_note")}</p>}
+      {me.is_demo && can("orders") && <BusyDayPanel token={token} canStart={can("settings")} />}
       <Approvals token={token} list={approvals.list} onChange={approvals.refresh} />
       <Alerts me={me} token={token} list={notices.list} onChange={notices.refresh} />
       {can("chats") && <InboxPanel me={me} token={token} />}
@@ -387,6 +390,7 @@ function Console({
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
       {can("settings") && <AnswersPanel token={token} />}
+      <PhoneAlerts token={token} />
       {can("settings") && <SettingsPanel token={token} />}
       {can("audit") && <ActivityPanel token={token} />}
     </Page>

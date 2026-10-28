@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     fireworks_api_key: SecretStr | None = None
     fireworks_base_url: str = "https://api.fireworks.ai/inference/v1"
     spark_model_fireworks: str = "accounts/fireworks/models/muse-spark-open"
+    modal_spark_base_url: str | None = None
+    modal_spark_api_key: SecretStr | None = None
+    spark_model_modal: str = "muse-spark-open"
     modal_glimmer_base_url: str | None = None
     modal_glimmer_api_key: SecretStr | None = None
     glimmer_model: str = "meta-models/Muse-Glimmer-30B"
@@ -89,6 +92,13 @@ class Settings(BaseSettings):
     worker_enabled: bool = True
     worker_poll_seconds: float = 1.0
     worker_batch_size: int = 5
+    # Alerts on staff phones (feature 115): the VAPID key from `python -m chatfront.push`, and
+    # an address push services may write to (empty: the public URL).
+    vapid_private_key: SecretStr | None = None
+    vapid_subject: str | None = None
+    # The customer simulator's pace (feature 110): seconds between arrivals and between a
+    # simulated customer's messages are a small multiple of this; 0 in tests.
+    sim_pace_seconds: float = 2.0
     i18n_dir: Path = REPO_ROOT / "i18n"
     web_dist_dir: Path = REPO_ROOT / "web" / "dist"
     public_rate_limit_per_minute: int = 30

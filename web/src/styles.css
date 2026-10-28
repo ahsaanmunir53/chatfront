@@ -5934,3 +5934,89 @@ button {
   font-size: 16px;
   font-weight: 400;
 }
+
+/* A busy day of simulated customers (feature 110). */
+.busy-day {
+  margin-bottom: 24px;
+}
+
+.busy-run p {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.busy-bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--line);
+}
+
+.busy-bar span {
+  min-width: 4px;
+}
+
+.busy-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 0 12px;
+  padding: 0;
+  font-size: 13px;
+  list-style: none;
+}
+
+.busy-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.busy-ordered {
+  background: var(--stamp);
+}
+
+.busy-handover {
+  background: var(--saffron);
+}
+
+.busy-left {
+  background: var(--muted);
+}
+
+.busy-stuck {
+  background: var(--chili);
+}
+
+.busy-active {
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.busy-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.busy-start .segment-filter {
+  margin: 0;
+}
+
+/* Alerts on this phone (feature 115). */
+.phone-alerts {
+  margin-bottom: 24px;
+}
+
+.phone-alerts-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.phone-alerts-actions p {
+  margin: 0;
+}

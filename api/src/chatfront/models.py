@@ -46,7 +46,9 @@ from chatfront.payments.models import (
     Refund,
     WalletCredit,
 )
+from chatfront.push.models import PushSubscription
 from chatfront.shield.models import Approval, FraudListEntry, FraudReport, Review
+from chatfront.sim.models import SimChat, SimRun
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
 __all__ = [
@@ -85,12 +87,15 @@ __all__ = [
     "PostComment",
     "PriceOffer",
     "Product",
+    "PushSubscription",
     "Receipt",
     "Refund",
     "ReturnRequest",
     "Review",
     "SavedAnswer",
     "Shipment",
+    "SimChat",
+    "SimRun",
     "SocialPost",
     "Staff",
     "StockBatch",
