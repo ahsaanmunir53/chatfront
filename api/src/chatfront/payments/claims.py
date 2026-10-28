@@ -29,7 +29,7 @@ from chatfront.core.models import Tenant
 from chatfront.media.service import from_data_url
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
-from chatfront.payments import forensics
+from chatfront.payments import forensics, fx
 from chatfront.payments.forensics import STRONG, Expected, PaymentReading, Signal, same_picture
 from chatfront.payments.matcher import credit_for_claim, find_order_code, same_transaction
 from chatfront.payments.messages import paid_text
@@ -48,10 +48,20 @@ _REUSED = frozenset({"reused_here", "reused_elsewhere"})
 
 
 @dataclass(frozen=True, slots=True)
+class Abroad:
+    """Money sent from abroad (feature 96), as read and as the owner's rate makes it."""
+
+    currency: str
+    sent: float
+    rate: int | None  # shop minor units per unit; None when the owner set none
+
+
+@dataclass(frozen=True, slots=True)
 class Picture:
     reading: PaymentReading | None  # None when no model could read it
     phash: str | None
-    amount: int | None  # minor units
+    amount: int | None  # minor units of the shop's money
+    abroad: Abroad | None = None
 
 
 def _close(phash: str | None, other: PaymentClaim, picture: Picture, tid: str | None) -> bool:
@@ -105,12 +115,15 @@ async def _read(services: Services, turn: Turn, image: ImagePart, waiting: list[
         log.warning("payment screenshot not read: %s", exc)
         reading = None
     data = from_data_url(image.url)
-    amount = (
-        round(reading.amount * 10**pack.minor_digits)
-        if reading is not None and reading.amount is not None
-        else None
-    )
-    return Picture(reading, forensics.picture_hash(data) if data else None, amount)
+    phash = forensics.picture_hash(data) if data else None
+    if reading is None or reading.amount is None:
+        return Picture(reading, phash, None)
+    currency = (reading.currency or pack.currency).upper()
+    if currency == pack.currency:
+        return Picture(reading, phash, round(reading.amount * 10**pack.minor_digits))
+    rate = fx.rate_of(turn.tenant, currency)
+    local = fx.to_local(reading.amount, rate) if rate else None
+    return Picture(reading, phash, local, Abroad(currency, reading.amount, rate))
 
 
 def _same_money(picture: Picture, tid: str | None) -> ColumnElement[bool]:
@@ -221,9 +234,30 @@ def _new_claim(
     return claim
 
 
+def _from_abroad(
+    tenant: Tenant, order: Order, picture: Picture, reading: PaymentReading
+) -> tuple[PaymentReading, list[Signal]]:
+    """The reading in the shop's money, and what the owner must see about it."""
+    abroad = picture.abroad
+    if abroad is None:
+        return reading, []
+    sent = f"{abroad.sent:,.2f} {abroad.currency}"
+    if abroad.rate is None or picture.amount is None:
+        return reading.model_copy(update={"amount": None}), [Signal("no_rate", sent)]
+    digits = get_pack(tenant.country).minor_digits
+    local = picture.amount
+    if order.due_now and fx.near(local, order.due_now):
+        local = order.due_now  # the day's rate, not a short payment
+    detail = f"{sent} = {shop_money(tenant, picture.amount, 'en')}"
+    return reading.model_copy(update={"amount": local / 10**digits}), [
+        Signal("paid_from_abroad", detail)
+    ]
+
+
 def _signals(tenant: Tenant, order: Order, picture: Picture) -> list[Signal]:
     if picture.reading is None:
         return [Signal("unread")]
+    reading, abroad = _from_abroad(tenant, order, picture, picture.reading)
     pack = get_pack(tenant.country)
     expected = Expected(
         due=order.due_now,
@@ -234,7 +268,7 @@ def _signals(tenant: Tenant, order: Order, picture: Picture) -> list[Signal]:
         timezone=pack.timezone,
         rounding=order.unique_off,
     )
-    return forensics.signals(picture.reading, expected)
+    return [*forensics.signals(reading, expected), *abroad]
 
 
 async def _decide(

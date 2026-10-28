@@ -37,6 +37,7 @@ class PaymentReading(BaseModel):
     provider: str | None
     status: Literal["successful", "pending", "failed", "unknown"]
     amount: float | None
+    currency: str | None  # as shown: PKR, or USD, GBP, AED... for money sent from abroad
     transaction_id: str | None
     paid_at: str | None  # ISO 8601, as the screenshot shows it
     payer_name: str | None
@@ -65,6 +66,8 @@ STRONG = frozenset(
         "reused_here",
         "reused_elsewhere",
         "more_than_due",
+        "paid_from_abroad",
+        "no_rate",
     }
 )
 
