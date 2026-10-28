@@ -24,6 +24,7 @@ from chatfront.orders import bargain
 from chatfront.orders.delivery import Quote, city_name, quote, rates_for, weight_of
 from chatfront.orders.models import Order, OrderItem, PriceOffer
 from chatfront.orders.states import CLOSED, HOLDS_STOCK, OrderStatus, check_move
+from chatfront.payments import refunds
 from chatfront.shield.autonomy import ASK_DISCOUNT_OVER, Action, Level, level
 from chatfront.stock import batches
 
@@ -56,17 +57,30 @@ async def open_cart(
     )
     if cart is not None:
         return cart
-    cart = Order(
+    return await new_order(session, tenant, customer_id, conversation_id=conversation_id)
+
+
+async def new_order(
+    session: AsyncSession,
+    tenant: Tenant,
+    customer_id: uuid.UUID,
+    *,
+    conversation_id: uuid.UUID | None = None,
+    source: str | None = None,
+) -> Order:
+    """An empty order in the cart state, with a code of its own."""
+    order = Order(
         tenant_id=tenant.id,
         code=await _new_code(session, tenant.id),
         customer_id=customer_id,
         conversation_id=conversation_id,
         status=OrderStatus.CART,
         currency=tenant.currency,
+        source=source,
     )
-    session.add(cart)
+    session.add(order)
     await session.flush()
-    return cart
+    return order
 
 
 async def lines(session: AsyncSession, order: Order) -> list[OrderItem]:
@@ -91,7 +105,8 @@ async def delivery_quote(session: AsyncSession, order: Order) -> Quote | None:
     return quote(rates_for(tenant), str(city), weight, order.subtotal)
 
 
-async def _recalculate(session: AsyncSession, order: Order) -> None:
+async def recalculate(session: AsyncSession, order: Order) -> None:
+    """Subtotal, delivery charge and total from the lines, the address and any discount."""
     order.subtotal = sum(item.line_total for item in await lines(session, order))
     charge = await delivery_quote(session, order)
     order.delivery_fee = charge.fee or 0 if charge else 0
@@ -118,7 +133,7 @@ async def set_address(
         "phone_valid": valid,
         **({"pin": pin} if pin else {}),
     }
-    await _recalculate(session, order)
+    await recalculate(session, order)
     charge = await delivery_quote(session, order)
     assert charge is not None
     return charge
@@ -165,7 +180,7 @@ async def set_quantity(
         if item is not None:
             await session.delete(item)
             await session.flush()
-        await _recalculate(session, order)
+        await recalculate(session, order)
         return None
     catalog_price = variant.price if variant.price is not None else product.price
     bargained = agreed_price is not None and 0 < agreed_price < catalog_price
@@ -189,7 +204,7 @@ async def set_quantity(
         item.quantity, item.unit_price, item.list_price = quantity, unit_price, list_price
         item.line_total = unit_price * quantity
     await session.flush()
-    await _recalculate(session, order)
+    await recalculate(session, order)
     return item
 
 
@@ -221,6 +236,8 @@ async def move(
     if wanted in CLOSED:
         order.closed_at = now
     await session.flush()
+    if wanted == OrderStatus.CANCELLED and order.paid > 0:
+        await refunds.on_cancel(session, order)  # what it took goes back (feature 28)
     await record(
         session,
         order.tenant_id,
@@ -263,7 +280,7 @@ async def change_placed_line(
     else:
         item.quantity, item.line_total = quantity, item.unit_price * quantity
     await session.flush()
-    await _recalculate(session, order)
+    await recalculate(session, order)
     await record(
         session,
         order.tenant_id,

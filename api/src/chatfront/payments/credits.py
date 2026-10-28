@@ -20,8 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import SYSTEM, record
-from chatfront.channels.language import reply_language
-from chatfront.channels.models import Conversation
+from chatfront.channels.language import chat_language
 from chatfront.channels.notify import send_to
 from chatfront.channels.types import OutText
 from chatfront.core.clock import utcnow
@@ -188,7 +187,6 @@ async def _tell_customer(services: Services, tenant: Tenant, paid: Paid) -> None
     if order.conversation_id is None:
         return
     async with services.db.tenant(tenant.id) as session:
-        conversation = await session.get(Conversation, order.conversation_id)
-    lang = reply_language(conversation, tenant) if conversation else tenant.default_lang
+        lang = await chat_language(session, tenant, order.conversation_id)
     text = paid_text(tenant, order, paid.receipt, lang, services.settings.web_url)
     await send_to(services, tenant.id, order.conversation_id, OutText(text), lang)

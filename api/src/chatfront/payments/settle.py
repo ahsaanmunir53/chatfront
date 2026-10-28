@@ -24,7 +24,7 @@ from chatfront.core.models import Tenant
 from chatfront.orders import service as orders
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
-from chatfront.payments import receipts
+from chatfront.payments import receipts, refunds
 from chatfront.payments.due import ask_for
 from chatfront.payments.matcher import ClaimFacts, CreditFacts
 from chatfront.payments.models import (
@@ -124,6 +124,7 @@ async def settle(
         payment_id=payment.id,
     )
     order.paid += amount
+    await refunds.on_payment(session, order)  # more than it costs is owed back (feature 29)
     if order.status == OrderStatus.AWAITING_PAYMENT:
         if _paid_in_full(order):
             wanted = OrderStatus.CONFIRMED if order.payment_method == "cod" else OrderStatus.PAID

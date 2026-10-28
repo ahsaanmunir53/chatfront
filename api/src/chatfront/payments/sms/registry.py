@@ -22,3 +22,9 @@ def parse_sms(sender: str, body: str, country: str) -> Credit | None:
         if parser.trusts(sender) and (credit := parser.parse(body)):
             return credit
     return None
+
+
+def provider_name(parser_id: str) -> str:
+    """The wallet or bank a parser reads ("JazzCash" for "pk.jazzcash")."""
+    parser = PARSERS.get(parser_id)
+    return parser.provider if parser else parser_id

@@ -22,8 +22,7 @@ from chatfront.ai.prompts import load_prompt
 from chatfront.ai.types import ChatMessage, ChatRequest, Role
 from chatfront.audit.service import Actor, ActorType, record
 from chatfront.channels.handover import staff_language
-from chatfront.channels.language import reply_language
-from chatfront.channels.models import Conversation
+from chatfront.channels.language import chat_language
 from chatfront.channels.notify import send_to, tell_owner
 from chatfront.channels.types import Button, Outbound, OutButtons, OutText
 from chatfront.core.clock import utcnow
@@ -239,12 +238,7 @@ async def decide(
         order = await session.get(Order, claim.order_id) if claim and claim.order_id else None
         if claim is None or tenant is None or order is None or claim.status not in _OPEN:
             return Decision(Decided.BEFORE)
-        conversation = (
-            await session.get(Conversation, order.conversation_id)
-            if order.conversation_id
-            else None
-        )
-        lang = reply_language(conversation, tenant) if conversation else tenant.default_lang
+        lang = await chat_language(session, tenant, order.conversation_id)
         if approve:
             credit = await session.get(WalletCredit, claim.credit_id) if claim.credit_id else None
             amount = (

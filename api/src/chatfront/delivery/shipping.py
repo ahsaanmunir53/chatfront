@@ -16,8 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.audit.service import Actor, ActorType
 from chatfront.books import ledger
 from chatfront.books.models import Category, EntryKind
-from chatfront.channels.language import reply_language
-from chatfront.channels.models import Conversation
+from chatfront.channels.language import chat_language
 from chatfront.channels.notify import send_to
 from chatfront.channels.types import OutText
 from chatfront.core.clock import utcnow
@@ -114,12 +113,7 @@ async def move(
         if wanted in (OrderStatus.DELIVERED, OrderStatus.RETURNED):
             await buyers.review(session, tenant, order.customer_id, actor)
         _stamp(shipment, wanted, courier=courier, tracking=tracking)
-        conversation = (
-            await session.get(Conversation, order.conversation_id)
-            if order.conversation_id
-            else None
-        )
-        lang = reply_language(conversation, tenant) if conversation else tenant.default_lang
+        lang = await chat_language(session, tenant, order.conversation_id)
         tell = _update(tenant, order, shipment, wanted, lang, services.settings.web_url)
     if tell and order.conversation_id:
         await send_to(services, tenant_id, order.conversation_id, OutText(tell), lang)

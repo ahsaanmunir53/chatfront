@@ -45,6 +45,7 @@ class Sums(BaseModel):
     cash_profit: int
     goods_profit: int
     write_offs: int
+    refunds: int
     cost_unknown: int
 
 
@@ -119,6 +120,7 @@ def _sums(found: Totals) -> Sums:
         cash_profit=found.cash_profit,
         goods_profit=found.goods_profit,
         write_offs=found.write_offs,
+        refunds=found.refunds,
         cost_unknown=found.goods.unknown,
     )
 
