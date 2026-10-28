@@ -1,6 +1,7 @@
 // Money and goods coming back: refunds owed, closed with the owner's transfer screenshot as
 // proof (feature 28), and the swaps and returns customers asked for, with Approve and Reject,
-// the return label for a reverse pickup and Parcel received (feature 92).
+// the return label for a reverse pickup and Parcel received (feature 92), and what the
+// customer's unboxing video showed (feature 36).
 import { useCallback, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
@@ -175,6 +176,39 @@ export function RefundsPanel({ me, token }: { me: OwnerMe; token: string }) {
   );
 }
 
+const CHECKS = [
+  "seal_intact_at_start",
+  "filmed_without_cut",
+  "item_matches_catalog",
+  "item_matches_packed",
+] as const;
+
+/** What the unboxing video showed (feature 36): advice from code, never the decision. */
+function UnboxingAdvice({ item }: { item: OwnerReturn }) {
+  const { t } = useLang();
+  if (!item.advice) return null;
+  const seen = item.unboxing;
+  return (
+    <details className={`unboxing is-${item.advice}`}>
+      <summary>{t(`console.unboxing.${item.advice}` as Key)}</summary>
+      {seen && (
+        <ul className="pay-signals">
+          {CHECKS.filter((check) => seen[check] !== null).map((check) => (
+            <li key={check}>
+              {t(`console.unboxing.${check}.${seen[check] ? "yes" : "no"}` as Key)}
+            </li>
+          ))}
+          {seen.damage_seen && (
+            <li dir="auto">{t("console.unboxing.damage", { damage: seen.damage || "-" })}</li>
+          )}
+          {seen.notes && <li dir="auto">{seen.notes}</li>}
+        </ul>
+      )}
+      <p className="aside">{t("console.unboxing_note")}</p>
+    </details>
+  );
+}
+
 function ReturnRow({
   token,
   item,
@@ -242,6 +276,7 @@ function ReturnRow({
             {t("console.return_new_order", { code: item.exchange_order_code })}
           </p>
         )}
+        <UnboxingAdvice item={item} />
         <div className="waiting-actions">
           {approval && (
             <>

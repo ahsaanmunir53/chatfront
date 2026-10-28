@@ -2,16 +2,18 @@
 // risk of a cash-on-delivery order coming back with its reasons (feature 34), the next moves,
 // the shipping label (feature 101), what the courier charged (51), the packing check (102),
 // the day's pick list and slips (103), why each decision was made (feature 107), and a gift's
-// message card (21) and a group order's parts (22).
+// message card (21), a group order's parts (22), a parcel booked with the shop's courier (31)
+// and the rider's photo of a delivery (35).
 import { useCallback, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { ApiError, api } from "../api";
-import type { OwnerMe, OwnerOrder, PackingCheck } from "../api";
+import type { CourierAccount, OwnerMe, OwnerOrder, PackingCheck } from "../api";
 import { saveFile } from "../download";
 import type { Key } from "../i18n";
 import { useLang } from "../lang";
 import { usePolled } from "../usePolled";
 import { formatMoney, parseAmount, toMajor, toMinor } from "../money";
+import { BookParcel, DeliveryProofs, useCouriers } from "./Couriers";
 import { PinIcon } from "./Icons";
 import { WhyDetails } from "./Why";
 
@@ -267,11 +269,13 @@ function OrderRow({
   me,
   token,
   order,
+  couriers,
   onChange,
 }: {
   me: OwnerMe;
   token: string;
   order: OwnerOrder;
+  couriers: CourierAccount[];
   onChange: () => void;
 }) {
   const { t, lang } = useLang();
@@ -376,6 +380,9 @@ function OrderRow({
           {canShip && CHECKABLE.has(order.status) && (
             <CheckPacking token={token} order={order} onDone={onChange} />
           )}
+          {canShip && (
+            <BookParcel token={token} order={order} couriers={couriers} onDone={onChange} />
+          )}
         </div>
       )}
       {dispatching && (
@@ -393,6 +400,7 @@ function OrderRow({
           onDone={onChange}
         />
       )}
+      {canShip && <DeliveryProofs token={token} order={order} />}
       {failed && (
         <p className="order-failed" role="alert">
           {t("console.move_failed")}
@@ -486,6 +494,7 @@ export function OrdersPanel({
   onChange: () => void;
 }) {
   const { t } = useLang();
+  const couriers = useCouriers(token, me.rights.includes("ship"));
   if (!orders) return null;
   return (
     <section className="order-panel" aria-labelledby="order-panel-title">
@@ -499,7 +508,14 @@ export function OrdersPanel({
       ) : (
         <ul className="order-list">
           {orders.map((order) => (
-            <OrderRow key={order.code} me={me} token={token} order={order} onChange={onChange} />
+            <OrderRow
+              key={order.code}
+              me={me}
+              token={token}
+              order={order}
+              couriers={couriers}
+              onChange={onChange}
+            />
           ))}
         </ul>
       )}

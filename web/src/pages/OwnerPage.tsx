@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { LowStock, OwnerMe, OwnerProduct } from "../api";
+import { BookingsPanel } from "../components/Bookings";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { BroadcastsPanel } from "../components/Broadcasts";
 import { BusyDayPanel } from "../components/BusyDay";
@@ -17,6 +18,8 @@ import { SalesPanel } from "../components/Sales";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { ConsentsPanel } from "../components/Consents";
+import { CouriersPanel } from "../components/Couriers";
+import { CustomRequestsPanel } from "../components/Custom";
 import { DashboardPanel } from "../components/Dashboard";
 import { FraudReportsPanel, FraudReviewPanel } from "../components/Fraud";
 import { ImportsPanel } from "../components/Imports";
@@ -383,6 +386,16 @@ function Console({
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
       {can("stock") && <ShelfCountPanel token={token} onSaved={stockChanged} />}
+      {can("orders") && <BookingsPanel me={me} token={token} canSettings={can("settings")} />}
+      {can("orders") && <CustomRequestsPanel me={me} token={token} canPrice={can("catalog")} />}
+      {(can("ship") || can("books")) && (
+        <CouriersPanel
+          me={me}
+          token={token}
+          canConnect={can("ship") && can("settings")}
+          canBooks={can("books")}
+        />
+      )}
       {can("orders") && <ReturnsPanel token={token} canShip={can("ship")} />}
       {can("orders") && <WaitingPanel token={token} />}
       {can("payments") && (

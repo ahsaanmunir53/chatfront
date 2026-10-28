@@ -505,6 +505,90 @@ export type OwnerReturn = {
   approval_id: string | null;
   exchange_order_code: string | null;
   created_at: string;
+  advice: "supports_claim" | "against_claim" | "unclear" | null;
+  unboxing: Unboxing | null;
+};
+/** What the model saw in an unboxing video (feature 36); code turns it into advice. */
+export type Unboxing = {
+  seal_intact_at_start: boolean | null;
+  filmed_without_cut: boolean | null;
+  item_matches_catalog: boolean | null;
+  item_matches_packed: boolean | null;
+  damage_seen: boolean;
+  damage: string;
+  notes: string;
+};
+export type BookingHours = { days: Record<string, string>; seats: number };
+export type AppointmentStatus = "booked" | "cancelled" | "done" | "no_show";
+export type Appointment = {
+  id: string;
+  code: string;
+  customer: string;
+  service: string;
+  price: number;
+  starts_at: string;
+  ends_at: string;
+  status: AppointmentStatus;
+};
+export type Bookings = { hours: BookingHours; coming: Appointment[] };
+export type CustomKind = "cake" | "stitching" | "print";
+export type CustomRequest = {
+  id: string;
+  code: string;
+  customer: string;
+  kind: CustomKind;
+  details: {
+    text?: string;
+    colours?: string[];
+    size?: string;
+    needed_by?: string;
+    notes?: string;
+  };
+  sketch_url: string | null;
+  status: "waiting" | "quoted" | "accepted" | "declined";
+  price: number | null;
+  note: string;
+  created_at: string;
+};
+export type CourierAccount = {
+  courier: string;
+  name: string;
+  connected: boolean;
+  pickup_code: string | null;
+};
+export type SettlementReport = {
+  rows: number;
+  matched: number;
+  short: string[];
+  unknown: string[];
+  paid_before: string[];
+  delivered: string[];
+  returned: string[];
+  collected: number;
+  paid_out: number;
+};
+export type Settlement = {
+  order: string;
+  source: string;
+  collected: number | null;
+  charges: number | null;
+  paid: number | null;
+  short: number;
+  at: string;
+};
+export type Settlements = { rows: Settlement[]; paid_total: number; short_total: number };
+export type DeliveryProof = {
+  id: string;
+  url: string;
+  matched: boolean | null;
+  reading: {
+    parcel_visible?: boolean;
+    handed_over?: boolean | null;
+    codes_seen?: string[];
+    damage_seen?: boolean;
+    notes?: string;
+  } | null;
+  at: string;
 };
 export type PaymentReview = {
   id: string;
@@ -1567,6 +1651,64 @@ export const api = {
       `${shopPath(slug)}/review/${encodeURIComponent(code)}?s=${encodeURIComponent(signature)}`,
       { method: "POST", body: JSON.stringify(review) },
     ),
+  bookings: (token: string) => call<Bookings>("/api/owner/bookings", { headers: bearer(token) }),
+  saveBookingHours: (token: string, hours: BookingHours) =>
+    call<BookingHours>("/api/owner/bookings/hours", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(hours),
+    }),
+  markBooking: (token: string, id: string, to: "done" | "no_show" | "cancelled") =>
+    call<Appointment>(`/api/owner/bookings/${encodeURIComponent(id)}/status`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ to }),
+    }),
+  customRequests: (token: string) =>
+    call<CustomRequest[]>("/api/owner/custom", { headers: bearer(token) }),
+  quoteCustom: (token: string, id: string, price: number, note: string) =>
+    call<{ status: string }>(`/api/owner/custom/${encodeURIComponent(id)}/quote`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ price, note }),
+    }),
+  couriers: (token: string) =>
+    call<CourierAccount[]>("/api/owner/couriers", { headers: bearer(token) }),
+  connectCourier: (token: string, courier: string, secret: string, pickupCode: string) =>
+    call<CourierAccount>(`/api/owner/couriers/${encodeURIComponent(courier)}`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ token: secret, pickup_code: pickupCode }),
+    }),
+  bookParcel: (token: string, code: string, courier: string) =>
+    call<{ status: string; tracking: string | null }>(
+      `/api/owner/orders/${encodeURIComponent(code)}/book`,
+      { method: "POST", headers: bearer(token), body: JSON.stringify({ courier }) },
+    ),
+  settlements: (token: string) =>
+    call<Settlements>("/api/owner/settlements", { headers: bearer(token) }),
+  uploadSettlement: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<SettlementReport>("/api/owner/settlements", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  deliveryProofs: (token: string, code: string) =>
+    call<DeliveryProof[]>(`/api/owner/orders/${encodeURIComponent(code)}/delivery-proof`, {
+      headers: bearer(token),
+    }),
+  addDeliveryProof: (token: string, code: string, file: Blob) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<DeliveryProof>(`/api/owner/orders/${encodeURIComponent(code)}/delivery-proof`, {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
   ownerReviews: (token: string) =>
     call<ShopReviews>("/api/owner/reviews", { headers: bearer(token) }),
   replyToReview: (token: string, reviewId: string, text: string) =>
