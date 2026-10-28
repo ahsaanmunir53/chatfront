@@ -1,0 +1,13 @@
+{
+  "about": "Days customers want things delivered before, by country (feature 95). Islamic dates are the expected ones (astronomical calculation, published August 2026) and move with the moon sighting, so the earlier likely day is used: a cut-off that is a day early is safe. Add a year's dates before the year starts.",
+  "events": [
+    {"key": "diwali", "date": "2026-11-08", "countries": ["IN"], "expected": false},
+    {"key": "uae_national_day", "date": "2026-12-02", "countries": ["AE"], "expected": false},
+    {"key": "christmas", "date": "2026-12-25", "countries": ["IN", "PH", "NG", "GH", "KE", "ZA", "BR", "MX", "LK"], "expected": false},
+    {"key": "ramadan", "date": "2027-02-08", "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"], "expected": true},
+    {"key": "eid_ul_fitr", "date": "2027-03-09", "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"], "expected": true},
+    {"key": "eid_ul_adha", "date": "2027-05-16", "countries": ["PK", "BD", "IN", "AE", "SA", "EG", "ID", "MY", "NG", "TR"], "expected": true},
+    {"key": "independence_pk", "date": "2027-08-14", "countries": ["PK"], "expected": false},
+    {"key": "saudi_national_day", "date": "2027-09-23", "countries": ["SA"], "expected": false}
+  ]
+}

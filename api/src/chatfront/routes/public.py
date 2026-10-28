@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated, Any
+from datetime import date, datetime
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from chatfront.books.ledger import today
 from chatfront.catalog.models import Product, ProductStatus
 from chatfront.catalog.service import load_items
 from chatfront.channels.links import chat_link
@@ -20,6 +22,8 @@ from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.media import service as media_service
 from chatfront.media.models import Media
+from chatfront.offers import seasons
+from chatfront.orders.models import Coupon
 from chatfront.services import Services, get_services
 from chatfront.templates import get_template
 
@@ -35,6 +39,21 @@ class ChannelLink(BaseModel):
     url: str | None
 
 
+class Countdown(BaseModel):
+    """A deadline on the shop page (feature 95): the last day to order for delivery anywhere
+    before a big day, or a sale's last day."""
+
+    kind: Literal["delivery", "sale"]
+    event: str | None  # a calendar day's key, for the page to name in its language
+    name: str | None  # or the shop's own name for its day
+    day: date  # the big day, or the sale's last day
+    ends_at: datetime  # when ordering stops counting, in the shop's time
+    expected: bool  # a day that moves with the moon sighting
+    code: str | None = None  # a sale's code
+    percent: int | None = None
+    amount: int | None = None
+
+
 class PublicShop(BaseModel):
     slug: str
     name: str
@@ -47,6 +66,7 @@ class PublicShop(BaseModel):
     is_demo: bool
     attribution: str
     channels: list[ChannelLink]
+    countdowns: list[Countdown]
 
 
 class VariantOut(BaseModel):
@@ -69,6 +89,7 @@ class ProductOut(BaseModel):
     translations: dict[str, dict[str, str]]  # per language: name and description
     image_url: str | None
     in_stock: bool
+    ships_from: date | None  # on pre-order: orderable now, ships from this day (feature 16)
     variants: list[VariantOut]
 
 
@@ -172,7 +193,56 @@ async def get_shop(slug: str, request: Request, services: ServicesDep) -> Public
         is_demo=tenant.is_demo,
         attribution=t("app.attribution"),
         channels=await _channels(services, tenant),
+        countdowns=await _countdowns(services, tenant),
     )
+
+
+async def _countdowns(services: Services, tenant: Tenant) -> list[Countdown]:
+    """The next big day, while ordering still gets there in time anywhere, and the sales the
+    shop shows on its page."""
+    day = today(tenant)
+    found: list[Countdown] = []
+    cut = seasons.cutoff(tenant, day, None)
+    if cut is not None and not cut.missed:
+        found.append(
+            Countdown(
+                kind="delivery",
+                event=cut.event.key,
+                name=cut.event.name,
+                day=cut.event.day,
+                ends_at=seasons.end_of(cut.order_by, tenant),
+                expected=cut.event.expected,
+            )
+        )
+    async with services.db.tenant(tenant.id) as session:
+        sales = list(
+            await session.scalars(
+                select(Coupon)
+                .where(
+                    Coupon.show_on_page.is_(True),
+                    Coupon.active.is_(True),
+                    Coupon.ends_on.is_not(None),
+                    Coupon.ends_on >= day,
+                )
+                .order_by(Coupon.ends_on)
+            )
+        )
+    found += [
+        Countdown(
+            kind="sale",
+            event=None,
+            name=None,
+            day=sale.ends_on,
+            ends_at=seasons.end_of(sale.ends_on, tenant),
+            expected=False,
+            code=sale.code,
+            percent=sale.percent,
+            amount=sale.amount,
+        )
+        for sale in sales
+        if sale.ends_on is not None and (sale.starts_on is None or sale.starts_on <= day)
+    ]
+    return found
 
 
 @router.get("/api/shops/{slug}/products")
@@ -210,13 +280,14 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                     else None
                 ),
                 in_stock=item.in_stock,
+                ships_from=item.preorder,
                 variants=[
                     VariantOut(
                         id=v.id,
                         catalog_id=item.catalog_id(v),
                         options=v.options,
                         price=item.price_of(v),
-                        in_stock=v.stock is None or v.stock > 0,
+                        in_stock=item.preorder is not None or v.stock is None or v.stock > 0,
                     )
                     for v in item.variants
                     if v.active
