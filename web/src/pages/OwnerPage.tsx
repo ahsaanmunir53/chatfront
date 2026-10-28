@@ -10,6 +10,10 @@ import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { BroadcastsPanel } from "../components/Broadcasts";
 import { BusyDayPanel } from "../components/BusyDay";
 import { PhoneAlerts } from "../components/PhoneAlerts";
+import { ProductPictures } from "../components/ProductPictures";
+import { PublicationsPanel } from "../components/Publish";
+import { LeadsPanel } from "../components/Leads";
+import { SalesPanel } from "../components/Sales";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { ConsentsPanel } from "../components/Consents";
@@ -228,6 +232,12 @@ function ProductRow({
           <WordingEditor product={product} me={me} token={token} onSaved={onSaved} />
         </details>
       )}
+      {product.status === "active" && (
+        <details className="khata-wording">
+          <summary>{t("console.pictures")}</summary>
+          <ProductPictures token={token} code={product.code} />
+        </details>
+      )}
     </li>
   );
 }
@@ -382,16 +392,19 @@ function Console({
       {can("books") && (
         <BooksPanel me={me} token={token} books={books.books} onChange={books.refresh} />
       )}
+      {can("chats") && <PublicationsPanel token={token} />}
       {can("chats") && <PostsPanel token={token} products={products ?? []} />}
       {can("catalog") && <CatalogSyncPanel token={token} />}
       {can("catalog") && <SizeChartsPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
       {can("chats") && <BroadcastsPanel me={me} token={token} products={products ?? []} />}
+      {can("orders") && <LeadsPanel me={me} token={token} />}
       {can("orders") && <ReviewsPanel token={token} canReply={can("chats")} />}
       {can("trust") && <FraudReportsPanel token={token} />}
       {me.is_platform && can("trust") && <FraudReviewPanel token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
+      {can("settings") && <SalesPanel me={me} token={token} products={products ?? []} />}
       {can("settings") && <AnswersPanel token={token} />}
       <PhoneAlerts token={token} />
       {can("settings") && <SettingsPanel token={token} />}

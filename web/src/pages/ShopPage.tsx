@@ -104,6 +104,30 @@ function useProducts(slug: string): ShopProduct[] | undefined {
   return live ?? bundledProducts(slug);
 }
 
+/** A flash or live sale on the product (feature 8): the price, what is left and the time. */
+function SaleLine({ product, country }: { product: ShopProduct; country: string }) {
+  const { t, lang } = useLang();
+  const sale = product.sale;
+  const left = useLeft(sale?.ends_at ?? "1970-01-01T00:00:00Z");
+  if (!sale || left <= 0) return null;
+  const minutes = Math.max(Math.ceil(left / MINUTE), 1);
+  return (
+    <p className={`product-sale${sale.left > 0 ? "" : " is-gone"}`}>
+      <span className="product-sale-name" dir="auto">
+        {sale.live ? t("shop.live_number", { number: sale.number }) : sale.name}
+      </span>{" "}
+      <strong>{formatMoney(sale.price, country, lang)}</strong>{" "}
+      <s>{formatMoney(product.listPrice, country, lang)}</s>{" "}
+      <span>{sale.left > 0 ? t("shop.sale_left", { count: sale.left }) : t("shop.sale_gone")}</span>{" "}
+      <span className="product-sale-time">
+        {minutes < 60
+          ? t("shop.minutes_left", { minutes })
+          : t("shop.hours_left", { hours: Math.floor(minutes / 60) })}
+      </span>
+    </p>
+  );
+}
+
 function ProductCard({
   product,
   slug,
@@ -144,6 +168,7 @@ function ProductCard({
             {product.options.join(", ")}
           </p>
         )}
+        <SaleLine product={product} country={country} />
         {product.shipsFrom && (
           <p className="product-preorder">
             {t("shop.preorder", { date: dayLabel(product.shipsFrom, lang) })}

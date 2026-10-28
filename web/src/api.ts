@@ -85,6 +85,15 @@ export type PublicProduct = {
   size_chart: SizeChart | null;
   variants: PublicVariant[];
   share_url: string; // the link with a preview card (feature 116)
+  sale?: PublicSale | null; // a flash or live sale it is in now (feature 8)
+};
+export type PublicSale = {
+  name: string;
+  price: number;
+  ends_at: string;
+  left: number;
+  live: boolean;
+  number: number;
 };
 
 /** A size chart (feature 5): each size's range per measure, smallest size first. */
@@ -354,6 +363,80 @@ export type Offers = {
   reminders: { on: boolean; reminded: number; placed: number; value: number };
   rates: Record<string, number>;
   currencies: string[];
+};
+export type SaleItemIn = {
+  product_code: string;
+  price: number;
+  units: number;
+  per_customer: number;
+};
+export type SaleIn = {
+  name: string;
+  live: boolean;
+  starts_in_minutes: number;
+  minutes: number;
+  hold_minutes: number;
+  items: SaleItemIn[];
+};
+export type OwnerSale = {
+  id: string;
+  name: string;
+  live: boolean;
+  starts_at: string;
+  ends_at: string;
+  hold_minutes: number;
+  state: "upcoming" | "on" | "ended";
+  items: {
+    number: number;
+    product_code: string;
+    name: string;
+    price: number;
+    list_price: number;
+    units: number;
+    held: number;
+    ordered: number;
+    left: number;
+    per_customer: number;
+  }[];
+};
+export type PostTarget = "instagram" | "facebook" | "whatsapp_catalog" | "whatsapp_status";
+export type Publication = {
+  id: string;
+  kind: "daily" | "product";
+  status: "draft" | "sent" | "skipped";
+  products: string[];
+  captions: Record<string, string>;
+  by_model: boolean;
+  images: { product: string; post_url: string; status_url: string }[];
+  targets: Partial<Record<PostTarget, { status: string; id?: string; error?: string }>>;
+  created_at: string;
+};
+export type Publications = {
+  daily: boolean;
+  connected: Record<"instagram" | "facebook" | "whatsapp_catalog", boolean>;
+  items: Publication[];
+};
+export type Picture = { media_id: string; url: string };
+export type LeadRow = {
+  kind: "story_reply" | "story_mention" | "ad" | "link";
+  channel: string;
+  customer: string;
+  text: string;
+  title: string;
+  url: string;
+  at: string;
+  ordered: boolean;
+};
+export type Leads = {
+  leads: LeadRow[];
+  brought: {
+    kind: LeadRow["kind"];
+    ref: string;
+    title: string;
+    chats: number;
+    orders: number;
+    value: number;
+  }[];
 };
 export type BroadcastResult = {
   text: string;
@@ -1131,6 +1214,65 @@ export const api = {
       body: JSON.stringify({ ...about, text }),
     }),
   consents: (token: string) => call<Consents>("/api/owner/consents", { headers: bearer(token) }),
+  sales: (token: string) => call<OwnerSale[]>("/api/owner/sales", { headers: bearer(token) }),
+  startSale: (token: string, sale: SaleIn) =>
+    call<OwnerSale>("/api/owner/sales", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(sale),
+    }),
+  stopSale: (token: string, id: string) =>
+    call<OwnerSale>(`/api/owner/sales/${encodeURIComponent(id)}/stop`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  publications: (token: string) =>
+    call<Publications>("/api/owner/publications", { headers: bearer(token) }),
+  setDailyPost: (token: string, on: boolean) =>
+    call<{ on: boolean }>("/api/owner/publications/daily", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ on }),
+    }),
+  postToday: (token: string) =>
+    call<Publication>("/api/owner/publications/today", {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  postProduct: (token: string, code: string) =>
+    call<Publication>("/api/owner/publications/product", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ product_code: code }),
+    }),
+  sendPublication: (token: string, id: string, targets: PostTarget[]) =>
+    call<{ status: string }>(`/api/owner/publications/${encodeURIComponent(id)}/send`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ targets }),
+    }),
+  skipPublication: (token: string, id: string) =>
+    call<{ status: string }>(`/api/owner/publications/${encodeURIComponent(id)}/skip`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  cleanPhoto: (token: string, code: string) =>
+    call<Picture>(`/api/owner/products/${encodeURIComponent(code)}/photo/clean`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  usePhoto: (token: string, code: string, mediaId: string) =>
+    call<Picture>(`/api/owner/products/${encodeURIComponent(code)}/photo`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ media_id: mediaId }),
+    }),
+  productCard: (token: string, code: string, shape: "square" | "post" | "status") =>
+    call<Picture>(
+      `/api/owner/products/${encodeURIComponent(code)}/card?${new URLSearchParams({ shape })}`,
+      { method: "POST", headers: bearer(token) },
+    ),
+  leads: (token: string) => call<Leads>("/api/owner/leads", { headers: bearer(token) }),
   shopConsent: (token: string, purpose: "fraud_list" | "credit_passport", granted: boolean) =>
     call<Consents>("/api/owner/consents/shop", {
       method: "POST",

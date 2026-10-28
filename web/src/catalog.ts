@@ -1,7 +1,7 @@
 // Products on the shop page. Demo shops' products ship inside the app (from the business
 // templates, like the shops themselves), so the catalog shows before the server wakes; the
 // live list from the API replaces them once it answers.
-import type { PublicProduct, SizeChart } from "./api";
+import type { PublicProduct, PublicSale, SizeChart } from "./api";
 import { chain } from "./i18n";
 import type { Lang } from "./i18n";
 import { packOf } from "./money";
@@ -35,6 +35,8 @@ export type ShopProduct = {
   shareUrl: string | null; // the link with a preview card (feature 116)
   // What can go in the cart; empty until the live catalog answers.
   variants: { catalogId: string; label: string; inStock: boolean }[];
+  listPrice: number; // the catalog price, shown struck through during a sale
+  sale: PublicSale | null; // a flash or live sale it is in now (feature 8)
 };
 
 const files = import.meta.glob<TemplateFile>("@templates/*.json", {
@@ -77,6 +79,8 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       sizeChart: null,
       shareUrl: null,
       variants: [],
+      listPrice: price,
+      sale: null,
     };
   });
 }
@@ -104,6 +108,8 @@ export function fromApi(product: PublicProduct): ShopProduct {
       label: optionLabel(v.options),
       inStock: v.in_stock,
     })),
+    listPrice: product.price,
+    sale: product.sale ?? null,
   };
 }
 

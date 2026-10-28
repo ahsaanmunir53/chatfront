@@ -6038,3 +6038,125 @@ button {
 .phone-alerts-actions p {
   margin: 0;
 }
+
+/* Flash and live sales (feature 8): the sale price, what is left, the time. */
+.product-sale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tone-chili) 12%, var(--card));
+  font-size: 14px;
+}
+
+.product-sale s {
+  color: var(--muted);
+}
+
+.product-sale.is-gone {
+  background: var(--paper);
+  color: var(--muted);
+}
+
+.product-sale-name {
+  font-weight: 650;
+}
+
+.product-sale-time {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.sale-card {
+  display: grid;
+  gap: 8px;
+}
+
+.sale-card.is-ended {
+  opacity: 0.7;
+}
+
+.sale-products {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sale-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-inline-start: 28px;
+}
+
+/* Posts code drafts (features 7 and 82) and a product's pictures (feature 3). */
+.post-card {
+  display: grid;
+  gap: 10px;
+}
+
+.post-images {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.post-images figure,
+.picture-preview {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.post-images img {
+  display: block;
+  width: 160px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.post-images figcaption {
+  max-width: 160px;
+  font-size: 13px;
+}
+
+.post-caption {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.post-targets {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.post-results {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.product-pictures {
+  display: grid;
+  gap: 10px;
+}
+
+.picture-preview img {
+  display: block;
+  max-width: min(260px, 100%);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.picture-preview figcaption {
+  margin-top: 6px;
+}
