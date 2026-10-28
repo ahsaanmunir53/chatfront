@@ -71,5 +71,49 @@ test("a vague address gets a pin, and the owner packs, labels and dispatches the
     /Packed/,
     /On its way/,
   ]);
+
+  // Delivered: the buyer gets a link to review this order, once (feature 46).
+  await row.getByRole("button", { name: "Mark delivered" }).click();
+  await expect(row).toContainText("Delivered", { timeout: 15_000 });
+  await customer.goto(`${shopPath}/chat`);
+  const delivered = customer
+    .locator(".bubble-out")
+    .filter({ hasText: "Rate your order here" })
+    .last();
+  await expect(delivered).toBeVisible({ timeout: 20_000 });
+  await delivered.getByRole("link", { name: /\/review\// }).click();
+  await expect(customer.getByRole("heading", { level: 1 })).toContainText("Review your order");
+  await customer.getByLabel("4 stars out of 5").check();
+  await customer.getByLabel("A few words (optional)").fill("Fresh sugar, on time");
+  await customer.getByRole("button", { name: "Send review" }).click();
+  await expect(customer.getByText("Your review is on the shop's page")).toBeVisible();
+
+  // The owner reads it and replies once; the shop page shows both.
+  await page.reload();
+  const reviews = page.getByRole("region", { name: /^What buyers say/ });
+  await expect(reviews).toContainText("Fresh sugar, on time", { timeout: 15_000 });
+  await reviews.getByLabel("Your reply").fill("Thank you, see you again");
+  await reviews.getByRole("button", { name: "Reply" }).click();
+  await expect(reviews.locator(".review-reply")).toContainText("Thank you, see you again");
+  await customer.goto(shopPath);
+  const shown = customer.getByRole("region", { name: "What buyers say" });
+  await expect(shown).toContainText("4.0 out of 5 from 1 review");
+  await expect(shown).toContainText("Thank you, see you again");
+  await customer.goto(`${shopPath}/trust`);
+  const numbers = customer.getByRole("region", { name: "From the shop's records" });
+  await expect(numbers).toContainText("1 order delivered");
+  await expect(numbers).toContainText("Too few orders yet");
+
+  // A buyer can be reported for fraud from the customers list (feature 37).
+  const people = page.getByRole("region", { name: /^Customers/ });
+  const buyer = people.locator("li").first();
+  await buyer.getByText("Report fraud").click();
+  await buyer.getByLabel("What happened").selectOption("refused_cod");
+  await buyer.getByRole("button", { name: "Send report" }).click();
+  await expect(buyer).toContainText("Reported, waiting for review", { timeout: 15_000 });
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Your fraud reports" })).toContainText(
+    "Refused a cash-on-delivery parcel",
+  );
   await customerContext.close();
 });

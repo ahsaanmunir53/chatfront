@@ -189,7 +189,7 @@ async def cod_order(client: Client, services: Services, match: str, phone: str) 
     guest, token = await customer(client, GROCERY)
     card = last(await say(client, services, GROCERY, guest, match, token=token))
     await say(client, services, GROCERY, guest, token=token, **button(card))
-    return {"guest": guest, "card": card}
+    return {"guest": guest, "token": token, "card": card}
 
 
 async def test_the_owner_ships_a_cod_order_and_a_return_makes_the_next_one_risky(
@@ -252,10 +252,11 @@ async def test_the_owner_ships_a_cod_order_and_a_return_makes_the_next_one_risky
     assert not_yet.status_code == 409
 
 
-async def test_a_paid_order_is_delivered_and_the_customer_is_told(
-    app: tuple[Client, Services],
-) -> None:
-    client, services = app
+async def deliver_lawn(
+    client: Client, services: Services
+) -> tuple[Order, dict[str, str], str, list[dict[str, Any]]]:
+    """A lawn suit paid for by transfer, packed, dispatched and delivered: the order, the
+    buyer's chat header and token, and their messages."""
     owner = await owner_auth(services)
     code = await code_of(client, "Printed lawn 3-piece")
     lawn_order(
@@ -281,11 +282,20 @@ async def test_a_paid_order_is_delivered_and_the_customer_is_told(
     url = f"/api/owner/orders/{order.code}/status"
     for step in ("packed", "dispatched", "delivered"):
         assert (await client.post(url, json={"to": step}, headers=owner)).status_code == 200
-    messages = await settle(client, services, SHOP, guest)
+    return order, guest, token, await settle(client, services, SHOP, guest)
+
+
+async def test_a_paid_order_is_delivered_and_the_customer_is_told(
+    app: tuple[Client, Services],
+) -> None:
+    client, services = app
+    owner = await owner_auth(services)
+    order, _, _, messages = await deliver_lawn(client, services)
     dispatched = next(m["body"] for m in messages if "/t/" in (m["body"] or ""))
     assert len(dispatched.splitlines()) == 2  # on its way, and the link: nothing to collect
-    delivered = either("delivery.delivered", code=order.code, shop="Gulmohar Lawn House")
-    assert messages[-1]["body"] in delivered
+    delivered, review = messages[-1]["body"].splitlines()
+    assert delivered in either("delivery.delivered", code=order.code, shop="Gulmohar Lawn House")
+    assert f"/s/{SHOP}/review/{order.code}?s=" in review  # feature 46
     rows = (await client.get("/api/owner/orders", headers=owner)).json()
     row = next(o for o in rows if o["code"] == order.code)
     assert (row["status"], row["next"], row["label"]) == (
