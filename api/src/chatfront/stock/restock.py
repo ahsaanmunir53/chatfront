@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
@@ -134,6 +135,27 @@ def _options(item: CatalogItem) -> str:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class Matched:
+    item: CatalogItem
+    variant: Variant
+
+
+def match(words: str, items: Sequence[CatalogItem]) -> Matched | Problem:
+    """The one product and variant the words name, or what to ask: which product, which
+    colour or size, or that the shop has no such thing."""
+    matches = find_products(items, words)
+    item = single_match(matches)
+    if item is None:
+        if matches:
+            return ("owner.which", {"options": ", ".join(m.item.product.name for m in matches[:3])})
+        return ("stock.not_in_shop", {"item": words})
+    variant = pick_variant(item, words)
+    if variant is None:
+        return ("stock.which_variant", {"name": item.product.name, "options": _options(item)})
+    return Matched(item, variant)
+
+
 def resolve_lines(
     lines: Sequence[PurchaseLine], items: Sequence[CatalogItem], digits: int
 ) -> tuple[list[dict[str, Any]], list[Problem]]:
@@ -144,21 +166,11 @@ def resolve_lines(
         if not line.quantity or not 0 < line.quantity <= batches.MAX_BATCH:
             problems.append(("stock.need_quantity", {"item": line.item}))
             continue
-        matches = find_products(items, line.item)
-        item = single_match(matches)
-        if item is None:
-            if matches:
-                names = ", ".join(m.item.product.name for m in matches[:3])
-                problems.append(("owner.which", {"options": names}))
-            else:
-                problems.append(("stock.not_in_shop", {"item": line.item}))
+        found = match(line.item, items)
+        if not isinstance(found, Matched):
+            problems.append(found)
             continue
-        variant = pick_variant(item, line.item)
-        if variant is None:
-            problems.append(
-                ("stock.which_variant", {"name": item.product.name, "options": _options(item)})
-            )
-            continue
+        item, variant = found.item, found.variant
         expiry = parse_expiry(line.expiry)
         ops.append(
             {

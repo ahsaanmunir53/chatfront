@@ -13,17 +13,21 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from chatfront.audit.service import Actor, ActorType
+from chatfront.catalog.drafts import prompt_context
 from chatfront.catalog.models import Product, ProductStatus, Variant
 from chatfront.catalog.service import load_items
 from chatfront.catalog.stock import label
 from chatfront.channels.language import staff_language
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
+from chatfront.core.i18n import t
 from chatfront.core.models import Staff, Tenant
+from chatfront.media import service as media_service
+from chatfront.media.models import MediaKind
 from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.routes import ServicesDep, StaffDep, needs
 from chatfront.owner.sessions import OwnerSession
-from chatfront.stock import actions, expiry, notices, profit, restock, sheets
+from chatfront.stock import actions, count, expiry, notices, profit, restock, sheets
 from chatfront.stock.batches import MAX_BATCH, unit_cost
 from chatfront.stock.models import OwnerNotice, PriceQuestion, StockBatch
 from chatfront.stock.prices import answer, on_hand
@@ -176,6 +180,66 @@ async def restock_sheet(
         "supplier": supplier,
         "rows": sheets.preview(lines, items, restock.digits_of(tenant)),
     }
+
+
+class CountLineIn(BaseModel):
+    variant_id: uuid.UUID
+    counted: int = Field(ge=0, le=count.MAX_COUNT)
+
+
+class CountIn(BaseModel):
+    lines: list[CountLineIn] = Field(min_length=1, max_length=count.MAX_LINES)
+
+
+@router.post("/stock/count/photo")
+async def count_photo(
+    session: StockDep, services: ServicesDep, file: Annotated[UploadFile, File()]
+) -> dict[str, Any]:
+    """Count a shelf from its photo (feature 87); nothing changes until the owner confirms."""
+    data = await file.read(services.settings.max_upload_bytes + 1)
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await _tenant(db, session)
+        staff = await db.get(Staff, session.staff_id)
+        media = await media_service.store(
+            db,
+            services.storage,
+            tenant.id,
+            data,
+            source="console",
+            max_bytes=services.settings.max_upload_bytes,
+        )
+        items = await load_items(db)
+    if media.kind != MediaKind.IMAGE:
+        raise AppError("not_a_photo", "Send a photo of the shelf", status_code=415)
+    lang = staff_language(staff, tenant) if staff else tenant.default_lang
+    try:
+        reading = await count.read_shelf(
+            services.ai,
+            tenant_id=tenant.id,
+            context=prompt_context(tenant),
+            items=items,
+            media=[await media_service.model_part(services.storage, media)],
+            words="",
+            lang=lang,
+        )
+    except AppError as exc:  # no model, or no answer that reads
+        raise AppError("shelf_unread", "This photo could not be counted", status_code=503) from exc
+    ops, problems = count.resolve_counts(reading.lines, items)
+    return {
+        "note": reading.note,
+        "rows": [{k: op[k] for k in ("variant_id", "name", "before", "counted")} for op in ops],
+        "problems": [t(key, lang, **values) for key, values in problems],
+    }
+
+
+@router.post("/stock/count")
+async def count_confirm(body: CountIn, session: StockDep, services: ServicesDep) -> dict[str, int]:
+    """The counts the owner checked: each becomes the stock, missing pieces a loss."""
+    async with services.db.tenant(session.tenant_id) as db:
+        tenant = await _tenant(db, session)
+        ops = await count.typed_ops(db, [(line.variant_id, line.counted) for line in body.lines])
+        changed = await count.apply(db, tenant, ops, _actor(session))
+    return {"changed": changed}
 
 
 @router.get("/batches")

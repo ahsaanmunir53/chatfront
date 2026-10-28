@@ -1,7 +1,8 @@
-"""The owner's assistant: add a product from a photo and a voice note (features 1 and 4),
-change prices and shop policies by voice or text (feature 86), tell the books about bills,
-expenses and udhaar (48, 49) and ask how the shop is doing (75). Spark Open reads; the owner
-confirms; code applies. Each staff member gets only what their role allows (42).
+"""The owner's assistant: add a product from a photo and a voice note (features 1 and 4), or
+a whole rack from a video (2), change prices and shop policies by voice or text (86), count
+stock from a shelf photo (87), tell the books about bills, expenses and udhaar (48, 49) and
+ask how the shop is doing (75). Spark Open reads; the owner confirms; code applies. Each
+staff member gets only what their role allows (42).
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from chatfront.ai.client import AiClient
 from chatfront.ai.types import Part
 from chatfront.audit.service import Actor, ActorType
-from chatfront.books import ledger, reports
+from chatfront.books import reports
 from chatfront.books.chat import (
     KIND_MONEY,
     BillReading,
@@ -27,6 +28,7 @@ from chatfront.books.chat import (
     read_bill,
     resolve_money,
 )
+from chatfront.catalog import imports, video_import
 from chatfront.catalog.drafts import (
     EMPTY_DRAFT,
     MoneyLine,
@@ -34,8 +36,8 @@ from chatfront.catalog.drafts import (
     ProductDraft,
     PurchaseLine,
     complete_draft,
-    fields_text,
     price_from_words,
+    prompt_context,
     read_owner_message,
     read_product,
     to_input,
@@ -47,6 +49,7 @@ from chatfront.catalog.service import (
     create_product,
     load_items,
 )
+from chatfront.catalog.translations import TRANSLATE_JOB
 from chatfront.channels.conversation import Turn
 from chatfront.channels.types import Kind, Outbound, OutText
 from chatfront.core.countries import get_pack, shop_money
@@ -66,8 +69,8 @@ from chatfront.owner.models import ActionStatus, PendingAction
 from chatfront.owner.rights import Can, staff_rights
 from chatfront.owner.types import Problem
 from chatfront.stock import changes as stock_changes
+from chatfront.stock import count, panel, profit, restock
 from chatfront.stock import ops as stock_ops
-from chatfront.stock import panel, profit, restock
 from chatfront.templates import get_template
 
 # A tap on a button another module put in the owner's chat (giving a chat back to the agent,
@@ -80,7 +83,6 @@ FollowUp = Callable[[Turn, PendingAction | None], Awaitable[list[Outbound] | Non
 KIND_PRODUCT = "product"
 KIND_UPDATE = "update"
 _RIGHT = {KIND_PRODUCT: Can.CATALOG, KIND_MONEY: Can.BOOKS_WRITE}
-TRANSLATE_JOB = "catalog.translate"
 _POLICY_FIELDS = ("delivery", "hours", "payment", "returns", "policies")
 
 
@@ -93,19 +95,6 @@ def _rights_for(action: PendingAction) -> set[Can]:
 
 def refuse(turn: Turn) -> list[Outbound]:
     return [OutText(t("owner.not_allowed", turn.lang))]
-
-
-def prompt_context(tenant: Tenant) -> dict[str, str]:
-    template = get_template(tenant.template)
-    pack = get_pack(tenant.country)
-    return {
-        "shop_name": tenant.name,
-        "business_type": template.name.en.lower(),
-        "country": pack.name,
-        "currency": pack.currency,
-        "fields": fields_text(template),
-        "today": ledger.today(tenant).isoformat(),
-    }
 
 
 class OwnerAssistant:
@@ -139,12 +128,16 @@ class OwnerAssistant:
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
         words, kind = turn.message.body or "", turn.message.kind
+        if kind == Kind.IMAGE and count.is_count(words):
+            return await self._count(turn) if Can.STOCK in allowed else refuse(turn)
         if kind == Kind.IMAGE and restock.is_purchase(words):
             return await self._purchase(turn) if Can.STOCK in allowed else refuse(turn)
         if kind == Kind.IMAGE and is_bill(words):
             return await self._bill(turn, None) if Can.BOOKS_WRITE in allowed else refuse(turn)
         if kind == Kind.IMAGE:
             return await self._product(turn, None, None) if Can.CATALOG in allowed else refuse(turn)
+        if kind == Kind.VIDEO:
+            return await self._video(turn) if Can.CATALOG in allowed else refuse(turn)
         for followup in self.followups:
             replies = await followup(turn, action)
             if replies is not None:
@@ -234,6 +227,28 @@ class OwnerAssistant:
             text = t("owner.preview_new", lang, summary=product_summary(tenant, product, lang))
             return [confirm_card(saved, text, "owner.confirm", lang)]
         return [OutText(t(self._ask_for(draft, message.kind, words), lang))]
+
+    async def _video(self, turn: Turn) -> list[Outbound]:
+        """A video of a rack or shelf: its products become drafts in the console (feature 2)."""
+        message = turn.message
+        if message.media_id is None:
+            return [OutText(t("owner.help", turn.lang))]
+        try:
+            await imports.queue(
+                self.db,
+                turn.tenant.id,
+                imports.Source.VIDEO,
+                video_import.IMPORT_JOB,
+                "WhatsApp video",
+                turn.staff_id,
+                media_id=str(message.media_id),
+                words=(message.body or "")[:500],
+            )
+        except AppError:  # another video is still being read
+            return [OutText(t("imports.busy", turn.lang))]
+        return [
+            OutText(t("imports.video_reading", turn.lang, link=f"{self.settings.web_url}/owner"))
+        ]
 
     @staticmethod
     def _ask_for(draft: ProductDraft, kind: str, words: str) -> str:
@@ -408,6 +423,32 @@ class OwnerAssistant:
             "media_id": media_id,
         }
         return await self._restock_card(turn, ops, problems, payload)
+
+    async def _count(self, turn: Turn) -> list[Outbound]:
+        """A shelf photo: what is on it, counted, next to the books (feature 87)."""
+        tenant, message, lang = turn.tenant, turn.message, turn.lang
+        async with self.db.tenant(tenant.id) as session:
+            items = await load_items(session)
+        media_id = str(message.media_id) if message.media_id else None
+        try:
+            reading = await count.read_shelf(
+                self.ai,
+                tenant_id=tenant.id,
+                context=prompt_context(tenant),
+                items=items,
+                media=await self._photos(tenant.id, [media_id] if media_id else []),
+                words=message.body or "",
+                lang=lang,
+            )
+        except AppError:  # no model: the owner can count in the console
+            return [OutText(t("stock.count_unread", lang))]
+        ops, problems = count.resolve_counts(reading.lines, items)
+        problem_lines = [t(key, lang, **values) for key, values in problems]
+        if not ops:
+            return [OutText("\n".join(problem_lines or [t("stock.count_unread", lang)]))]
+        action = await self._open(turn, KIND_UPDATE, {"ops": ops, "source": "count"})
+        text = "\n".join([count.card_text(ops, lang), *problem_lines])
+        return [confirm_card(action, text, "stock.count_save", lang)]
 
     async def _money(
         self, turn: Turn, lines: Sequence[MoneyLine], allowed: frozenset[Can]

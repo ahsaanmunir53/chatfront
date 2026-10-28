@@ -1,6 +1,6 @@
 """Stock operations on the owner's confirm cards, next to the catalog's (price, limits,
-policies): restock lines, an expiry date, and the answer to a price question. Each is shown
-on the card, needs its own right, and is applied only on Confirm."""
+policies): restock lines, a shelf count, an expiry date, and the answer to a price question.
+Each is shown on the card, needs its own right, and is applied only on Confirm."""
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from chatfront.core.countries import shop_money
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.owner.rights import Can
-from chatfront.stock import expiry, prices, restock
+from chatfront.stock import count, expiry, prices, restock
 
 RESTOCK, EXPIRY, PRICE_ANSWER = "restock", "expiry", "price_answer"
-STOCK_OPS = frozenset({RESTOCK, EXPIRY, PRICE_ANSWER})
+STOCK_OPS = frozenset({RESTOCK, count.COUNT, EXPIRY, PRICE_ANSWER})
 
 
 def right_for(op: dict[str, Any]) -> Can:
-    return Can.STOCK if op["op"] in (RESTOCK, EXPIRY) else Can.CATALOG
+    return Can.STOCK if op["op"] in (RESTOCK, count.COUNT, EXPIRY) else Can.CATALOG
 
 
 def rights_for(ops: Sequence[dict[str, Any]]) -> set[Can]:
@@ -33,6 +33,8 @@ def rights_for(ops: Sequence[dict[str, Any]]) -> set[Can]:
 def line(tenant: Tenant, op: dict[str, Any], lang: str) -> str:
     if op["op"] == RESTOCK:
         return restock.card_line(tenant, op, lang)
+    if op["op"] == count.COUNT:
+        return count.card_line(op, lang)
     if op["op"] == EXPIRY:
         old = op["old"] or t("owner.none_set", lang)
         return t("stock.change_expiry", lang, name=op["name"], old=old, new=op["new"])
@@ -62,6 +64,9 @@ async def apply(
             phone=payload.get("phone"),
             media_id=uuid.UUID(media) if media else None,
         )
+    counts = [op for op in ops if op["op"] == count.COUNT]
+    if counts:
+        await count.apply(session, tenant, counts, actor)
     for op in ops:
         if op["op"] == EXPIRY:
             for batch_id in op["batch_ids"]:
