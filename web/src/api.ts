@@ -428,7 +428,29 @@ export type OwnerOrder = {
   placed_at: string | null;
   next: string[];
   label: boolean;
-  shipment: { courier: string | null; tracking_number: string | null; public_code: string } | null;
+  shipment: {
+    courier: string | null;
+    tracking_number: string | null;
+    public_code: string;
+    courier_charge: number | null;
+    return_charge: number | null;
+  } | null;
+  packing: PackingCheck | null;
+};
+export type PackingLine = { name: string; quantity: number; seen: number | null; sure: boolean };
+export type PackingCheck = {
+  verdict: "match" | "mismatch" | "unclear";
+  lines: PackingLine[];
+  extra: string[];
+  asked_owner: boolean;
+  created_at: string;
+};
+export type PickList = {
+  day: string;
+  orders: number;
+  pieces: number;
+  lines: { name: string; quantity: number; orders: string; short: number }[];
+  waiting: { code: string; ships_from: string }[];
 };
 export type Parcel = {
   shop: string;
@@ -600,6 +622,11 @@ export type ProductProfit = {
   cost: number;
   profit: number;
   cost_unknown: number;
+  delivery_fees: number;
+  courier: number;
+  returns: number;
+  parcels_unknown: number;
+  true_profit: number;
 };
 export type Approval = { id: string; kind: string; text: string; created_at: string };
 export type OwnerCustomer = {
@@ -890,12 +917,36 @@ export const api = {
   setUpForwarding: (token: string) =>
     call<Forwarding>("/api/owner/sms-forwarding", { method: "POST", headers: bearer(token) }),
   orders: (token: string) => call<OwnerOrder[]>("/api/owner/orders", { headers: bearer(token) }),
-  moveOrder: (token: string, code: string, to: string, courier = "", tracking = "") =>
+  moveOrder: (
+    token: string,
+    code: string,
+    to: string,
+    courier = "",
+    tracking = "",
+    charge: number | null = null,
+  ) =>
     call<OwnerOrder>(`/api/owner/orders/${encodeURIComponent(code)}/status`, {
       method: "POST",
       headers: bearer(token),
-      body: JSON.stringify({ to, courier, tracking }),
+      body: JSON.stringify({ to, courier, tracking, charge }),
     }),
+  setCharges: (token: string, code: string, there: number | null, back: number | null) =>
+    call<unknown>(`/api/owner/orders/${encodeURIComponent(code)}/charges`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ there, back }),
+    }),
+  packingCheck: (token: string, code: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<PackingCheck>(`/api/owner/orders/${encodeURIComponent(code)}/packing-check`, {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  pickList: (token: string) => call<PickList>("/api/owner/pick-list", { headers: bearer(token) }),
+  pickListPdf: (token: string) => pdf(token, "/api/owner/pick-list.pdf"),
   label: (token: string, code: string) =>
     pdf(token, `/api/owner/orders/${encodeURIComponent(code)}/label.pdf`),
   returnLabel: (token: string, returnId: string) =>

@@ -108,6 +108,11 @@ export function formatMoney(amount: number, country: string | null | undefined, 
     : `${sign}${number} ${symbol.symbol}`;
 }
 
+/** Minor units (485000) to major units as an owner types them (4850). */
+export function toMajor(minor: number, country: string | null | undefined): number {
+  return minor / 10 ** packOf(country).minorDigits;
+}
+
 /** Major units as typed by an owner (4850) to minor units (485000). */
 export function toMinor(major: number, country: string | null | undefined): number {
   return Math.round(major * 10 ** packOf(country).minorDigits);

@@ -5745,3 +5745,77 @@ button {
   border-top: 0;
   padding-top: 0;
 }
+
+/* Packing and books: the pick list, the packing check and courier charges ------------------- */
+
+.pick-list {
+  margin-bottom: 20px;
+}
+
+.pick-list .pay-note {
+  margin: 0 0 10px;
+}
+
+.pick-table td:last-child {
+  white-space: normal;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.pick-table td:first-child {
+  text-align: start;
+  font-weight: 650;
+}
+
+.packing-photo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.packing-photo:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.packing-result {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--paper);
+  font-size: 14px;
+}
+
+.packing-result.is-match {
+  background: color-mix(in srgb, var(--stamp) 14%, var(--card));
+}
+
+.packing-result.is-mismatch {
+  background: color-mix(in srgb, var(--chili) 14%, var(--card));
+}
+
+.packing-result.is-unclear {
+  background: color-mix(in srgb, var(--saffron) 22%, var(--card));
+}
+
+.packing-result ul {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+}
+
+.order-charges {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.order-charges summary {
+  width: fit-content;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-charges .order-dispatch {
+  margin-top: 8px;
+}

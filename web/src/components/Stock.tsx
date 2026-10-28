@@ -794,6 +794,8 @@ function BatchRow({
 function ProfitTable({ me, rows }: { me: OwnerMe; rows: ProductProfit[] }) {
   const { t, lang } = useLang();
   const money = (minor: number) => formatMoney(minor, me.country, lang);
+  // What delivery and returns did to profit: + when buyers' delivery charges came out ahead.
+  const signed = (minor: number) => (minor > 0 ? "+" : "") + money(minor);
   if (rows.length === 0) return <p className="aside">{t("console.profit_none")}</p>;
   return (
     <table className="daybook profit-table">
@@ -804,6 +806,8 @@ function ProfitTable({ me, rows }: { me: OwnerMe; rows: ProductProfit[] }) {
           <th scope="col">{t("console.profit_sales")}</th>
           <th scope="col">{t("console.profit_cost")}</th>
           <th scope="col">{t("console.profit_profit")}</th>
+          <th scope="col">{t("console.profit_delivery")}</th>
+          <th scope="col">{t("console.profit_true")}</th>
         </tr>
       </thead>
       <tbody>
@@ -816,11 +820,20 @@ function ProfitTable({ me, rows }: { me: OwnerMe; rows: ProductProfit[] }) {
                   {t("console.profit_unknown", { count: row.cost_unknown })}
                 </span>
               )}
+              {row.parcels_unknown > 0 && (
+                <span className="profit-unknown">
+                  {t("console.profit_parcels_unknown", { count: row.parcels_unknown })}
+                </span>
+              )}
             </th>
             <td>{row.sold}</td>
             <td>{money(row.revenue)}</td>
             <td>{money(row.cost)}</td>
             <td className={row.profit < 0 ? "is-loss" : undefined}>{money(row.profit)}</td>
+            <td>{signed(row.delivery_fees - row.courier - row.returns)}</td>
+            <td className={row.true_profit < 0 ? "is-loss" : undefined}>
+              {money(row.true_profit)}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -885,6 +898,7 @@ export function StockPanel({
         <>
           <h3 className="pay-block-title stock-subtitle">{t("console.profit_title")}</h3>
           <ProfitTable me={me} rows={profit.data} />
+          <p className="pay-note daybook-note">{t("console.profit_true_note")}</p>
         </>
       )}
     </section>
