@@ -668,6 +668,57 @@ Decisions:
 Not verified yet: free-worded questions on the real model (needs a model key); how WhatsApp
 and X show the card for a deployed link (needs the deploy).
 
+## Done on 28 October: demo engineering (110, 114, 115)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 994 passed, 94.84% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 33 passed |
+| Browser tests, desktop and phone | 72 passed |
+| Order agent evaluation set, replayed | 100/100 |
+| Busy day from the command line, 50 customers, each demo shop with recorded chats | none stuck |
+
+What it delivered:
+
+- Customer simulator (110): a busy day in a demo copy. 10, 20 or 50 invented customers in
+  Urdu and Roman Urdu, each with a mood, a goal and their own number, chat with the shop at
+  once through the same path a real message takes. With keys Glimmer plays them (a new prompt,
+  `customer_sim`) and Spark Open answers; without, they replay the evaluation set's Urdu and
+  Roman Urdu conversations with recorded answers scoped to that shop. The console shows them
+  arrive and how each chat ended. `python -m chatfront.sim` runs one with a report.
+- Failover (114): Baseten, then Modal (a Spark Open deployment, optional), then Fireworks; an
+  endpoint that fails twice rests for a minute; an outage drill for the demo; the dashboard
+  says which endpoint answered. `deploy/modal_glimmer.py` starts Glimmer on one H100 from the
+  FP8 weights, scaling to zero after five idle minutes.
+- Push alerts (115): Web Push written on the RFCs (encryption checked against RFC 8291's own
+  example), VAPID key made with `python -m chatfront.push`; whatever the shop tells a staff
+  member also arrives on their phones. The Urdu right-to-left dashboard was checked on a
+  phone screen.
+- Migrations 0021 (busy days) and 0022 (push subscriptions).
+- Refactors on the way: the scripted conversations moved to `eval/cases.py`, the web chat's
+  accept step to `channels/webchat.py` and the checkout's routes to
+  `orders/checkout_routes.py`, so the simulator can use them without an import loop. The mock
+  model now prefers the longest matching words, and keeps only its latest 500 requests in
+  memory (a long-running demo kept every one).
+
+Decisions:
+
+- Simulated customers only ever go to a visitor's demo copy, never a real shop, and never send
+  a payment screenshot: one who pays by transfer only says so.
+- A replayed customer whose card never comes (a product sold out since the recording) leaves
+  after a few looks; only a chat the shop never answered counts as stuck.
+- Push uses no outside service and no extra library; the VAPID key is Ahsaan's to make, like
+  the other secrets.
+- Spark Open on Modal needs a node of eight large GPUs, beyond the $100 credit as a standing
+  endpoint, so it is an optional link in the chain; Modal's credit goes to Glimmer.
+
+Not verified yet: Glimmer playing customers and the failover on real endpoints (need keys);
+`deploy/modal_glimmer.py` on Modal (needs Ahsaan's Modal account); an alert on a real phone
+(needs the deployed HTTPS site).
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -717,7 +768,7 @@ Proposed order, the Meta platform first since it is what is judged:
 5. Shield: 37, 40, 43, 45, 46. Done on 28 October.
 6. Packing and books: 102, 103, 51. Done on 28 October.
 7. Data and growth: 57, 59, 116, 66. Done on 28 October.
-8. Demo engineering: 110, 114, 115.
+8. Demo engineering: 110, 114, 115. Done on 28 October.
 
 ## Plan for 117 to 120
 

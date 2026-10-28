@@ -20,6 +20,11 @@ WhatsApp test numbers can only message their verified recipients, so the page ch
 anyone outside the shop can try it. Six demo shops, one per business type, are created on
 first start: open `/` and pick one. They and their customers are made up.
 
+In a demo copy of a shop ("Try as the owner"), Busy day lets 10, 20 or 50 simulated
+customers chat with it at once in Urdu and Roman Urdu, and the console shows them come in and
+how each chat ended. With model keys Muse Glimmer plays them and Spark Open answers; without,
+they replay recorded conversations. From the command line: `uv run python -m chatfront.sim`.
+
 The web app is static, so it opens at once even when the API on Render's free tier is
 asleep. It pings the API and shows a countdown while it wakes; anything typed in the chat
 meanwhile is sent as soon as the API answers.
@@ -121,6 +126,9 @@ api/src/chatfront/
   insights/   questions about the shop's records, answered by code
   crm/        buyers' worth, groups and greetings
   mcp/        the MCP endpoint for outside AI assistants
+  sim/        the customer simulator's busy day
+  push/       alerts on staff phones (Web Push)
+deploy/       Muse Glimmer on Modal
   eval/       evaluation sets: languages, and the order agent's 100 conversations
 i18n/         language registry, catalogs, number words, detector hints, country packs
 web/src/      React app: shop page with cart and checkout, try-it chat, start page, owner console
@@ -132,6 +140,12 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, demo engineering:** a busy day of up to fifty simulated customers in Urdu
+  and Roman Urdu against a demo copy of a shop, played by Muse Glimmer or replayed from the
+  evaluation set; failover across Baseten, Modal and Fireworks with a minute's rest for an
+  endpoint that keeps failing, an outage drill and the dashboard saying which endpoint
+  answered; and alerts on staff phones through Web Push, built on the RFCs with no outside
+  service, next to the right-to-left Urdu dashboard.
 - **28 October, data and growth:** the owner asks the shop's records in the chat ("sab se
   zyada kya bika pichle mahine?") and code answers from the shop's own rows; the customers
   list with what each buyer spent, who came back and who went quiet, and a greeting (Eid, or
@@ -301,12 +315,19 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    (so links sent in chats open the Pages app); then run the "Deploy the web app to GitHub
    Pages" workflow.
 11. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
-   come) in Render's Environment for the app, and as repository secrets for the manual
+   come; `deploy/modal_glimmer.py` says how to start Glimmer on Modal) in Render's Environment for the app, and as repository secrets for the manual
    "Live model evaluation" workflow. They never go in the repository or the chat. Until they
    come, set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
    `https://<service>.onrender.com/health` shows `mock`, `live` or `no keys`. Optional:
    `SAFE_BROWSING_API_KEY` (where to get it is in `.env.example`) adds Google's lists of
    phishing sites to the link check (feature 40); code catches fake support links without it.
+12. Alerts on staff phones (feature 115, optional): run `uv run python -m chatfront.push` once
+   and put the `VAPID_PRIVATE_KEY` it prints in Render's Environment. Staff then turn alerts
+   on from the console on each phone. The browsers' push services are free.
+13. Failover drill (feature 114): with the keys in, take Baseten out for five minutes and the
+   calls move to the next endpoint:
+   `curl -X POST https://<service>.onrender.com/internal/ai/drill -H "X-Cron-Secret: $CRON_SECRET" -H 'content-type: application/json' -d '{"endpoint":"baseten","minutes":5}'`
+   (`"minutes":0` brings it back; `GET /internal/ai` shows each endpoint's state).
 
 ## Roadmap
 
