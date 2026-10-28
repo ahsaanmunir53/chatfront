@@ -14,6 +14,7 @@ from chatfront.ai.factory import build_ai_client
 from chatfront.ai.tools import ToolRegistry
 from chatfront.bookings import service as bookings
 from chatfront.bookings.tools import booking_tools
+from chatfront.books import forecast as cash_forecast
 from chatfront.books.reminders import EVERY as REMINDERS_EVERY
 from chatfront.books.reminders import KIND as reminder_kind
 from chatfront.books.reminders import REMINDER, REMINDERS_JOB, reminders_job
@@ -38,6 +39,7 @@ from chatfront.core.ratelimit import RateLimiter
 from chatfront.core.settings import Settings
 from chatfront.crm import broadcasts
 from chatfront.delivery import courier_service, packing, picking, proof
+from chatfront.insights import coach
 from chatfront.jobs.cron import CronRegistry, Periodic
 from chatfront.jobs.queue import JobContext, JobRegistry, Worker
 from chatfront.media.storage import LocalStorage, Storage, SupabaseStorage
@@ -48,6 +50,7 @@ from chatfront.orders import custom, live_claims, unboxing
 from chatfront.orders import reminders as cart_reminders
 from chatfront.orders.agent import OrderAgent
 from chatfront.orders.custom import custom_tools
+from chatfront.orders.data_tool import data_tools
 from chatfront.orders.discounts import DISCOUNT
 from chatfront.orders.discounts import KIND as discount_kind
 from chatfront.orders.returns import KIND as return_kind
@@ -65,6 +68,7 @@ from chatfront.payments.watcher import EVERY, WATCH_JOB, watch
 from chatfront.publish import service as publishing
 from chatfront.push.alerts import PUSH_JOB
 from chatfront.push.alerts import send_job as push_job
+from chatfront.shield import data_rights
 from chatfront.shield.approvals import APPROVAL_JOB, ApprovalKind, approval_button
 from chatfront.shield.approvals import tell_job as approval_tell_job
 from chatfront.sim.runner import TURN_JOB as SIM_TURN_JOB
@@ -128,10 +132,12 @@ def build_registries() -> Registries:
             *review_tools(),
             *booking_tools(),
             *custom_tools(),
+            *data_tools(),
         ]
     )
     registries.approvals[RETURN] = return_kind
     registries.approvals[answers.ANSWER] = answers.KIND
+    registries.approvals[data_rights.ERASE] = data_rights.KIND
     registries.jobs.register(BACK_IN_STOCK_JOB)(back_in_stock_job)
     payments = registries.modules.modules["payments"]
     payments.tools.extend(payment_tools())
@@ -145,6 +151,11 @@ def build_registries() -> Registries:
     registries.approvals[REMINDER] = reminder_kind
     books.jobs |= {CARDS_JOB: cards_job, CARD_JOB: card_job}
     books.periodic.append(Periodic("profit-cards", CARDS_EVERY, CARDS_JOB))
+    books.jobs |= {
+        cash_forecast.JOB: cash_forecast.forecasts_job,
+        cash_forecast.SHOP_JOB: cash_forecast.forecast_job,
+    }
+    books.periodic.append(Periodic("cash-forecasts", cash_forecast.EVERY, cash_forecast.JOB))
     growth = registries.modules.modules["growth"]
     growth.jobs |= {
         LOW_STOCK_JOB: low_stock_alert,
@@ -165,6 +176,8 @@ def build_registries() -> Registries:
         publishing.SEND_JOB: publishing.send_job,
     }
     growth.periodic.append(Periodic("daily-posts", publishing.EVERY, publishing.DAILY_JOB))
+    growth.jobs |= {coach.JOB: coach.notes_job, coach.SHOP_JOB: coach.note_job}
+    growth.periodic.append(Periodic("coach-notes", coach.EVERY, coach.JOB))
     catalog = registries.modules.modules["catalog"]
     catalog.jobs[sales.JOB] = live_claims.release_job
     catalog.periodic.append(Periodic("sale-holds", sales.EVERY, sales.JOB))

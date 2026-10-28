@@ -14,6 +14,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from chatfront.bookings.routes import router as bookings_router
+from chatfront.books.plan_routes import public as passport_router
+from chatfront.books.plan_routes import router as plans_router
 from chatfront.books.routes import router as books_router
 from chatfront.catalog.import_routes import router as imports_router
 from chatfront.catalog.meta_routes import router as catalog_sync_router
@@ -30,6 +32,7 @@ from chatfront.crm.broadcast_routes import router as broadcasts_router
 from chatfront.crm.routes import router as crm_router
 from chatfront.delivery.courier_routes import router as couriers_router
 from chatfront.delivery.routes import router as delivery_router
+from chatfront.insights.routes import router as insights_router
 from chatfront.mcp.routes import router as mcp_router
 from chatfront.offers.routes import router as offers_router
 from chatfront.orders.checkout_routes import router as checkout_router
@@ -50,9 +53,11 @@ from chatfront.routes.internal import router as internal_router
 from chatfront.routes.public import router as public_router
 from chatfront.services import build_registries, build_services
 from chatfront.shield.consent_routes import router as consents_router
+from chatfront.shield.data_routes import router as data_router
 from chatfront.shield.platform_routes import router as platform_router
 from chatfront.shield.review_routes import router as reviews_router
 from chatfront.shield.routes import router as shield_router
+from chatfront.shield.scam_routes import router as scams_router
 from chatfront.sim.routes import router as busy_day_router
 from chatfront.stock.routes import router as stock_router
 
@@ -135,6 +140,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(returns_router)
     app.include_router(offers_router)
     app.include_router(waitlist_router)
+    app.include_router(data_router)
+    app.include_router(plans_router)
+    app.include_router(passport_router)
+    app.include_router(insights_router)
+    app.include_router(scams_router)
     registries.modules.install(app, registries.jobs, registries.cron, registries.tools)
     _serve_web(app, settings.web_dist_dir)
     return app
