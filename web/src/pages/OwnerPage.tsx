@@ -10,12 +10,15 @@ import { BooksPanel, LowStockList, useBooks } from "../components/Books";
 import { CatalogSyncPanel } from "../components/CatalogSync";
 import { ChatView } from "../components/ChatView";
 import { DashboardPanel } from "../components/Dashboard";
+import { ImportsPanel } from "../components/Imports";
 import { InboxPanel } from "../components/Inbox";
 import { OrdersPanel, useOrders } from "../components/Orders";
 import { PaymentReviews, PaymentsPanel, usePayments } from "../components/Payments";
 import { AnswersPanel } from "../components/Answers";
 import { OffersPanel } from "../components/Offers";
 import { RefundsPanel, ReturnsPanel } from "../components/Returns";
+import { ShelfCountPanel } from "../components/ShelfCount";
+import { SizeChartsPanel } from "../components/SizeCharts";
 import { WaitingPanel } from "../components/Waiting";
 import { PostsPanel } from "../components/Posts";
 import { Approvals, CustomersPanel, SettingsPanel, useApprovals } from "../components/Shield";
@@ -193,9 +196,7 @@ function ProductRow({
       </div>
       <div className="khata-facts">
         <span className="khata-code">{product.code}</span>
-        <span className={`khata-status status-${product.status}`}>
-          {t(STATUS[product.status])}
-        </span>
+        <span className={`khata-status status-${product.status}`}>{t(STATUS[product.status])}</span>
         {product.floor_price !== null && (
           <span>{t("console.lowest", { price: money(product.floor_price) })}</span>
         )}
@@ -248,13 +249,7 @@ function Products({
       {products && products.length === 0 && <p className="aside">{t("console.no_products")}</p>}
       <ul className="khata" aria-busy={!products}>
         {products?.map((product) => (
-          <ProductRow
-            key={product.id}
-            product={product}
-            me={me}
-            token={token}
-            onSaved={onSaved}
-          />
+          <ProductRow key={product.id} product={product} me={me} token={token} onSaved={onSaved} />
         ))}
       </ul>
     </section>
@@ -362,12 +357,14 @@ function Console({
         />
         <Products me={me} token={token} products={products} low={books.low} onSaved={saved} />
       </div>
+      {can("catalog") && <ImportsPanel me={me} token={token} onAdded={saved} />}
       {can("orders") && (
         <OrdersPanel me={me} token={token} orders={orders.orders} onChange={orders.refresh} />
       )}
       {can("stock") && (
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
+      {can("stock") && <ShelfCountPanel token={token} onSaved={stockChanged} />}
       {can("orders") && <ReturnsPanel token={token} canShip={can("ship")} />}
       {can("orders") && <WaitingPanel token={token} />}
       {can("payments") && (
@@ -379,6 +376,7 @@ function Console({
       )}
       {can("chats") && <PostsPanel token={token} products={products ?? []} />}
       {can("catalog") && <CatalogSyncPanel token={token} />}
+      {can("catalog") && <SizeChartsPanel token={token} />}
       {can("orders") && <CustomersPanel me={me} token={token} />}
       {can("team") && <TeamPanel token={token} />}
       {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
@@ -431,11 +429,6 @@ export function OwnerPage() {
     );
   }
   return (
-    <Console
-      me={me}
-      token={token}
-      onSignOut={() => signOut(false)}
-      onSessionEnded={sessionEnded}
-    />
+    <Console me={me} token={token} onSignOut={() => signOut(false)} onSessionEnded={sessionEnded} />
   );
 }

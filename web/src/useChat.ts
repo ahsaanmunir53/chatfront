@@ -50,9 +50,7 @@ function problemOf(error: unknown): { problem: SendProblem; drop: boolean } {
 export function useChat(slug: string, ownerToken: string | null, onSignedOut?: () => void) {
   const { state } = useServer();
   const online = state === "online";
-  const [customerToken, setCustomerToken] = useState(() =>
-    ownerToken ? null : storedToken(slug),
-  );
+  const [customerToken, setCustomerToken] = useState(() => (ownerToken ? null : storedToken(slug)));
   const auth: ChatAuth | null = ownerToken
     ? { token: ownerToken, owner: true }
     : customerToken
@@ -161,8 +159,8 @@ export function useChat(slug: string, ownerToken: string | null, onSignedOut?: (
   );
 
   const attach = useCallback(
-    (file: Blob, kind: "image" | "audio", caption = "") => {
-      const preview = kind === "image" ? URL.createObjectURL(file) : undefined;
+    (file: Blob, kind: "image" | "video" | "audio", caption = "") => {
+      const preview = kind === "audio" ? undefined : URL.createObjectURL(file);
       queue({ kind, body: caption.trim(), file, ...(preview ? { preview } : {}) });
     },
     [queue],

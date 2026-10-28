@@ -5301,3 +5301,238 @@ button {
   font-size: 13px;
   font-weight: 650;
 }
+
+/* What the shop already has: imports and their drafts (features 85, 84 and 2), the shelf
+   count (87) and size charts (5). ------------------------------------------------------ */
+
+.import-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+
+.import-sources .action,
+.shelf-count .import-pick {
+  padding: 9px 16px;
+  background: var(--card);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.import-sources .action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.import-pick:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.import-runs {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.import-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.import-run-source {
+  font-weight: 700;
+}
+
+.import-run-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.import-run.is-failed .import-run-status {
+  color: var(--chili);
+  font-weight: 650;
+}
+
+.import-run-actions,
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-run-actions {
+  margin-inline-start: auto;
+}
+
+.import-run-actions .action,
+.import-actions .action {
+  padding: 6px 14px;
+  background: var(--card);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.import-drafts {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .import-drafts {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+.import-draft {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.import-photo {
+  width: 88px;
+  height: 110px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--paper);
+}
+
+.import-photo.is-empty {
+  display: block;
+  border: 1.5px dashed var(--line);
+}
+
+.import-fields.books-form {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.import-fields input {
+  width: 100%;
+  min-width: 0;
+}
+
+.import-check {
+  margin: 0;
+  color: color-mix(in srgb, var(--chili) 75%, var(--text));
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.shelf-count-rows {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.shelf-count-rows table,
+.size-chart table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.shelf-count-rows th,
+.shelf-count-rows td,
+.size-chart th,
+.size-chart td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  text-align: start;
+}
+
+.shelf-count-rows input,
+.size-chart-edit input {
+  width: 6em;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.shelf-count-rows button {
+  justify-self: start;
+}
+
+.size-chart {
+  font-size: 14px;
+}
+
+/* A wide chart scrolls inside its card instead of stretching it. */
+.product {
+  min-width: 0;
+}
+
+.product-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.size-chart summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.size-chart-scroll {
+  overflow-x: auto;
+}
+
+.size-chart th,
+.size-chart td {
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.size-chart-help {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.size-chart-form {
+  margin: 16px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+.size-chart-form > legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.size-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.size-chart-edit th {
+  font-size: 13px;
+  text-align: start;
+}
+
+.size-chart-edit td {
+  padding: 4px 6px 4px 0;
+}
+
+.size-charts > .import-actions {
+  margin-top: 14px;
+}

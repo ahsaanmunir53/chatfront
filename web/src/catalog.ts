@@ -1,7 +1,7 @@
 // Products on the shop page. Demo shops' products ship inside the app (from the business
 // templates, like the shops themselves), so the catalog shows before the server wakes; the
 // live list from the API replaces them once it answers.
-import type { PublicProduct } from "./api";
+import type { PublicProduct, SizeChart } from "./api";
 import { chain } from "./i18n";
 import type { Lang } from "./i18n";
 import { packOf } from "./money";
@@ -31,6 +31,7 @@ export type ShopProduct = {
   imageUrl: string | null;
   inStock: boolean;
   shipsFrom: string | null; // on pre-order: orderable now, ships from this day (YYYY-MM-DD)
+  sizeChart: SizeChart | null; // the shop's chart for it (feature 5)
   // What can go in the cart; empty until the live catalog answers.
   variants: { catalogId: string; label: string; inStock: boolean }[];
 };
@@ -72,6 +73,7 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       imageUrl: null,
       inStock: variants.some((v) => v.stock == null || v.stock > 0),
       shipsFrom: null,
+      sizeChart: null,
       variants: [],
     };
   });
@@ -93,6 +95,7 @@ export function fromApi(product: PublicProduct): ShopProduct {
     imageUrl: product.image_url,
     inStock: product.in_stock,
     shipsFrom: product.ships_from,
+    sizeChart: product.size_chart,
     variants: product.variants.map((v) => ({
       catalogId: v.catalog_id,
       label: optionLabel(v.options),

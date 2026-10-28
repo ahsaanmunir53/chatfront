@@ -28,6 +28,12 @@ describe("catalog", () => {
       image_url: null,
       in_stock: false,
       ships_from: null,
+      size_chart: {
+        name: "Kurtas",
+        unit: "in",
+        measures: ["chest"],
+        rows: [{ size: "M", ranges: { chest: [36, 37] } }],
+      },
       variants: [
         { id: "a", catalog_id: "KRT01-1", options: { size: "M" }, price: 275_000, in_stock: false },
         {

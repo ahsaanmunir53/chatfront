@@ -4,12 +4,12 @@ import type { Coordinates, ServerMessage } from "./api";
 /** Something typed, tapped or attached here that the server has not shown back yet. */
 export type Outgoing = {
   clientId: string;
-  kind: "text" | "image" | "audio" | "location";
-  body: string; // the text, a photo's caption, or empty for a voice note
+  kind: "text" | "image" | "video" | "audio" | "location";
+  body: string; // the text, a photo's or video's caption, or empty for a voice note
   buttonId?: string;
   location?: Coordinates;
   file?: Blob;
-  preview?: string; // an object URL for a photo being sent
+  preview?: string; // an object URL for a photo or video being sent
 };
 
 /** Add newly polled messages, without duplicates, in the order they were written. */

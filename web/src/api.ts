@@ -82,7 +82,61 @@ export type PublicProduct = {
   image_url: string | null;
   in_stock: boolean;
   ships_from: string | null;
+  size_chart: SizeChart | null;
   variants: PublicVariant[];
+};
+
+/** A size chart (feature 5): each size's range per measure, smallest size first. */
+export type Measure =
+  "chest" | "waist" | "hips" | "shoulder" | "length" | "sleeve" | "inseam" | "foot";
+export type SizeRow = { size: string; ranges: Partial<Record<Measure, [number, number]>> };
+export type SizeChart = {
+  name: string;
+  unit: "in" | "cm";
+  categories?: string[];
+  measures?: Measure[];
+  rows: SizeRow[];
+};
+export type SizeCharts = { charts: SizeChart[]; usual: SizeChart[]; categories: string[] };
+
+/** What an import found (features 85, 84 and 2), waiting for the owner. */
+export type ImportDraft = {
+  id: string;
+  import_id: string;
+  source: ImportSource;
+  name: string;
+  price: number | null;
+  price_from: string | null;
+  description: string;
+  category: string | null;
+  variants: { options: Record<string, string>; price: number | null; stock: number | null }[];
+  photo: string | null;
+  ready: boolean;
+  in_shop: string | null;
+  link: string | null;
+};
+export type ImportSource = "sheet" | "meta_catalog" | "instagram" | "video";
+export type ImportRun = {
+  id: string;
+  source: ImportSource;
+  label: string;
+  status: "reading" | "ready" | "failed";
+  found: number;
+  waiting: number;
+  error: string | null;
+  created_at: string;
+};
+export type Imports = {
+  currency: string;
+  runs: ImportRun[];
+  drafts: ImportDraft[];
+  instagram: boolean;
+  meta_catalog: boolean;
+};
+export type ShelfCount = {
+  note: string;
+  rows: { variant_id: string; name: string; before: number | null; counted: number }[];
+  problems: string[];
 };
 
 export type QuoteLine = {
@@ -169,7 +223,12 @@ export type InboxItem = {
   handover_id: string | null;
   summary: string | null;
   assigned: InboxPerson | null;
-  last: { by: "customer" | "agent" | "staff"; kind: string; text: string | null; at: string } | null;
+  last: {
+    by: "customer" | "agent" | "staff";
+    kind: string;
+    text: string | null;
+    at: string;
+  } | null;
   window_open: boolean;
 };
 export type SocialPost = {
@@ -595,7 +654,12 @@ export type WhyDecision = {
   values: Record<string, unknown>;
   evidence: Record<string, unknown>[];
 };
-export type WhyHistory = { at: string; action: string; actor: string; data: Record<string, unknown> };
+export type WhyHistory = {
+  at: string;
+  action: string;
+  actor: string;
+  data: Record<string, unknown>;
+};
 export type Why = { code: string; status: string; decisions: WhyDecision[]; history: WhyHistory[] };
 
 /** Who is chatting: a customer with a random chat token, or the owner with a signed session. */
@@ -740,18 +804,24 @@ export const api = {
   catalogSync: (token: string) =>
     call<CatalogSync>("/api/owner/catalog-sync", { headers: bearer(token) }),
   sendCatalog: (token: string) =>
-    call<{ queued: boolean }>("/api/owner/catalog-sync", { method: "POST", headers: bearer(token) }),
+    call<{ queued: boolean }>("/api/owner/catalog-sync", {
+      method: "POST",
+      headers: bearer(token),
+    }),
   chatMessages: (token: string, conversationId: string) =>
     call<ConsoleMessage[]>(
       `/api/owner/conversations/${encodeURIComponent(conversationId)}/messages`,
       { headers: bearer(token) },
     ),
   staffReply: (token: string, conversationId: string, text: string) =>
-    call<{ sent: boolean }>(`/api/owner/conversations/${encodeURIComponent(conversationId)}/reply`, {
-      method: "POST",
-      headers: bearer(token),
-      body: JSON.stringify({ text }),
-    }),
+    call<{ sent: boolean }>(
+      `/api/owner/conversations/${encodeURIComponent(conversationId)}/reply`,
+      {
+        method: "POST",
+        headers: bearer(token),
+        body: JSON.stringify({ text }),
+      },
+    ),
   payments: (token: string) => call<Payments>("/api/owner/payments", { headers: bearer(token) }),
   decidePayment: (token: string, claimId: string, answer: "approve" | "reject") =>
     call<{ outcome: string; receipt_code: string | null }>(
@@ -855,7 +925,8 @@ export const api = {
       body: JSON.stringify(move),
     }),
   lowStock: (token: string) => call<LowStock[]>("/api/owner/low-stock", { headers: bearer(token) }),
-  approvals: (token: string) => call<Approval[]>("/api/owner/approvals", { headers: bearer(token) }),
+  approvals: (token: string) =>
+    call<Approval[]>("/api/owner/approvals", { headers: bearer(token) }),
   answerApproval: (token: string, approvalId: string, approve: boolean) =>
     call<{ outcome: string }>(`/api/owner/approvals/${encodeURIComponent(approvalId)}`, {
       method: "POST",
@@ -870,7 +941,8 @@ export const api = {
       headers: bearer(token),
       body: JSON.stringify({ verified }),
     }),
-  settings: (token: string) => call<ShopSettings>("/api/owner/settings", { headers: bearer(token) }),
+  settings: (token: string) =>
+    call<ShopSettings>("/api/owner/settings", { headers: bearer(token) }),
   saveSettings: (token: string, change: SettingsChange) =>
     call<ShopSettings>("/api/owner/settings", {
       method: "PUT",
@@ -958,4 +1030,71 @@ export const api = {
       `/api/owner/products/${encodeURIComponent(productId)}/translations/${encodeURIComponent(lang)}`,
       { method: "PUT", headers: bearer(token), body: JSON.stringify(text) },
     ),
+  imports: (token: string) => call<Imports>("/api/owner/imports", { headers: bearer(token) }),
+  importSheet: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<ImportRun>("/api/owner/imports/sheet", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  importVideo: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<{ queued: boolean }>("/api/owner/imports/video", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  importFrom: (token: string, source: "instagram" | "meta-catalog") =>
+    call<{ queued: boolean }>(`/api/owner/imports/${source}`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  addDraft: (token: string, draftId: string, edits: { name?: string; price?: number }) =>
+    call<{ code: string; name: string }>(
+      `/api/owner/imports/drafts/${encodeURIComponent(draftId)}/add`,
+      { method: "POST", headers: bearer(token), body: JSON.stringify(edits) },
+    ),
+  dropDraft: (token: string, draftId: string) =>
+    call<{ dropped: boolean }>(`/api/owner/imports/drafts/${encodeURIComponent(draftId)}/drop`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  addReady: (token: string, importId: string) =>
+    call<{ added: number }>(`/api/owner/imports/${encodeURIComponent(importId)}/add-ready`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  dropRest: (token: string, importId: string) =>
+    call<{ dropped: number }>(`/api/owner/imports/${encodeURIComponent(importId)}/drop-rest`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  countShelf: (token: string, file: Blob) => {
+    const form = new FormData();
+    form.append("file", file);
+    return call<ShelfCount>("/api/owner/stock/count/photo", {
+      method: "POST",
+      headers: bearer(token),
+      body: form,
+    });
+  },
+  saveCount: (token: string, lines: { variant_id: string; counted: number }[]) =>
+    call<{ changed: number }>("/api/owner/stock/count", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ lines }),
+    }),
+  sizeCharts: (token: string) =>
+    call<SizeCharts>("/api/owner/size-charts", { headers: bearer(token) }),
+  saveSizeCharts: (token: string, charts: SizeChart[]) =>
+    call<SizeCharts>("/api/owner/size-charts", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ charts }),
+    }),
 };

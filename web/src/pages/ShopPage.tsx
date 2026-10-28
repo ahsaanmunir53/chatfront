@@ -8,6 +8,7 @@ import type { ShopProduct } from "../catalog";
 import { Avatar, initials, templateTone } from "../components/Avatar";
 import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
 import { Page, Problem } from "../components/Shell";
+import { SizeChartTable } from "../components/SizeChart";
 import { demoShop } from "../demo";
 import { pick, scriptLang } from "../i18n";
 import type { Key, Text3 } from "../i18n";
@@ -145,6 +146,7 @@ function ProductCard({
             {t("shop.preorder", { date: dayLabel(product.shipsFrom, lang) })}
           </p>
         )}
+        {product.sizeChart && <SizeChartTable chart={product.sizeChart} />}
         <div className="product-actions">
           {product.inStock && product.variants.length > 0 && (
             <AddToCart slug={slug} product={product} name={text.name} />

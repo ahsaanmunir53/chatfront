@@ -75,6 +75,13 @@ function Media({ kind, url }: { kind: string; url: string | null | undefined }) 
       </audio>
     );
   }
+  if (kind === "video") {
+    return (
+      <video className="bubble-photo" controls preload="metadata" src={url}>
+        {t("chat.video")}
+      </video>
+    );
+  }
   return null;
 }
 
@@ -152,7 +159,12 @@ function PendingBubble({ item, online }: { item: Outgoing; online: boolean }) {
   const { t } = useLang();
   return (
     <li className="bubble bubble-in bubble-pending">
-      {item.preview && <img className="bubble-photo" src={item.preview} alt={t("chat.photo")} />}
+      {item.preview && item.kind === "video" && (
+        <video className="bubble-photo" src={item.preview} muted aria-label={t("chat.video")} />
+      )}
+      {item.preview && item.kind !== "video" && (
+        <img className="bubble-photo" src={item.preview} alt={t("chat.photo")} />
+      )}
       {item.kind === "audio" && <span>{t("chat.voice_note")}</span>}
       {item.body && <span dir="auto">{item.body}</span>}
       <span className="bubble-meta">
@@ -257,7 +269,8 @@ export function ChatView({
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    chat.attach(await shrinkImage(file), "image", draft);
+    if (file.type.startsWith("video/")) chat.attach(file, "video", draft);
+    else chat.attach(await shrinkImage(file), "image", draft);
     setDraft("");
   }
 
@@ -346,7 +359,11 @@ export function ChatView({
             >
               <CloseIcon />
             </button>
-            <button type="button" onClick={() => void sendVoice()} aria-label={t("chat.send_voice")}>
+            <button
+              type="button"
+              onClick={() => void sendVoice()}
+              aria-label={t("chat.send_voice")}
+            >
               <SendIcon className="flip-rtl" />
             </button>
           </>
@@ -364,7 +381,7 @@ export function ChatView({
               ref={photoRef}
               className="sr-only"
               type="file"
-              accept="image/*"
+              accept="image/*,video/mp4,video/quicktime"
               tabIndex={-1}
               aria-hidden="true"
               onChange={(event) => void pickPhoto(event)}
