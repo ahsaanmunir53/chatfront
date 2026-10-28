@@ -93,6 +93,7 @@ class ProductOut(BaseModel):
     ships_from: date | None  # on pre-order: orderable now, ships from this day (feature 16)
     size_chart: dict[str, Any] | None  # the shop's chart for it (feature 5)
     variants: list[VariantOut]
+    share_url: str  # the link with a preview card (feature 116)
 
 
 class ShopSummary(BaseModel):
@@ -123,7 +124,8 @@ async def shop_by_slug(services: Services, slug: str) -> Tenant:
     return tenant
 
 
-async def _channels(services: Services, tenant: Tenant) -> list[ChannelLink]:
+async def shop_channels(services: Services, tenant: Tenant) -> list[ChannelLink]:
+    """The shop's active chat accounts, with links that open them."""
     async with services.db.tenant(tenant.id) as session:
         accounts = list(
             await session.scalars(
@@ -175,7 +177,9 @@ async def trust(slug: str, request: Request, services: ServicesDep) -> TrustInfo
     """The shop's official channels, so nobody can run a fake shop in its name."""
     _limit(services, request)
     tenant = await shop_by_slug(services, slug)
-    return TrustInfo(slug=tenant.slug, name=tenant.name, channels=await _channels(services, tenant))
+    return TrustInfo(
+        slug=tenant.slug, name=tenant.name, channels=await shop_channels(services, tenant)
+    )
 
 
 @router.get("/api/shops/{slug}")
@@ -195,7 +199,7 @@ async def get_shop(slug: str, request: Request, services: ServicesDep) -> Public
         default_lang=tenant.default_lang,
         is_demo=tenant.is_demo,
         attribution=t("app.attribution"),
-        channels=await _channels(services, tenant),
+        channels=await shop_channels(services, tenant),
         countdowns=await _countdowns(services, tenant),
     )
 
@@ -262,6 +266,7 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
             )
         }
     ttl = services.settings.signed_url_ttl_seconds
+    public = services.settings.public_base_url.rstrip("/")
     charts = sizes.charts_of(tenant)
     out = []
     for item in items:
@@ -287,6 +292,7 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                 in_stock=item.in_stock,
                 ships_from=item.preorder,
                 size_chart=sizes.public(chart) if chart else None,
+                share_url=f"{public}/s/{slug}/p/{product.code}",
                 variants=[
                     VariantOut(
                         id=v.id,

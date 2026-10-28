@@ -32,6 +32,7 @@ export type ShopProduct = {
   inStock: boolean;
   shipsFrom: string | null; // on pre-order: orderable now, ships from this day (YYYY-MM-DD)
   sizeChart: SizeChart | null; // the shop's chart for it (feature 5)
+  shareUrl: string | null; // the link with a preview card (feature 116)
   // What can go in the cart; empty until the live catalog answers.
   variants: { catalogId: string; label: string; inStock: boolean }[];
 };
@@ -74,6 +75,7 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       inStock: variants.some((v) => v.stock == null || v.stock > 0),
       shipsFrom: null,
       sizeChart: null,
+      shareUrl: null,
       variants: [],
     };
   });
@@ -96,6 +98,7 @@ export function fromApi(product: PublicProduct): ShopProduct {
     inStock: product.in_stock,
     shipsFrom: product.ships_from,
     sizeChart: product.size_chart,
+    shareUrl: product.share_url,
     variants: product.variants.map((v) => ({
       catalogId: v.catalog_id,
       label: optionLabel(v.options),

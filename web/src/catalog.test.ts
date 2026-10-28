@@ -28,6 +28,7 @@ describe("catalog", () => {
       image_url: null,
       in_stock: false,
       ships_from: null,
+      share_url: "https://shop.example/s/kapra/p/KRT01",
       size_chart: {
         name: "Kurtas",
         unit: "in",

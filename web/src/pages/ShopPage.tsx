@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ChannelLink, Countdown } from "../api";
 import { bundledProducts, fromApi, productText } from "../catalog";
+import { useCopy } from "../clipboard";
 import type { ShopProduct } from "../catalog";
 import { Avatar, initials, templateTone } from "../components/Avatar";
 import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
@@ -156,9 +157,41 @@ function ProductCard({
             <ChatIcon size={16} />
             {t("catalog.ask")}
           </Link>
+          {product.shareUrl && <Share url={product.shareUrl} name={text.name} />}
         </div>
       </div>
     </li>
+  );
+}
+
+/** The product's link with its preview card (feature 116): the phone's share sheet, or the
+ * link copied where there is none. */
+function Share({ url, name }: { url: string; name: string }) {
+  const { t } = useLang();
+  const { copied, copy } = useCopy();
+  async function share() {
+    if (navigator.share) {
+      await navigator.share({ title: name, url }).catch(() => undefined);
+      return;
+    }
+    await copy(url);
+  }
+  return (
+    <>
+      <button
+        type="button"
+        className="product-share"
+        aria-label={`${t("catalog.share")}: ${name}`}
+        onClick={() => void share()}
+      >
+        {t("catalog.share")}
+      </button>
+      {copied && (
+        <span className="product-in-cart" role="status">
+          {t("catalog.link_copied")}
+        </span>
+      )}
+    </>
   );
 }
 
