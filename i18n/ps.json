@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {یو ځل راغلی} other {# ځله راغلی}}",
   "console.sms_formats_handled": "حل شو",
   "activity.payment_share_unread": "د والټ پیغام شریکولو اجازه بدله شوه",
-  "activity.platform_sms_format_handled": "د والټ پیغام بڼه حل شوه"
+  "activity.platform_sms_format_handled": "د والټ پیغام بڼه حل شوه",
+  "suppliers.draft": "السلام علیکم. {shop} ته دا په کار دي:\n{lines}\nمهرباني وکړئ ولېږئ او بیه راته ووایاست. مننه.",
+  "suppliers.draft_line": "- {name}: {quantity} دانې",
+  "suppliers.cheaper": "تېر ځل {supplier} لږ واخیستل: {cost} هره دانه، په داسې حال کې چې {other} {other_cost}.",
+  "console.suppliers_title": "عرضه کوونکي",
+  "console.suppliers_lede": "د یوه شي لپاره هر عرضه کوونکي څومره واخیستل، ستاسو د ذخیرې له ثبت څخه، او د هغه څه لپاره چې کمېږي هر عرضه کوونکي ته یو پیغام. تر هغه چې تاسو یې ونه لېږئ، هیڅ نه ځي.",
+  "console.suppliers_reorders": "د بیا راغوښتلو پیغامونه",
+  "console.suppliers_no_low": "هیڅ شی نه کمېږي.",
+  "console.suppliers_unknown": "لا کوم عرضه کوونکی نه دی معلوم",
+  "console.suppliers_total": "د دوی په وروستیو بیو شاوخوا {amount}",
+  "console.suppliers_open": "په واټساپ کې یې پرانیزئ",
+  "console.suppliers_compare": "یو شی، بېلابېل عرضه کوونکي",
+  "console.suppliers_compare_none": "کله چې یو شی له دوو عرضه کوونکو واخلئ، د دوی بیې به دلته ښکاره شي.",
+  "console.suppliers_item": "شی",
+  "console.suppliers_supplier": "عرضه کوونکی",
+  "console.suppliers_unit": "هره دانه",
+  "console.suppliers_when": "وروستی پېر",
+  "console.suppliers_cheapest": "تر ټولو ارزان"
 }

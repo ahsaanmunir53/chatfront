@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, zero {لم تصل} one {وصلت مرة واحدة} two {وصلت مرتين} few {وصلت # مرات} many {وصلت # مرة} other {وصلت # مرة}}",
   "console.sms_formats_handled": "تمت المعالجة",
   "activity.payment_share_unread": "تغيرت مشاركة رسائل المحفظة",
-  "activity.platform_sms_format_handled": "تمت معالجة تنسيق رسالة محفظة"
+  "activity.platform_sms_format_handled": "تمت معالجة تنسيق رسالة محفظة",
+  "suppliers.draft": "مرحباً. يحتاج {shop} إلى:\n{lines}\nيرجى إرسالها وإخبارنا بالسعر. شكراً.",
+  "suppliers.draft_line": "- {name}: {quantity} قطعة",
+  "suppliers.cheaper": "{supplier} طلب أقل في المرة الماضية: {cost} للقطعة، مقابل {other_cost} من {other}.",
+  "console.suppliers_title": "الموردون",
+  "console.suppliers_lede": "كم طلب كل مورد مقابل الصنف نفسه، من سجلات المخزون، ورسالة واحدة لكل مورد لما يوشك على النفاد. لا يُرسل شيء حتى ترسله أنت.",
+  "console.suppliers_reorders": "رسائل إعادة الطلب",
+  "console.suppliers_no_low": "لا شيء يوشك على النفاد.",
+  "console.suppliers_unknown": "لا يوجد مورد معروف بعد",
+  "console.suppliers_total": "نحو {amount} بأسعارهم الأخيرة",
+  "console.suppliers_open": "افتح في واتساب",
+  "console.suppliers_compare": "الصنف نفسه، موردون مختلفون",
+  "console.suppliers_compare_none": "عندما تشتري صنفاً من موردَين، تظهر أسعارهما هنا.",
+  "console.suppliers_item": "الصنف",
+  "console.suppliers_supplier": "المورد",
+  "console.suppliers_unit": "للقطعة",
+  "console.suppliers_when": "آخر شراء",
+  "console.suppliers_cheapest": "الأرخص"
 }

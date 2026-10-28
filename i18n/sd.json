@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {هڪ ڀيرو آيو} other {# ڀيرا آيو}}",
   "console.sms_formats_handled": "نبيريو ويو",
   "activity.payment_share_unread": "والٽ پيغام شيئر ڪرڻ جي اجازت بدلي",
-  "activity.platform_sms_format_handled": "والٽ پيغام جو فارميٽ نبيريو"
+  "activity.platform_sms_format_handled": "والٽ پيغام جو فارميٽ نبيريو",
+  "suppliers.draft": "السلام عليڪم. {shop} کي هي گهرجي:\n{lines}\nمهرباني ڪري موڪليو ۽ قيمت ٻڌايو. مهرباني.",
+  "suppliers.draft_line": "- {name}: {quantity} پيس",
+  "suppliers.cheaper": "پوئين ڀيري {supplier} گهٽ ورتو: {cost} في پيس، جڏهن ته {other} کان {other_cost}.",
+  "console.suppliers_title": "سپلائر",
+  "console.suppliers_lede": "هڪ ئي شيءِ لاءِ هر سپلائر ڪيترو ورتو، توهان جي اسٽاڪ جي داخلا مان، ۽ جيڪو گهٽجي رهيو آهي ان لاءِ هر سپلائر کي هڪ پيغام. جيستائين توهان نه موڪليو، ڪجهه به نٿو وڃي.",
+  "console.suppliers_reorders": "ٻيهر گهرائڻ جا پيغام",
+  "console.suppliers_no_low": "ڪجهه به گهٽ ناهي ٿي رهيو.",
+  "console.suppliers_unknown": "اڃا ڪو سپلائر معلوم ناهي",
+  "console.suppliers_total": "انهن جي پوئين قيمتن تي لڳ ڀڳ {amount}",
+  "console.suppliers_open": "واٽس ايپ ۾ کوليو",
+  "console.suppliers_compare": "هڪ شيءِ، مختلف سپلائر",
+  "console.suppliers_compare_none": "جڏهن توهان ڪا شيءِ ٻن سپلائرن کان خريد ڪندا ته انهن جون قيمتون هتي ڏسبيون.",
+  "console.suppliers_item": "شيءِ",
+  "console.suppliers_supplier": "سپلائر",
+  "console.suppliers_unit": "في پيس",
+  "console.suppliers_when": "آخري خريداري",
+  "console.suppliers_cheapest": "سڀ کان سستو"
 }

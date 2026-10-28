@@ -10,6 +10,7 @@ import { BookingsPanel } from "../components/Bookings";
 import { BooksAheadPanel } from "../components/BooksAhead";
 import { CoachPanel } from "../components/Coach";
 import { SmsFormatsPanel } from "../components/SmsFormats";
+import { SuppliersPanel } from "../components/Suppliers";
 import { ScamReviewPanel, ScamsPanel } from "../components/Scams";
 import { StaffPayPanel } from "../components/StaffPay";
 import { BooksPanel, LowStockList, useBooks } from "../components/Books";
@@ -391,6 +392,7 @@ function Console({
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
       {can("stock") && <ShelfCountPanel token={token} onSaved={stockChanged} />}
+      {can("stock") && <SuppliersPanel me={me} token={token} />}
       {can("orders") && <BookingsPanel me={me} token={token} canSettings={can("settings")} />}
       {can("orders") && <CustomRequestsPanel me={me} token={token} canPrice={can("catalog")} />}
       {(can("ship") || can("books")) && (

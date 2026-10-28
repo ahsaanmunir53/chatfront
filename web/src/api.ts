@@ -764,6 +764,28 @@ export type Payments = {
   recent: PaymentDone[];
 };
 export type Forwarding = { url: string; header: string; secret: string };
+export type SupplierQuote = {
+  supplier: string;
+  phone: string | null;
+  unit_cost: number;
+  on: string;
+  times: number;
+};
+export type SupplierItem = {
+  variant_id: string;
+  name: string;
+  left: number | null;
+  quotes: SupplierQuote[];
+};
+export type SupplierReorder = {
+  supplier: string | null;
+  phone: string | null;
+  lines: { name: string; quantity: number; unit_cost: number | null }[];
+  total: number | null;
+  draft: string;
+  link: string | null;
+};
+export type Suppliers = { compared: SupplierItem[]; reorders: SupplierReorder[] };
 export type SmsParserOut = {
   parser: string;
   provider: string;
@@ -1696,6 +1718,7 @@ export const api = {
     });
   },
   batches: (token: string) => call<Batch[]>("/api/owner/batches", { headers: bearer(token) }),
+  suppliers: (token: string) => call<Suppliers>("/api/owner/suppliers", { headers: bearer(token) }),
   setExpiry: (token: string, batchId: string, expiresOn: string) =>
     call<{ expires_on: string }>(`/api/owner/batches/${encodeURIComponent(batchId)}/expiry`, {
       method: "POST",

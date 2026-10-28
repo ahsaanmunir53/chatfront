@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {একবার এসেছে} other {# বার এসেছে}}",
   "console.sms_formats_handled": "সমাধান হয়েছে",
   "activity.payment_share_unread": "ওয়ালেট বার্তা শেয়ারের অনুমতি বদলেছে",
-  "activity.platform_sms_format_handled": "ওয়ালেট বার্তার ফরম্যাট সমাধান হয়েছে"
+  "activity.platform_sms_format_handled": "ওয়ালেট বার্তার ফরম্যাট সমাধান হয়েছে",
+  "suppliers.draft": "আসসালামু আলাইকুম। {shop}-এর দরকার:\n{lines}\nদয়া করে পাঠিয়ে দিন এবং দাম জানান। ধন্যবাদ।",
+  "suppliers.draft_line": "- {name}: {quantity} পিস",
+  "suppliers.cheaper": "গতবার {supplier} কম নিয়েছিল: প্রতি পিস {cost}, যেখানে {other} নিয়েছিল {other_cost}।",
+  "console.suppliers_title": "সাপ্লায়ার",
+  "console.suppliers_lede": "একই জিনিসের জন্য প্রতিটি সাপ্লায়ার কত নিয়েছে, আপনার স্টকের হিসাব থেকে, এবং যা কমে আসছে তার জন্য প্রতিটি সাপ্লায়ারকে একটি বার্তা। আপনি না পাঠানো পর্যন্ত কিছুই যায় না।",
+  "console.suppliers_reorders": "আবার অর্ডারের বার্তা",
+  "console.suppliers_no_low": "কিছুই কমে আসছে না।",
+  "console.suppliers_unknown": "এখনো কোনো সাপ্লায়ার জানা নেই",
+  "console.suppliers_total": "তাদের শেষ দামে প্রায় {amount}",
+  "console.suppliers_open": "WhatsApp-এ খুলুন",
+  "console.suppliers_compare": "একই জিনিস, ভিন্ন সাপ্লায়ার",
+  "console.suppliers_compare_none": "কোনো জিনিস দুজন সাপ্লায়ারের কাছ থেকে কিনলে তাদের দাম এখানে দেখাবে।",
+  "console.suppliers_item": "জিনিস",
+  "console.suppliers_supplier": "সাপ্লায়ার",
+  "console.suppliers_unit": "প্রতি পিস",
+  "console.suppliers_when": "শেষ কেনা",
+  "console.suppliers_cheapest": "সবচেয়ে সস্তা"
 }

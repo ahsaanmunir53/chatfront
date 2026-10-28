@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {ایک بار آیا} other {# بار آیا}}",
   "console.sms_formats_handled": "نمٹ گیا",
   "activity.payment_share_unread": "والیٹ پیغام شیئر کرنے کی اجازت بدلی",
-  "activity.platform_sms_format_handled": "والیٹ پیغام کا فارمیٹ نمٹایا"
+  "activity.platform_sms_format_handled": "والیٹ پیغام کا فارمیٹ نمٹایا",
+  "suppliers.draft": "السلام علیکم۔ {shop} کو یہ چاہیے:\n{lines}\nمہربانی کر کے بھیج دیں اور قیمت بتا دیں۔ شکریہ۔",
+  "suppliers.draft_line": "- {name}: {quantity} پیس",
+  "suppliers.cheaper": "پچھلی بار {supplier} نے کم لیا: {cost} فی پیس، جبکہ {other} سے {other_cost}۔",
+  "console.suppliers_title": "سپلائر",
+  "console.suppliers_lede": "ایک ہی چیز کے لیے ہر سپلائر نے کتنا لیا، آپ کے اسٹاک کے اندراج سے، اور جو کم ہو رہا ہے اس کے لیے ہر سپلائر کو ایک پیغام۔ جب تک آپ نہ بھیجیں کچھ نہیں جاتا۔",
+  "console.suppliers_reorders": "دوبارہ منگوانے کے پیغام",
+  "console.suppliers_no_low": "کچھ کم نہیں ہو رہا۔",
+  "console.suppliers_unknown": "ابھی کوئی سپلائر معلوم نہیں",
+  "console.suppliers_total": "ان کی پچھلی قیمتوں پر تقریباً {amount}",
+  "console.suppliers_open": "واٹس ایپ میں کھولیں",
+  "console.suppliers_compare": "ایک چیز، مختلف سپلائر",
+  "console.suppliers_compare_none": "جب آپ کوئی چیز دو سپلائرز سے خریدیں گے تو ان کی قیمتیں یہاں دکھیں گی۔",
+  "console.suppliers_item": "چیز",
+  "console.suppliers_supplier": "سپلائر",
+  "console.suppliers_unit": "فی پیس",
+  "console.suppliers_when": "آخری خریداری",
+  "console.suppliers_cheapest": "سب سے سستا"
 }

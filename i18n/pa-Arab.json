@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {اک واری آیا} other {# واری آیا}}",
   "console.sms_formats_handled": "نبڑ گیا",
   "activity.payment_share_unread": "والیٹ سنیہے شیئر کرن دی اجازت بدلی",
-  "activity.platform_sms_format_handled": "والیٹ سنیہے دا فارمیٹ نبیڑیا"
+  "activity.platform_sms_format_handled": "والیٹ سنیہے دا فارمیٹ نبیڑیا",
+  "suppliers.draft": "السلام علیکم۔ {shop} نوں ایہہ چاہیدا اے:\n{lines}\nمہربانی کر کے بھیج دیو تے قیمت دس دیو۔ شکریہ۔",
+  "suppliers.draft_line": "- {name}: {quantity} پیس",
+  "suppliers.cheaper": "پچھلی واری {supplier} نے گھٹ لیا: {cost} فی پیس، جدوں کہ {other} توں {other_cost}۔",
+  "console.suppliers_title": "سپلائر",
+  "console.suppliers_lede": "اکو چیز لئی ہر سپلائر نے کِنا لیا، تہاڈے اسٹاک دے اندراج توں، تے جو گھٹ ہو رہیا اے اوہدے لئی ہر سپلائر نوں اک سنیہا۔ جدوں تک تسیں نہ بھیجو کجھ نئیں جاندا۔",
+  "console.suppliers_reorders": "مڑ منگوان دے سنیہے",
+  "console.suppliers_no_low": "کجھ وی گھٹ نئیں ہو رہیا۔",
+  "console.suppliers_unknown": "حالے کوئی سپلائر پتہ نئیں",
+  "console.suppliers_total": "اوہناں دیاں پچھلیاں قیمتاں اُتے تقریباً {amount}",
+  "console.suppliers_open": "واٹس ایپ وچ کھولو",
+  "console.suppliers_compare": "اکو چیز، وکھرے سپلائر",
+  "console.suppliers_compare_none": "جدوں تسیں کوئی چیز دو سپلائراں توں خریدو گے تے اوہناں دیاں قیمتاں ایتھے دِسن گیاں۔",
+  "console.suppliers_item": "چیز",
+  "console.suppliers_supplier": "سپلائر",
+  "console.suppliers_unit": "فی پیس",
+  "console.suppliers_when": "آخری خریداری",
+  "console.suppliers_cheapest": "سب توں سستا"
 }

@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {seen once} other {seen # times}}",
   "console.sms_formats_handled": "Handled",
   "activity.payment_share_unread": "Wallet message sharing changed",
-  "activity.platform_sms_format_handled": "Wallet message format handled"
+  "activity.platform_sms_format_handled": "Wallet message format handled",
+  "suppliers.draft": "Hello. {shop} needs:\n{lines}\nPlease send them and let us know the price. Thank you.",
+  "suppliers.draft_line": "- {name}: {quantity} pieces",
+  "suppliers.cheaper": "{supplier} charged less last time: {cost} a piece, against {other_cost} from {other}.",
+  "console.suppliers_title": "Suppliers",
+  "console.suppliers_lede": "What each supplier charged for the same item, from your restocks, and one message per supplier for what is running low. Nothing is sent until you send it.",
+  "console.suppliers_reorders": "Reorder messages",
+  "console.suppliers_no_low": "Nothing is running low.",
+  "console.suppliers_unknown": "No supplier known yet",
+  "console.suppliers_total": "About {amount} at their last prices",
+  "console.suppliers_open": "Open in WhatsApp",
+  "console.suppliers_compare": "Same item, different suppliers",
+  "console.suppliers_compare_none": "Once you buy an item from two suppliers, their prices show here.",
+  "console.suppliers_item": "Item",
+  "console.suppliers_supplier": "Supplier",
+  "console.suppliers_unit": "A piece",
+  "console.suppliers_when": "Last bought",
+  "console.suppliers_cheapest": "Cheapest"
 }

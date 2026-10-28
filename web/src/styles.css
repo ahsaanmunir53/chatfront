@@ -3268,6 +3268,79 @@ button {
   word-break: break-word;
 }
 
+/* Suppliers: reorder messages and the same item's price from each (feature 53) -------- */
+
+.supplier-reorders {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 720px) {
+  .supplier-reorders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.supplier-reorder {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.supplier-reorder h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.supplier-lines {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.supplier-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.supplier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.supplier-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.supplier-table th,
+.supplier-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: top;
+}
+
+.supplier-cheapest {
+  margin-inline-start: 8px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--stamp) 16%, transparent);
+  font-size: 12px;
+}
+
 /* Money and goods coming back: refunds with their proof, swaps and returns ------------- */
 
 .refund-columns {

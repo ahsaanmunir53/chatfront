@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {एक बार आया} other {# बार आया}}",
   "console.sms_formats_handled": "निपट गया",
   "activity.payment_share_unread": "वॉलेट संदेश साझा करने की अनुमति बदली",
-  "activity.platform_sms_format_handled": "वॉलेट संदेश का फ़ॉर्मैट निपटाया"
+  "activity.platform_sms_format_handled": "वॉलेट संदेश का फ़ॉर्मैट निपटाया",
+  "suppliers.draft": "नमस्ते। {shop} को यह चाहिए:\n{lines}\nकृपया भेज दें और कीमत बता दें। धन्यवाद।",
+  "suppliers.draft_line": "- {name}: {quantity} पीस",
+  "suppliers.cheaper": "पिछली बार {supplier} ने कम लिया: {cost} प्रति पीस, जबकि {other} से {other_cost}।",
+  "console.suppliers_title": "सप्लायर",
+  "console.suppliers_lede": "एक ही चीज़ के लिए हर सप्लायर ने कितना लिया, आपके स्टॉक की एंट्री से, और जो कम हो रहा है उसके लिए हर सप्लायर को एक संदेश। जब तक आप न भेजें, कुछ नहीं जाता।",
+  "console.suppliers_reorders": "दोबारा मँगाने के संदेश",
+  "console.suppliers_no_low": "कुछ भी कम नहीं हो रहा।",
+  "console.suppliers_unknown": "अभी कोई सप्लायर पता नहीं",
+  "console.suppliers_total": "उनकी पिछली कीमतों पर लगभग {amount}",
+  "console.suppliers_open": "WhatsApp में खोलें",
+  "console.suppliers_compare": "एक चीज़, अलग सप्लायर",
+  "console.suppliers_compare_none": "जब आप कोई चीज़ दो सप्लायरों से खरीदेंगे, तो उनकी कीमतें यहाँ दिखेंगी।",
+  "console.suppliers_item": "चीज़",
+  "console.suppliers_supplier": "सप्लायर",
+  "console.suppliers_unit": "प्रति पीस",
+  "console.suppliers_when": "आखिरी खरीद",
+  "console.suppliers_cheapest": "सबसे सस्ता"
 }

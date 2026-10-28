@@ -1840,5 +1840,22 @@
   "console.sms_formats_seen": "{count, plural, one {ek baar aaya} other {# baar aaya}}",
   "console.sms_formats_handled": "Nimat gaya",
   "activity.payment_share_unread": "Wallet paighaam share karne ki ijazat badli",
-  "activity.platform_sms_format_handled": "Wallet paighaam ka format nimtaya"
+  "activity.platform_sms_format_handled": "Wallet paighaam ka format nimtaya",
+  "suppliers.draft": "Assalam o alaikum. {shop} ko yeh chahiye:\n{lines}\nMeharbani kar ke bhej dein aur qeemat bata dein. Shukriya.",
+  "suppliers.draft_line": "- {name}: {quantity} piece",
+  "suppliers.cheaper": "Pichhli baar {supplier} ne kam liya: {cost} fi piece, jabke {other} se {other_cost}.",
+  "console.suppliers_title": "Suppliers",
+  "console.suppliers_lede": "Aik hi cheez ke liye har supplier ne kitna liya, aap ke stock ke indiraj se, aur jo kam ho raha hai us ke liye har supplier ko aik message. Jab tak aap na bhejein kuch nahin jata.",
+  "console.suppliers_reorders": "Dobara mangwane ke messages",
+  "console.suppliers_no_low": "Kuch kam nahin ho raha.",
+  "console.suppliers_unknown": "Abhi koi supplier maloom nahin",
+  "console.suppliers_total": "Un ki pichhli qeematon par taqreeban {amount}",
+  "console.suppliers_open": "WhatsApp mein kholein",
+  "console.suppliers_compare": "Aik cheez, mukhtalif suppliers",
+  "console.suppliers_compare_none": "Jab aap koi cheez do suppliers se khareedenge to un ki qeematein yahan dikhengi.",
+  "console.suppliers_item": "Cheez",
+  "console.suppliers_supplier": "Supplier",
+  "console.suppliers_unit": "Fi piece",
+  "console.suppliers_when": "Aakhri khareedari",
+  "console.suppliers_cheapest": "Sab se sasta"
 }
