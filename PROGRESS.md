@@ -361,6 +361,45 @@ Meta accounts (they need Ahsaan's Instagram, Page, WhatsApp number and Commerce 
 catalog, and Meta wants the app live for comment webhooks); the agent offering the link
 (needs a model key).
 
+## Done on 28 October: payments and returns (28, 29, 100, 92)
+
+Checks after it:
+
+| Check | Result |
+|---|---|
+| API tests | 766 passed, 94.5% coverage (lines and branches) |
+| Lint, format, strict types, `alembic check` | clean |
+| Web types and unit tests | clean, 32 passed |
+| Browser tests, desktop and phone | 58 passed |
+| Order agent evaluation set, replayed | 100/100 |
+
+What it delivered:
+
+- Refunds (28): a refund becomes due on its own when a paid order is cancelled, a returned
+  piece reaches the shop, or more arrives than the order costs. The owner is told what goes
+  back and to whom, and closes it in the console's Money to send back with their transfer
+  screenshot: code checks the amount, a completed transfer, signs of editing and the
+  receiver's name against the payer. Record anyway closes it on the owner's word, and the
+  record and the receipt say so. The customer gets a refund receipt signed with the shop's
+  key; the books count money sent back against cash profit.
+- "I sent too much" (29): only money settled from a wallet SMS or approved by the owner can
+  be owed back. The order agent's `report_overpayment` tool answers from that; a claim with
+  nothing behind it gets a polite no and a scam-check notice to the owner. A screenshot for
+  more than was asked goes to the owner at once. "kya 5000 aaye?" lists the last two days of
+  wallet and bank SMS with what each matched.
+- Part payments (100): a screenshot for part of what is due tells the customer what is still
+  to pay, and both halves land on one order with a receipt each; order status shows paid and
+  still to pay.
+- Swaps and returns (92): the agent's `ask_return` tool, checked by code (delivered, inside
+  the window, a photo for a damaged or wrong piece, what was bought, the new size in stock);
+  Approve and Reject; a swap becomes a cash-on-delivery order at the price paid; a return
+  label for the reverse pickup; Parcel received puts the stock back and makes the refund due.
+- Migration 0015: return requests, refunds, and receipts that belong to a payment or a
+  refund.
+
+Not verified yet: reading refund screenshots and the agent's two new tools on the real model
+(they need a model key); a real reverse pickup with a courier.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
@@ -403,7 +442,7 @@ Proposed order, the Meta platform first since it is what is judged:
 
 1. Meta channels: 76 (one inbox with staff assign), 77 (comment-to-DM), 79 (one customer
    across channels), 6 (WhatsApp catalog and Instagram shop sync). Done on 27 October.
-2. Payments and returns: 28, 29, 100, 92.
+2. Payments and returns: 28, 29, 100, 92. Done on 28 October.
 3. Selling more: 13, 16, 19, 95, 91.
 4. Catalog from what the shop already has: 84, 85, 2, 5, 87, 88.
 5. Shield: 37, 40, 43, 45, 46.
@@ -493,6 +532,26 @@ stays the same.
    and eval lines, and to record the two voice notes per language (script in the eval data).
 
 ## Decisions taken
+
+- A refund goes back to whoever the money came from: the payer on the wallet SMS, else on the
+  screenshot the owner approved, else (cash at the door) the customer's name. It is closed
+  only by the owner, with a screenshot code checks or on their word; Chatfront never sends
+  money itself. A refund sent cannot be undone from the books.
+- Paying the unique-amount rupee off anyway (Rs 5,000 for Rs 4,999) is a round price, not an
+  overpayment: nothing is owed back and the screenshot is not flagged as "more than asked".
+- An undelivered parcel the courier brings back (dispatched to returned) makes no refund by
+  itself; the customer asks through the chat or the owner cancels and refunds.
+- Return windows by business type: clothing and electronics 7 days, wholesale 3, grocery 2,
+  food and services none; the owner's `return_days` overrides. A damaged or wrong item may
+  always be reported within 2 days, with a photo sent in the last 48 hours.
+- A swap goes out as a new cash-on-delivery order before the old piece is back, so the rider
+  can swap at the door; its stock is held from approval. It is priced at what the customer
+  paid for the old piece (a dearer size costs nothing more; a cheaper one leaves the
+  difference owed back). The customer pays delivery for a change of mind and not for the
+  shop's mistake. A swap whose size sold out between asking and approving becomes a return.
+- A return refunds the pieces, not the delivery charge. A returned piece goes back into stock
+  and its batch, damaged or not; the owner corrects the stock by chat for one that cannot be
+  sold. Writing off a single returned piece as a loss is not built.
 
 - A customer's records are joined only by a code sent from WhatsApp, never by a typed phone
   number. The WhatsApp record is kept. Two web chats from two browsers on the same shop stay

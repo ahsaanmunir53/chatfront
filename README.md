@@ -129,6 +129,14 @@ web/src/      React app: shop page with cart and checkout, try-it chat, start pa
 Everything in this repository was written from 27 October 2026, during the Meta Global AI
 Developer Hackathon. The commit history shows the order.
 
+- **28 October, payments and returns:** refunds owed on their own (a paid order cancelled, a
+  piece returned, money beyond the order's cost) and closed with the owner's transfer
+  screenshot, checked by code, or on the owner's word, with a signed refund receipt; "I sent
+  too much, send it back" answered from what really reached the shop's wallets; part payments
+  that ask for the balance and link both halves to one order; size and colour swaps and
+  returns from the chat, inside the shop's return window, with a photo for a damaged piece,
+  the owner's Approve and Reject, a return label for the reverse pickup, and the stock and
+  the money coming back when the parcel does.
 - **27 October, Meta channels:** one inbox for WhatsApp, Instagram, Messenger and web chats,
   where a person takes a chat or the owner gives it to someone; "price?" under an Instagram or
   Facebook post answered by a private reply with the product; one customer across channels,
