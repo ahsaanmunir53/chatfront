@@ -60,8 +60,11 @@ def to_collect(order: Order) -> int:
 
 
 async def shipment_for(session: AsyncSession, order: Order) -> Shipment:
-    """The order's parcel, made the first time it is needed; what to collect is kept current."""
+    """The order's parcel, made the first time it is needed. What to collect is kept current
+    until the parcel is delivered or comes back; after that it stays what the rider was to
+    collect, which the courier's payment is checked against (feature 32)."""
     shipment = await session.scalar(select(Shipment).where(Shipment.order_id == order.id))
+    fresh = shipment is None
     if shipment is None:
         shipment = Shipment(
             tenant_id=order.tenant_id,
@@ -69,7 +72,8 @@ async def shipment_for(session: AsyncSession, order: Order) -> Shipment:
             public_code=short_code(PUBLIC_CODE_LENGTH),
         )
         session.add(shipment)
-    shipment.cod_amount = to_collect(order)
+    if fresh or order.status not in (OrderStatus.DELIVERED, OrderStatus.RETURNED):
+        shipment.cod_amount = to_collect(order)
     await session.flush()
     return shipment
 
@@ -102,17 +106,38 @@ async def move(
 ) -> Moved:
     """The owner moves an order on. Stock comes back on a return or a cancellation. A
     dispatch may carry what the courier charged (feature 51)."""
+    actor = Actor(ActorType.STAFF, str(staff_id))
+    return await move_as(
+        services, tenant_id, code, wanted, actor, courier=courier, tracking=tracking, charge=charge
+    )
+
+
+async def move_as(
+    services: Services,
+    tenant_id: uuid.UUID,
+    code: str,
+    wanted: OrderStatus,
+    actor: Actor,
+    *,
+    courier: str = "",
+    tracking: str = "",
+    charge: int | None = None,
+) -> Moved:
+    """A move the owner makes, by the owner or for them: a courier saying a parcel was
+    delivered or came back (feature 31)."""
     if wanted not in OWNER_MOVES:
         raise AppError("invalid_transition", "Not a move the owner makes", status_code=409)
     async with services.db.tenant(tenant_id) as session:
         tenant = await session.get(Tenant, tenant_id)
         assert tenant is not None
         order = await order_by_code(session, code)
-        actor = Actor(ActorType.STAFF, str(staff_id))
-        await orders.move(session, order, wanted, actor, reason="owner")
+        reason = "owner" if actor.type == ActorType.STAFF else str(actor.type)
+        await orders.move(session, order, wanted, actor, reason=reason)
         shipment = await shipment_for(session, order)
-        if wanted == OrderStatus.DELIVERED and shipment.cod_amount:
-            await _cash_at_door(session, tenant, order, shipment.cod_amount, actor)
+        if wanted == OrderStatus.DELIVERED:
+            shipment.cod_amount = to_collect(order)  # what the rider took at the door
+            if shipment.cod_amount:
+                await _cash_at_door(session, tenant, order, shipment.cod_amount, actor)
         if wanted in (OrderStatus.DELIVERED, OrderStatus.RETURNED):
             await buyers.review(session, tenant, order.customer_id, actor)
         _stamp(shipment, wanted, courier=courier, tracking=tracking)
