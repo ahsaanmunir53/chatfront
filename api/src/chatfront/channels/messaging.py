@@ -31,6 +31,7 @@ from chatfront.core.http import request
 
 log = logging.getLogger(__name__)
 
+POST_FIELDS = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp"
 QUICK_REPLY_TITLE_MAX = 20
 QUICK_REPLIES_MAX = 13
 _ATTACHMENT_KINDS = {
@@ -38,6 +39,8 @@ _ATTACHMENT_KINDS = {
     "audio": Kind.AUDIO,
     "video": Kind.VIDEO,
     "file": Kind.DOCUMENT,
+    "ig_reel": Kind.VIDEO,  # a reel the customer shared: its video is read (feature 88)
+    "reel": Kind.VIDEO,
 }
 
 
@@ -137,6 +140,8 @@ class MetaMessagingAdapter:
             kind = _ATTACHMENT_KINDS.get(first.get("type", ""), Kind.UNSUPPORTED)
             url = (first.get("payload") or {}).get("url")
             payload["attachment_type"] = first.get("type")
+            if reel := (first.get("payload") or {}).get("reel_video_id"):
+                payload["reel_id"] = str(reel)  # the shop's own reel names its product
             if kind is Kind.UNSUPPORTED and url:
                 payload["url"] = url  # a shared post, reel or story mention
             return Inbound(
@@ -248,6 +253,19 @@ class MetaMessagingAdapter:
             caption if isinstance(caption, str) else None,
             link if isinstance(link, str) else None,
         )
+
+    async def recent_posts(self, account: AccountRef, limit: int) -> list[dict[str, Any]]:
+        """The account's latest posts and reels, newest first, with their captions and
+        pictures (Instagram; feature 84)."""
+        response = await request(
+            self.http,
+            "GET",
+            f"{self.base}/{account.external_id}/media",
+            service=self.channel,
+            params={"fields": POST_FIELDS, "limit": str(limit)},
+            headers=self._bearer(account),
+        )
+        return [post for post in response.json().get("data") or [] if isinstance(post, dict)]
 
     async def download_media(self, account: AccountRef, media_ref: str) -> bytes:
         """Attachment links are signed CDN URLs, so no token is sent with them."""
