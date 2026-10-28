@@ -22,7 +22,7 @@ from chatfront.ai.client import ModelUnavailable
 from chatfront.ai.types import ImagePart
 from chatfront.channels.types import Kind, Outbound, OutText
 from chatfront.core.clock import utcnow
-from chatfront.core.countries import get_pack
+from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
@@ -232,6 +232,7 @@ def _signals(tenant: Tenant, order: Order, picture: Picture) -> list[Signal]:
         placed_at=order.placed_at,
         now=utcnow(),
         timezone=pack.timezone,
+        rounding=order.unique_off,
     )
     return forensics.signals(picture.reading, expected)
 
@@ -268,6 +269,9 @@ async def _decide(
     # With no forwarder, no SMS will ever come: only the owner can say the money arrived.
     extra = () if tenant.sms_secret_hash else (Signal("no_forwarder"),)
     if not (codes & STRONG or "unread" in codes or extra):
+        if "part_payment" in codes and claim.amount and order.due_now:
+            rest = shop_money(tenant, order.due_now - claim.amount, lang)
+            return [OutText(t("payment.checking_part", lang, code=order.code, rest=rest))]
         return [OutText(t("payment.checking", lang, code=order.code))]
     await to_review(session, claim, *extra)
     return [OutText(t("payment.with_owner", lang, code=order.code))]

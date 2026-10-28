@@ -58,7 +58,14 @@ class Signal:
 
 # Signals that send a claim to the owner at once instead of waiting for the SMS.
 STRONG = frozenset(
-    {"not_successful", "looks_edited", "other_receiver", "reused_here", "reused_elsewhere"}
+    {
+        "not_successful",
+        "looks_edited",
+        "other_receiver",
+        "reused_here",
+        "reused_elsewhere",
+        "more_than_due",
+    }
 )
 
 
@@ -128,6 +135,7 @@ class Expected:
     placed_at: datetime | None
     now: datetime
     timezone: str
+    rounding: int = 0  # the unique-amount rupee off (feature 97): paying it too is rounding up
 
 
 def signals(reading: PaymentReading, expected: Expected) -> list[Signal]:
@@ -139,6 +147,10 @@ def signals(reading: PaymentReading, expected: Expected) -> list[Signal]:
     amount = round(reading.amount * 10**expected.digits) if reading.amount is not None else None
     if amount is None:
         found.append(Signal("amount_unreadable"))
+    elif expected.due is not None and 0 < amount < expected.due:
+        found.append(Signal("part_payment", str(amount)))  # feature 100: the rest stays due
+    elif expected.due is not None and amount > expected.due + expected.rounding:
+        found.append(Signal("more_than_due", str(amount)))  # feature 29: a scam's first step
     elif expected.due is not None and amount != expected.due:
         found.append(Signal("amount_differs", str(amount)))
     if not reading.transaction_id:

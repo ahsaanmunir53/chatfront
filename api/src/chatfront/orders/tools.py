@@ -85,7 +85,7 @@ class AgentContext:
         return CardMaker(self.tenant, self.lang)
 
 
-def _error(code: str, **detail: Any) -> dict[str, Any]:
+def tool_error(code: str, **detail: Any) -> dict[str, Any]:
     return {"ok": False, "error": code, **detail}
 
 
@@ -159,7 +159,7 @@ def _variant_for(
     """The variant the options name, or an error saying what to ask the customer."""
     active = [v for v in item.variants if v.active]
     if not active:
-        return None, _error("not_for_sale")
+        return None, tool_error("not_for_sale")
     if len(active) == 1 and not wanted:
         return active[0], None
     asked = {k.casefold(): str(v).strip().casefold() for k, v in wanted.items() if str(v).strip()}
@@ -174,8 +174,8 @@ def _variant_for(
     if len(matching) == 1:
         return matching[0], None
     if not matching:
-        return None, _error("no_such_option", available=_options(item))
-    return None, _error("choose_option", available=_options(item))
+        return None, tool_error("no_such_option", available=_options(item))
+    return None, tool_error("choose_option", available=_options(item))
 
 
 async def _cart(ctx: AgentContext) -> dict[str, Any]:
@@ -255,10 +255,10 @@ async def update_cart(ctx: AgentContext, params: CartLine) -> dict[str, Any]:
 async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, Any]:
     item = _by_code(await _items(ctx), params.product_code)
     if item is None:
-        return _error("unknown_product", hint="find the product first")
+        return tool_error("unknown_product", hint="find the product first")
     variant, problem = _variant_for(item, params.options)
     if variant is None:
-        return problem or _error("not_for_sale")
+        return problem or tool_error("not_for_sale")
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
@@ -270,14 +270,14 @@ async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, A
         quantity = params.quantity + (current.quantity if add and current else 0)
         if variant.stock is not None and quantity > variant.stock:
             ctx.facts.count(variant.stock)
-            return _error("not_enough_stock", pieces_left=variant.stock)
+            return tool_error("not_enough_stock", pieces_left=variant.stock)
         agreed = await orders.agreed_price(session, ctx.conversation_id, item.product.id)
         try:
             await orders.set_quantity(
                 session, cart, variant.id, min(quantity, orders.MAX_QUANTITY), agreed_price=agreed
             )
         except AppError as exc:
-            return _error(exc.code)
+            return tool_error(exc.code)
     return await _cart(ctx)
 
 
@@ -387,7 +387,7 @@ class Offer(BaseModel):
 async def make_offer(ctx: AgentContext, params: Offer) -> dict[str, Any]:
     item = _by_code(await _items(ctx), params.product_code)
     if item is None:
-        return _error("unknown_product")
+        return tool_error("unknown_product")
     digits = get_pack(ctx.tenant.country).minor_digits
     amount = round(params.price * 10**digits)
     ctx.facts.money(amount)
@@ -452,7 +452,7 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
     """Show the customer a summary card. Only their tap on Place order places the order."""
     taken = accepted_methods(ctx.tenant, trusted=ctx.trusted)
     if params.payment_method not in taken:
-        return _error("payment_method_not_taken", taken=taken)
+        return tool_error("payment_method_not_taken", taken=taken)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
@@ -460,7 +460,7 @@ async def checkout(ctx: AgentContext, params: Checkout) -> dict[str, Any]:
         lines = await orders.lines(session, cart)
         missing = _missing(ctx, cart, lines)
         if missing:
-            return _error("details_missing", missing=missing)
+            return tool_error("details_missing", missing=missing)
         action = await actions.open_action(
             session,
             tenant_id=ctx.tenant.id,
@@ -518,6 +518,8 @@ async def order_status(ctx: AgentContext, params: OrderRef) -> dict[str, Any]:
                 "code": order.code,
                 "status": order.status,
                 "total": ctx.money(order.total),
+                "paid": ctx.money(order.paid),  # feature 100: what came in so far
+                "to_pay_now": ctx.money(order.due_now) if order.due_now else None,
                 "can_change": order.status in orders.CHANGEABLE,
             }
         )
@@ -531,10 +533,10 @@ class OrderCode(BaseModel):
 async def cancel_order(ctx: AgentContext, params: OrderCode) -> dict[str, Any]:
     found = await _orders(ctx, params.order_code)
     if not found:
-        return _error("unknown_order")
+        return tool_error("unknown_order")
     order = found[0]
     if order.status not in orders.CHANGEABLE:
-        return _error("too_late_or_paid", status=order.status, next_step="hand_over")
+        return tool_error("too_late_or_paid", status=order.status, next_step="hand_over")
     async with ctx.db.tenant(ctx.tenant.id) as session:
         action = await actions.open_action(
             session,
@@ -558,18 +560,18 @@ class OrderChange(BaseModel):
 async def change_order(ctx: AgentContext, params: OrderChange) -> dict[str, Any]:
     found = await _orders(ctx, params.order_code)
     if not found:
-        return _error("unknown_order")
+        return tool_error("unknown_order")
     order = found[0]
     if order.status not in orders.CHANGEABLE:
-        return _error("too_late_or_paid", status=order.status, next_step="hand_over")
+        return tool_error("too_late_or_paid", status=order.status, next_step="hand_over")
     item = _by_code(await _items(ctx), params.product_code)
     async with ctx.db.tenant(ctx.tenant.id) as session:
         lines = await orders.lines(session, order)
         line = next((ln for ln in lines if item and ln.product_id == item.product.id), None)
         if line is None:
-            return _error("not_in_this_order")
+            return tool_error("not_in_this_order")
         if params.quantity == 0 and len(lines) == 1:
-            return _error("would_empty_order", next_step="cancel_order")
+            return tool_error("would_empty_order", next_step="cancel_order")
         action = await actions.open_action(
             session,
             tenant_id=ctx.tenant.id,
@@ -598,11 +600,11 @@ async def link_whatsapp(ctx: AgentContext, params: NoArguments) -> dict[str, Any
     this chat's record to the customer's WhatsApp one."""
     del params
     if ctx.channel == Channel.WHATSAPP:
-        return _error("already_whatsapp")
+        return tool_error("already_whatsapp")
     async with ctx.db.tenant(ctx.tenant.id) as session:
         number = await identity.whatsapp_number(session)
         if number is None:
-            return _error("no_whatsapp", next_step="say the shop has no WhatsApp number yet")
+            return tool_error("no_whatsapp", next_step="say the shop has no WhatsApp number yet")
         code = await identity.start_link(
             session,
             ctx.tenant.id,

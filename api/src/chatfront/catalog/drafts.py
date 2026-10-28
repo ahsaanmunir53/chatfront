@@ -105,6 +105,7 @@ Report = Literal[
     "products",
     "orders",
     "batches",
+    "wallet_sms",
 ]
 
 
