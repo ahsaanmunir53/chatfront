@@ -19,8 +19,9 @@ from chatfront.ai.prompts import load_prompt
 from chatfront.ai.translate import Translation, translate
 from chatfront.ai.types import ChatMessage, ChatRequest, Role
 from chatfront.audit.service import AGENT, Actor, ActorType, record
+from chatfront.channels import answers
 from chatfront.channels import service as channels
-from chatfront.channels.language import reply_language
+from chatfront.channels.language import reply_language, staff_language
 from chatfront.channels.models import (
     Channel,
     ChannelAccount,
@@ -49,10 +50,6 @@ log = logging.getLogger(__name__)
 # Conversation statuses: the agent answers an open chat and stays quiet in a handed-over one.
 OPEN = "open"
 HANDOVER = "handover"
-
-
-def staff_language(staff: Staff, tenant: Tenant) -> str:
-    return staff.lang or tenant.default_lang
 
 
 async def show_to_staff(
@@ -313,4 +310,5 @@ async def resume(
         )
         lang = reply_language(conversation, tenant)
     await send_to(services, tenant_id, conversation.id, OutText(t("handover.back", lang)), lang)
+    await answers.propose(services, tenant_id, handover_id)  # feature 91
     return True

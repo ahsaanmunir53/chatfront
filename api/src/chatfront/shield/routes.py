@@ -15,6 +15,8 @@ from sqlalchemy import case, func, select
 from chatfront.audit.service import Actor, ActorType, record
 from chatfront.books.models import UdhaarAccount
 from chatfront.catalog.stock import SHOP_LIMIT, shop_limit
+from chatfront.channels import answers
+from chatfront.channels.models import SavedAnswer
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.orders.models import Order
@@ -169,6 +171,46 @@ async def decide(
     if outcome == approvals.Answered.NOT_ALLOWED:
         raise AppError("forbidden", "Your role in this shop does not allow this", status_code=403)
     return {"outcome": str(outcome)}
+
+
+# -- answers the owner approved for reuse (feature 91) -----------------------------------
+
+
+class AnswerOut(BaseModel):
+    id: uuid.UUID
+    question: str
+    answer: str
+    created_at: datetime
+
+
+@router.get("/answers")
+async def saved_answers(session: SettingsDep, services: ServicesDep) -> list[AnswerOut]:
+    async with services.db.tenant(session.tenant_id) as db:
+        return [
+            AnswerOut(id=a.id, question=a.question, answer=a.answer, created_at=a.created_at)
+            for a in await answers.approved(db)
+        ]
+
+
+@router.delete("/answers/{answer_id}")
+async def remove_answer(
+    answer_id: uuid.UUID, session: SettingsDep, services: ServicesDep
+) -> dict[str, bool]:
+    """The assistant stops giving this answer at once."""
+    async with services.db.tenant(session.tenant_id) as db:
+        found = await db.get(SavedAnswer, answer_id)
+        if found is None:
+            raise NotFound("answer")
+        await db.delete(found)
+        await record(
+            db,
+            session.tenant_id,
+            Actor(ActorType.STAFF, str(session.staff_id)),
+            "answer.removed",
+            entity=("saved_answer", str(answer_id)),
+            data={"question": found.question},
+        )
+    return {"removed": True}
 
 
 # -- customers and the verified-buyer badge (feature 38) ---------------------------------
