@@ -250,6 +250,9 @@ class PostComment(Base):
         ForeignKey("conversations.id", ondelete="SET NULL")
     )
     message_id: Mapped[str | None] = mapped_column(String(160))
+    # A live sale's claim (feature 8): the reply code already decided, sent as the private
+    # reply in place of the product card.
+    claim_reply: Mapped[str | None] = mapped_column(Text)
     commented_at: Mapped[datetime]
     replied_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
@@ -273,4 +276,26 @@ class SavedAnswer(Base):
     approved_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("staff.id", ondelete="SET NULL")
     )
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class Lead(Base):
+    """Where a chat began (features 78 and 81): a story reply, a story mention, an ad, or the
+    shop's own link with a ref. Orders are credited to the latest one."""
+
+    __tablename__ = "leads"
+    __table_args__ = (Index("ix_leads_customer", "tenant_id", "customer_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL")
+    )
+    channel: Mapped[str] = mapped_column(String(20))
+    kind: Mapped[str] = mapped_column(String(20))
+    ref: Mapped[str] = mapped_column(String(120), default="")
+    title: Mapped[str] = mapped_column(String(200), default="")
+    url: Mapped[str] = mapped_column(Text, default="")
+    text: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = created_at_column()

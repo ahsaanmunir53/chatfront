@@ -6,8 +6,11 @@ from chatfront.books.models import LedgerEntry, UdhaarAccount
 from chatfront.catalog.models import (
     CatalogImport,
     CommerceCatalog,
+    FlashSale,
     ImportDraft,
     Product,
+    SaleHold,
+    SaleItem,
     StockMovement,
     Variant,
 )
@@ -17,6 +20,7 @@ from chatfront.channels.models import (
     CustomerIdentity,
     Handover,
     IdentityLink,
+    Lead,
     Message,
     PostComment,
     SavedAnswer,
@@ -48,6 +52,7 @@ from chatfront.payments.models import (
     Refund,
     WalletCredit,
 )
+from chatfront.publish.models import Publication
 from chatfront.push.models import PushSubscription
 from chatfront.shield.models import Approval, Consent, FraudListEntry, FraudReport, Review
 from chatfront.sim.models import SimChat, SimRun
@@ -72,6 +77,7 @@ __all__ = [
     "CronRun",
     "Customer",
     "CustomerIdentity",
+    "FlashSale",
     "FraudListEntry",
     "FraudReport",
     "GroupOrder",
@@ -79,6 +85,7 @@ __all__ = [
     "IdentityLink",
     "ImportDraft",
     "Job",
+    "Lead",
     "LedgerEntry",
     "LoyaltyEntry",
     "Media",
@@ -93,11 +100,14 @@ __all__ = [
     "PostComment",
     "PriceOffer",
     "Product",
+    "Publication",
     "PushSubscription",
     "Receipt",
     "Refund",
     "ReturnRequest",
     "Review",
+    "SaleHold",
+    "SaleItem",
     "SavedAnswer",
     "Shipment",
     "SimChat",

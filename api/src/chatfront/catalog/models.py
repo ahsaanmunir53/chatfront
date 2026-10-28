@@ -175,3 +175,64 @@ class ImportDraft(Base):
         ForeignKey("products.id", ondelete="SET NULL")
     )
     created_at: Mapped[datetime] = created_at_column()
+
+
+class FlashSale(Base):
+    """A flash sale or a live sale (feature 8): a set price on some products between two
+    times, the pieces going to whoever takes them first. In a live sale each product has a
+    number the presenter says, and a customer claims it by writing the number."""
+
+    __tablename__ = "flash_sales"
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    live: Mapped[bool] = mapped_column(default=False)
+    starts_at: Mapped[datetime]
+    ends_at: Mapped[datetime]
+    hold_minutes: Mapped[int]  # how long a taken piece waits for its order
+    stopped_at: Mapped[datetime | None]
+    staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class SaleItem(Base):
+    __tablename__ = "sale_items"
+    __table_args__ = (
+        UniqueConstraint("sale_id", "product_id"),
+        UniqueConstraint("sale_id", "number"),
+    )
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    sale_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("flash_sales.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"))
+    number: Mapped[int]  # what a customer writes to claim it in a live sale
+    price: Mapped[int] = mapped_column(BigInteger)  # the sale price of every variant
+    units: Mapped[int]  # pieces at this price, all variants together
+    per_customer: Mapped[int]
+
+
+class SaleHold(Base):
+    """Pieces a customer took at the sale price: held for their cart until it becomes an order
+    or the hold runs out. A placed order's hold has no end; a cancelled one's is deleted."""
+
+    __tablename__ = "sale_holds"
+    __table_args__ = (UniqueConstraint("item_id", "order_id"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("sale_items.id", ondelete="CASCADE"), index=True
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"))
+    quantity: Mapped[int]
+    expires_at: Mapped[datetime | None]  # None once the order is placed
+    created_at: Mapped[datetime] = created_at_column()

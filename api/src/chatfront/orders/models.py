@@ -63,6 +63,9 @@ class Order(Base):
         ForeignKey("group_orders.id", ondelete="SET NULL"), index=True
     )
     group_member: Mapped[str] = mapped_column(String(80), default="", server_default="")
+    # The story, ad or link that brought the customer, credited when the order is placed
+    # (feature 81): {"lead", "kind", "ref", "title"}.
+    attribution: Mapped[dict[str, Any] | None]
     # How likely a cash-on-delivery order is to come back unpaid, 0 to 100, with the reasons
     # code found (feature 34): [{"code": ..., "points": ...}].
     risk_score: Mapped[int] = mapped_column(default=0, server_default="0")
