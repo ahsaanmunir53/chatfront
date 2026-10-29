@@ -20,6 +20,6 @@ export default defineConfig({
     fs: { allow: [".."] },
     proxy: { "/api": api, "/media": api, "/health": api },
   },
-  build: { outDir: "dist", sourcemap: true },
+  build: { outDir: "dist", sourcemap: false },
   test: { include: ["src/**/*.test.ts"] },
 });

@@ -6,6 +6,7 @@ from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -130,6 +131,26 @@ class Settings(BaseSettings):
             origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()
         ]
 
+    @field_validator("cors_origins")
+    @classmethod
+    def _validate_cors_origins(cls, value: str, info: object) -> str:
+        env = info.data.get("env", "dev")  # type: ignore[attr-defined]
+        origins = [part.strip() for part in value.split(",") if part.strip()]
+        for origin in origins:
+            parsed = urlsplit(origin)
+            if (
+                origin == "*"
+                or parsed.scheme not in ({"https"} if env == "prod" else {"http", "https"})
+                or not parsed.netloc
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.path not in ("", "/")
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError("CORS_ORIGINS must contain explicit safe origins, never wildcards")
+        return ",".join(origins)
+
     @field_validator("database_url")
     @classmethod
     def _use_asyncpg(cls, value: str) -> str:
@@ -144,8 +165,9 @@ class Settings(BaseSettings):
             return
         for name in ("secret_key", "phone_hash_key", "cron_secret"):
             secret: SecretStr = getattr(self, name)
-            if secret.get_secret_value().startswith("dev-only") or len(secret) < 32:
-                raise RuntimeError(f"{name.upper()} must be set to a random value of 32+ chars")
+            value = secret.get_secret_value()
+            if value.startswith("dev-only") or len(value.encode("utf-8")) < 32:
+                raise RuntimeError(f"{name.upper()} must be set to a random value of at least 32 bytes")
 
 
 @lru_cache
