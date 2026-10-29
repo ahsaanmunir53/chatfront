@@ -55,6 +55,7 @@ class RateLimited(AppError):
 def install_error_handlers(app: FastAPI) -> None:
     async def handle(_: Request, exc: Exception) -> JSONResponse:
         assert isinstance(exc, AppError)
-        return JSONResponse(exc.to_dict(), status_code=exc.status_code)
+        headers = {"Retry-After": "60"} if exc.status_code == 429 else None
+        return JSONResponse(exc.to_dict(), status_code=exc.status_code, headers=headers)
 
     app.add_exception_handler(AppError, handle)

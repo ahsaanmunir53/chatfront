@@ -66,3 +66,20 @@ async def test_security_headers_are_set_on_api_responses() -> None:
     assert response.headers["referrer-policy"] == "no-referrer"
     assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
     assert "strict-transport-security" not in response.headers
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_error_includes_retry_after() -> None:
+    from chatfront.core.errors import RateLimited
+
+    app = create_app(Settings(env="test", worker_enabled=False))
+
+    @app.get("/security-rate-limit-test")
+    async def rate_limit_test() -> None:
+        raise RateLimited()
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/security-rate-limit-test")
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "60"
