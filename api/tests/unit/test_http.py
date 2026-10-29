@@ -50,9 +50,7 @@ async def test_upstream_error_body_is_not_exposed_or_logged(
     respx.get("https://x.test/private").mock(return_value=httpx.Response(500, text=secret))
     async with httpx.AsyncClient() as client:
         with pytest.raises(UpstreamError) as caught:
-            await request(
-                client, "GET", "https://x.test/private", service="x", backoff_seconds=0
-            )
+            await request(client, "GET", "https://x.test/private", service="x", backoff_seconds=0)
     assert secret not in caught.value.message
     assert "+923001234567" not in caught.value.message
     assert secret not in caplog.text
