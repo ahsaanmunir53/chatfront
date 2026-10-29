@@ -2113,13 +2113,13 @@ export const api = {
     id: string,
     change: { name?: string; city?: string | null; address?: string | null; active?: boolean; is_default?: boolean },
   ) =>
-    call<NetworkBranch>(\`/api/network/branches/\${encodeURIComponent(id)}\`, {
+    call<NetworkBranch>(`/api/network/branches/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: bearer(token),
       body: JSON.stringify(change),
     }),
   assignStaffBranch: (token: string, staffId: string, branchId: string | null) =>
-    call<{ saved: boolean }>(\`/api/network/team/\${encodeURIComponent(staffId)}/branch\`, {
+    call<{ saved: boolean }>(`/api/network/team/${encodeURIComponent(staffId)}/branch`, {
       method: "PUT",
       headers: bearer(token),
       body: JSON.stringify({ branch_id: branchId }),
@@ -2160,7 +2160,7 @@ export const api = {
       active?: boolean;
     },
   ) =>
-    call<WholesaleListing>(\`/api/network/listings/\${encodeURIComponent(id)}\`, {
+    call<WholesaleListing>(`/api/network/listings/${encodeURIComponent(id)}`, {
       method: "PUT",
       headers: bearer(token),
       body: JSON.stringify(change),
@@ -2170,7 +2170,7 @@ export const api = {
     listingId: string,
     order: { quantity: number; initial_offer_unit_price: number; budget_unit_price: number; branch_id?: string | null },
   ) =>
-    call<NetworkOrder>(\`/api/network/listings/\${encodeURIComponent(listingId)}/orders\`, {
+    call<NetworkOrder>(`/api/network/listings/${encodeURIComponent(listingId)}/orders`, {
       method: "POST",
       headers: bearer(token),
       body: JSON.stringify(order),
@@ -2180,21 +2180,21 @@ export const api = {
   sellerNetworkOrders: (token: string) =>
     call<NetworkOrder[]>("/api/network/seller/orders", { headers: bearer(token) }),
   networkOrderRounds: (token: string, orderId: string) =>
-    call<NetworkRound[]>(\`/api/network/orders/\${encodeURIComponent(orderId)}/rounds\`, {
+    call<NetworkRound[]>(`/api/network/orders/${encodeURIComponent(orderId)}/rounds`, {
       headers: bearer(token),
     }),
   approveNetworkOrder: (token: string, orderId: string) =>
-    call<NetworkOrder>(\`/api/network/seller/orders/\${encodeURIComponent(orderId)}/approve\`, {
+    call<NetworkOrder>(`/api/network/seller/orders/${encodeURIComponent(orderId)}/approve`, {
       method: "POST",
       headers: bearer(token),
     }),
   rejectNetworkOrder: (token: string, orderId: string) =>
-    call<NetworkOrder>(\`/api/network/seller/orders/\${encodeURIComponent(orderId)}/reject\`, {
+    call<NetworkOrder>(`/api/network/seller/orders/${encodeURIComponent(orderId)}/reject`, {
       method: "POST",
       headers: bearer(token),
     }),
   confirmNetworkOrder: (token: string, orderId: string) =>
-    call<NetworkPayment>(\`/api/network/buyer/orders/\${encodeURIComponent(orderId)}/confirm\`, {
+    call<NetworkPayment>(`/api/network/buyer/orders/${encodeURIComponent(orderId)}/confirm`, {
       method: "POST",
       headers: bearer(token),
     }),
