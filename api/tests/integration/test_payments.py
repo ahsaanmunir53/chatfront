@@ -115,6 +115,8 @@ async def test_an_unverified_sms_goes_to_the_owner_who_approves_in_the_console(
     guest, order = await order_by_transfer(client, services, slug)
     sms = jazzcash("4,999.00")
     url = f"/webhooks/sms/{slug}"
+    missing = await client.post(url, json=sms)
+    assert missing.status_code == 403
     wrong = await client.post(url, json=sms, headers={"X-Chatfront-Secret": "wrong"})
     assert wrong.status_code == 403
     taken = await client.post(url, json=sms, headers={"X-Chatfront-Secret": setup["secret"]})
