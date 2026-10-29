@@ -106,6 +106,7 @@ class Staff(Base):
     phone_hash: Mapped[str | None] = mapped_column(String(64))
     lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # None: the shop's default
     active: Mapped[bool] = mapped_column(default=True)
+    session_version: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = created_at_column()
 
 
