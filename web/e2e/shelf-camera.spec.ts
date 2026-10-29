@@ -67,7 +67,7 @@ test("phone shelf mode changes stock only after owner confirmation", async ({ pa
   await expect(panel.getByRole("status").filter({ hasText: "Tally updated." })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(panel.getByRole("row").filter({ hasText: "Lawn suit" })).toContainText("4");
+  await expect(panel.getByRole("row").filter({ hasText: "Lawn suit" }).locator("input")).toHaveValue("4");
   expect(saves).toBe(0);
 
   await panel.getByRole("button", { name: "Stop camera" }).click();
