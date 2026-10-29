@@ -351,3 +351,40 @@ async def test_staff_roles_are_forbidden_outside_their_rights(
 
     response = await client.get(forbidden_path, headers=staff_auth)
     assert response.status_code == 403, f"{role} unexpectedly accessed {forbidden_path}: {response.text}"
+
+
+async def test_sensitive_actions_require_a_fresh_sign_in_link(
+    app: tuple[Client, Services], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import chatfront.owner.sessions as owner_sessions
+
+    client, services = app
+    _, owner_auth = await sign_in(client)
+    raw = owner_auth["Authorization"].removeprefix("Bearer ")
+    current = owner_sessions.verify(raw, services.settings.secret_key.get_secret_value())
+    actual_clock = owner_sessions.utcnow
+    monkeypatch.setattr(
+        owner_sessions,
+        "utcnow",
+        lambda: actual_clock() - timedelta(minutes=16),
+    )
+    stale_token = owner_sessions.issue(
+        current.staff_id,
+        current.tenant_id,
+        services.settings.secret_key.get_secret_value(),
+        session_version=current.session_version,
+    )
+    monkeypatch.setattr(owner_sessions, "utcnow", actual_clock)
+    stale_auth = {"Authorization": f"Bearer {stale_token}"}
+
+    team_change = await client.post(
+        "/api/owner/team",
+        headers=stale_auth,
+        json={"name": "Stale Link Member", "role": "sales"},
+    )
+    assert team_change.status_code == 403
+    assert team_change.json()["error"]["code"] == "fresh_link_required"
+
+    payment_settings = await client.post("/api/owner/sms-forwarding", headers=stale_auth)
+    assert payment_settings.status_code == 403
+    assert payment_settings.json()["error"]["code"] == "fresh_link_required"
