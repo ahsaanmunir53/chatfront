@@ -7,7 +7,6 @@ import json
 from pydantic import SecretStr
 from sqlalchemy import select
 
-from chatfront.core.models import Tenant
 from chatfront.orders.models import Order
 from chatfront.services import Services
 from tests.integration.chat import Client, customer, shop_id, sign_in
@@ -133,7 +132,7 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
     assert discovered.status_code == 200, discovered.text
     match = next(item for item in discovered.json() if item["id"] == listing["id"])
     assert match["seller_slug"] == seller_slug
-    assert match["seller_tenant_id"] != buyer_slug
+    assert match["seller_slug"] != buyer_slug
     assert "minimum_unit_price" not in match
 
     buyer_branch_response = await client.post(
