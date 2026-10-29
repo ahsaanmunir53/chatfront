@@ -2,6 +2,14 @@
 
 Updated after every phase so a new session can carry on from here.
 
+## Security checklist continuation (29 October)
+
+- The latest branch CI run before the newest commits passed API (Ruff, strict mypy, coverage, pip-audit and evaluation replay), web (typecheck, Vitest, production build, source-map guard and npm audit), and Gitleaks. E2E was still running at the time of the check; see [run 40858710174](https://github.com/ahsaanmunir53/chatfront/actions/runs/40858710174).
+- Tightened `POST /api/owner/team/{staff_id}/link` to require a recent sign-in link, matching the guard on team creation/removal and the existing payment/data-erasure controls.
+- Added integration coverage asserting that a stale but otherwise valid owner session receives `403 fresh_link_required` when attempting to regenerate a staff link.
+- New commit-triggered CI run: [40860785115](https://github.com/ahsaanmunir53/chatfront/actions/runs/40860785115). Do not consider this change validated until all jobs, including Playwright, finish green.
+- The security checklist remains conservative; outstanding Partial rows are not being relabeled complete without route-by-route evidence.
+
 ## Where things stand (27 October, end of Phase 0)
 
 Phase 0, the foundation, is done and every check passes:
