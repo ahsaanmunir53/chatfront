@@ -150,3 +150,39 @@ def test_session_verification_preserves_issue_time_and_version() -> None:
     assert session.issued_at is not None
     assert session.staff_id == staff_id
     assert session.tenant_id == tenant_id
+
+
+def test_owner_route_permissions_are_explicit() -> None:
+    from fastapi.routing import APIRoute
+
+    from chatfront.main import create_app
+    from chatfront.core.settings import Settings
+
+    app = create_app(Settings(env="test", worker_enabled=False))
+    violations: list[str] = []
+
+    def dependency_tree(dependant: object) -> list[object]:
+        children = list(getattr(dependant, "dependencies", ()))
+        result = [dependant]
+        for child in children:
+            result.extend(dependency_tree(child))
+        return result
+
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        path = route.path
+        if path.startswith("/api/owner/") and path != "/api/owner/demo":
+            deps = dependency_tree(route.dependant)
+            names = {getattr(dep.call, "__name__", "") for dep in deps}
+            has_right = any(name == "check" for name in names)
+            has_active_staff = any(name in {"active_staff", "recent_staff"} for name in names)
+            if not (has_right or has_active_staff):
+                violations.append(f"{','.join(sorted(route.methods or []))} {path}")
+        if path.startswith("/api/platform/"):
+            deps = dependency_tree(route.dependant)
+            names = {getattr(dep.call, "__name__", "") for dep in deps}
+            if "reviewer" not in names:
+                violations.append(f"platform reviewer missing: {path}")
+
+    assert violations == [], "Unprotected routes: " + "; ".join(violations)
