@@ -27,6 +27,7 @@ from chatfront.channels.models import (
 from chatfront.channels.types import Kind
 from chatfront.channels.webchat import ChatIdentity, accept_web
 from chatfront.core.errors import AppError, Forbidden, NotFound
+from chatfront.core.models import Staff
 from chatfront.core.phone import hash_phone
 from chatfront.media import service as media_service
 from chatfront.media.models import Media, MediaKind
@@ -194,16 +195,20 @@ def _limit(services: Services, request: Request, slug: str) -> None:
     services.limiter.check(f"chat:{slug}:{client}")
 
 
-def _identity(
+async def _identity(
     services: Services, account: ChannelAccount, chat_token: str | None, authorization: str | None
 ) -> ChatIdentity:
-    """The owner (a valid session for this shop) or a customer (their chat token)."""
+    """The owner (an active, unrevoked session for this shop) or a customer chat token."""
     if authorization:
         scheme, _, value = authorization.partition(" ")
         if scheme.lower() != "bearer":
             raise NotSignedIn
         session = verify(value, services.settings.secret_key.get_secret_value())
         if session.tenant_id != account.tenant_id:
+            raise NotSignedIn
+        async with services.db.tenant(session.tenant_id) as db:
+            staff = await db.get(Staff, session.staff_id)
+        if staff is None or not staff.active or staff.session_version != session.session_version:
             raise NotSignedIn
         return ChatIdentity(f"staff:{session.staff_id}", session.staff_id)
     if chat_token is None or len(chat_token) < 20:
@@ -228,7 +233,7 @@ async def post_chat_message(
 ) -> dict[str, bool]:
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, body.token, authorization)
+    identity = await _identity(services, account, body.token, authorization)
     kind, payload = Kind.TEXT, dict[str, Any]()
     if body.location is not None:
         kind, payload = Kind.LOCATION, {"location": body.location.model_dump()}
@@ -264,7 +269,7 @@ async def post_chat_media(
     """A photo or voice note typed into the chat. The type is read from the bytes."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, chat_token, authorization)
+    identity = await _identity(services, account, chat_token, authorization)
     data = await file.read(services.settings.max_upload_bytes + 1)
     async with services.db.tenant(account.tenant_id) as session:
         media = await media_service.store(
