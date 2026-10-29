@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.ai.types import ImagePart
 from chatfront.audit.service import Actor, ActorType
 from chatfront.books import ledger
 from chatfront.catalog.drafts import prompt_context
@@ -22,7 +23,6 @@ from chatfront.catalog.stock import label
 from chatfront.channels.language import staff_language
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
-from chatfront.ai.types import ImagePart
 from chatfront.core.i18n import t
 from chatfront.core.models import Staff, Tenant
 from chatfront.media import service as media_service
