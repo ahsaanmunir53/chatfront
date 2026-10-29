@@ -306,3 +306,19 @@ async def test_product_texts_by_the_owner_are_kept(app: tuple[Client, Services])
         product = await session.get(Product, uuid.UUID(product_id))
     assert product is not None
     assert product.translations["ur"]["by"] == "owner"
+
+
+async def test_sign_out_all_revokes_owner_session_versions(app: tuple[Client, Services]) -> None:
+    client, _ = app
+    slug, auth = await sign_in(client)
+    before = await client.get("/api/owner/me", headers=auth)
+    assert before.status_code == 200
+
+    result = await client.post("/api/owner/sign-out-all", headers=auth)
+    assert result.status_code == 200, result.text
+    assert result.json() == {"signed_out": True}
+
+    # A correctly signed but old token must not work after the stored session version changes.
+    revoked = await client.get("/api/owner/me", headers=auth)
+    assert revoked.status_code == 401
+    assert (await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)).status_code == 401
