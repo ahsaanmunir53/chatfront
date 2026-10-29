@@ -381,6 +381,7 @@ function Console({
           empty={t("console.chat_empty")}
           suggestions={SUGGESTIONS.map((key) => t(key))}
           ownerToken={token}
+          ownerLang={me.lang}
           onSignedOut={onSessionEnded}
           onReplies={setReplies}
         />

@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "Tally update ho gayi.",
   "stock.camera_clear": "Tally saaf karein",
   "stock.camera_confirm": "Stock count confirm karein",
-  "stock.camera_spoken": "Shelf tally: {products} products, kul {pieces} pieces."
+  "stock.camera_spoken": "Shelf tally: {products} products, kul {pieces} pieces.",
+  "owner.voice_mode": "Voice mode",
+  "owner.voice_mode_hint": "Microphone button daba kar rakhein, apni baat kahein, phir chhor dein. Main apne jawab bol kar sunaunga.",
+  "owner.voice_hold": "Bolne ke liye daba kar rakhein",
+  "owner.voice_release": "Bhejne ke liye chhor dein",
+  "owner.voice_type": "Type karna use karein",
+  "owner.voice_recording": "Sun raha hoon",
+  "owner.voice_tts_unavailable": "Is browser mein jawab bol kar sunane ki sahulat nahi hai."
 }

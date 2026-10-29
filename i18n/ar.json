@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "تم تحديث العدد.",
   "stock.camera_clear": "مسح العدد",
   "stock.camera_confirm": "تأكيد عدد المخزون",
-  "stock.camera_spoken": "عدد الرفوف: {products} منتجات، بإجمالي {pieces} قطعة."
+  "stock.camera_spoken": "عدد الرفوف: {products} منتجات، بإجمالي {pieces} قطعة.",
+  "owner.voice_mode": "الوضع الصوتي",
+  "owner.voice_mode_hint": "اضغط مطولًا على زر الميكروفون، وقل طلبك ثم اترك الزر. سأقرأ ردودي بصوت مسموع.",
+  "owner.voice_hold": "اضغط مطولًا للتحدث",
+  "owner.voice_release": "اترك الزر للإرسال",
+  "owner.voice_type": "استخدم الكتابة",
+  "owner.voice_recording": "أستمع",
+  "owner.voice_tts_unavailable": "ميزة قراءة الردود بصوت مسموع غير متاحة في هذا المتصفح."
 }

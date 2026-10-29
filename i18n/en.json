@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "Tally updated.",
   "stock.camera_clear": "Clear tally",
   "stock.camera_confirm": "Confirm stock count",
-  "stock.camera_spoken": "Shelf tally: {products} products, {pieces} pieces."
+  "stock.camera_spoken": "Shelf tally: {products} products, {pieces} pieces.",
+  "owner.voice_mode": "Voice mode",
+  "owner.voice_mode_hint": "Hold the microphone button, speak your request, then release. I will read my replies aloud.",
+  "owner.voice_hold": "Hold to talk",
+  "owner.voice_release": "Release to send",
+  "owner.voice_type": "Use typing",
+  "owner.voice_recording": "Listening",
+  "owner.voice_tts_unavailable": "Speech output is not available in this browser."
 }

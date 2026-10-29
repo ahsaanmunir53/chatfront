@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "گنتی اپ ڈیٹ ہو گئی۔",
   "stock.camera_clear": "گنتی صاف کریں",
   "stock.camera_confirm": "اسٹاک کی گنتی کی تصدیق کریں",
-  "stock.camera_spoken": "شیلف کی گنتی: {products} مصنوعات، کل {pieces} عدد۔"
+  "stock.camera_spoken": "شیلف کی گنتی: {products} مصنوعات، کل {pieces} عدد۔",
+  "owner.voice_mode": "وائس موڈ",
+  "owner.voice_mode_hint": "مائیکروفون کا بٹن دبا کر رکھیں، اپنی بات کہیں، پھر چھوڑ دیں۔ میں اپنے جواب آپ کو پڑھ کر سناؤں گا۔",
+  "owner.voice_hold": "بات کرنے کے لیے دبائے رکھیں",
+  "owner.voice_release": "بھیجنے کے لیے چھوڑ دیں",
+  "owner.voice_type": "لکھنے کا طریقہ استعمال کریں",
+  "owner.voice_recording": "سن رہا ہوں",
+  "owner.voice_tts_unavailable": "اس براؤزر میں آواز کے ذریعے جواب سنانے کی سہولت دستیاب نہیں۔"
 }

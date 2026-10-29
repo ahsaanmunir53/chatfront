@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "गिनती अपडेट हुई।",
   "stock.camera_clear": "गिनती साफ़ करें",
   "stock.camera_confirm": "स्टॉक की गिनती की पुष्टि करें",
-  "stock.camera_spoken": "शेल्फ की गिनती: {products} उत्पाद, कुल {pieces} पीस।"
+  "stock.camera_spoken": "शेल्फ की गिनती: {products} उत्पाद, कुल {pieces} पीस।",
+  "owner.voice_mode": "वॉइस मोड",
+  "owner.voice_mode_hint": "माइक्रोफ़ोन बटन को दबाकर रखें, अपनी बात कहें, फिर छोड़ दें। मैं अपने जवाब बोलकर सुनाऊँगा।",
+  "owner.voice_hold": "बोलने के लिए दबाकर रखें",
+  "owner.voice_release": "भेजने के लिए छोड़ें",
+  "owner.voice_type": "लिखकर भेजें",
+  "owner.voice_recording": "सुन रहा हूँ",
+  "owner.voice_tts_unavailable": "इस ब्राउज़र में जवाब बोलकर सुनाने की सुविधा उपलब्ध नहीं है।"
 }

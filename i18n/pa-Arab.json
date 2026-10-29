@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "گنتی اپ ڈیٹ ہو گئی۔",
   "stock.camera_clear": "گنتی صاف کرو",
   "stock.camera_confirm": "اسٹاک دی گنتی دی تصدیق کرو",
-  "stock.camera_spoken": "شیلف دی گنتی: {products} مصنوعات، کل {pieces} پیس۔"
+  "stock.camera_spoken": "شیلف دی گنتی: {products} مصنوعات، کل {pieces} پیس۔",
+  "owner.voice_mode": "وائس موڈ",
+  "owner.voice_mode_hint": "مائیکروفون دا بٹن دبا کے رکھو، اپنی گل کرو، فیر بٹن چھڈ دیو۔ میں اپنے جواب بول کے سناواں گا۔",
+  "owner.voice_hold": "گل کرن لئی دبا کے رکھو",
+  "owner.voice_release": "بھیجن لئی چھڈ دیو",
+  "owner.voice_type": "لکھ کے بھیجو",
+  "owner.voice_recording": "سن ریا واں",
+  "owner.voice_tts_unavailable": "ایس براؤزر وچ جواب بول کے سنان دی سہولت موجود نہیں۔"
 }

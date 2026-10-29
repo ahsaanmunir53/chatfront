@@ -6313,3 +6313,51 @@ button {
 .shelf-camera-video[hidden] {
   display: none;
 }
+
+/* Voice-first owner chat (feature 71). */
+.voice-mode-toggle {
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.voice-mode-toggle[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--card);
+}
+
+.composer-voice-mode {
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.owner-voice-prompt {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.owner-voice-hold {
+  min-height: 62px;
+  min-width: 150px;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ink);
+  color: var(--card);
+  font-size: 17px;
+  font-weight: 750;
+  touch-action: none;
+  user-select: none;
+}

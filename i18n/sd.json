@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "ڳڻپ اپڊيٽ ٿي وئي.",
   "stock.camera_clear": "ڳڻپ صاف ڪريو",
   "stock.camera_confirm": "اسٽاڪ جي ڳڻپ جي تصديق ڪريو",
-  "stock.camera_spoken": "شيلف جي ڳڻپ: {products} شيون، ڪل {pieces} عدد."
+  "stock.camera_spoken": "شيلف جي ڳڻپ: {products} شيون، ڪل {pieces} عدد.",
+  "owner.voice_mode": "وائس موڊ",
+  "owner.voice_mode_hint": "مائڪروفون جو بٽڻ دٻائي رکو، پنهنجو سوال چئو، پوءِ ڇڏي ڏيو. مان پنهنجا جواب آواز ۾ پڙهي ٻڌائيندس.",
+  "owner.voice_hold": "ڳالهائڻ لاءِ دٻائي رکو",
+  "owner.voice_release": "موڪلڻ لاءِ ڇڏي ڏيو",
+  "owner.voice_type": "لکي موڪليو",
+  "owner.voice_recording": "ٻڌان پيو",
+  "owner.voice_tts_unavailable": "هن برائوزر ۾ جواب آواز سان پڙهي ٻڌائڻ جي سهولت موجود ناهي."
 }
