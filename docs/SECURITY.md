@@ -1,0 +1,38 @@
+# Chatfront security checklist (20 points)
+
+Status is deliberately conservative: **Implemented** means the behavior is present in code and has a focused test or CI guard; **Partial** means meaningful controls exist but the full checklist is not yet verified; **Open** means further implementation or a route-by-route audit is required. Passing CI alone does not prove every route is secure.
+
+| # | Area | Status | Evidence / tests | Remaining work |
+|---:|---|---|---|---|
+| 1 | SQL injection | Partial | SQLAlchemy ORM and bound parameters are common; `api/tests/integration/test_rls.py` contains deliberate static SQL for database-policy tests. | Audit every API module for user-controlled raw SQL and every `text()` call; add injection tests for dynamic query paths. |
+| 2 | XSS / rendered HTML | Partial | `api/src/chatfront/catalog/share.py` escapes HTML text; no React `dangerouslySetInnerHTML` match found in the repository search. | Test script-like product names, chat messages, SVG/QR receipts and every server-generated HTML response. |
+| 3 | CSRF | Partial | Owner sessions are sent as Bearer headers by `api/src/chatfront/owner/sessions.py`; CORS origins are validated. | Confirm no mutation endpoint relies on ambient cookies; if cookies are added, require SameSite and CSRF tokens. |
+| 4 | Upload validation | Partial | `api/src/chatfront/media/service.py` sniffs JPEG/PNG/WebP/audio/video/PDF signatures and enforces configured byte caps. | Audit all upload routes; CSV/XLSX strict allow-lists, SVG/HTML rejection, safe Content-Disposition and nosniff on signed storage URLs need explicit route tests. |
+| 5 | SSRF | Partial | `api/src/chatfront/catalog/imports.py` declares Meta CDN host allow-list `PHOTO_HOSTS`. | Verify scheme/hostname/port, disable redirects or validate every redirect, and confirm model/courier/storage URLs are environment-controlled with no arbitrary URL fetch. |
+| 6 | BOLA / tenant isolation | Partial | Tenant-scoped DB access and RLS tests in `api/tests/integration/test_rls.py`; public share endpoint has a rate-limit check. | Add cross-shop 404 tests for every listed owner resource (customers, orders, claims, refunds, batches, notices, passports, scams and approvals) and prove public codes are unguessable. |
+| 7 | Rate limiting | Partial | `api/src/chatfront/core/ratelimit.py` provides a limiter; share routes call it. | Inventory every public/unauthenticated route, owner-link sign-in, webhooks by sender, chat/demo sign-in, receipt/passport/key/price lookups and uploads; ensure 429 responses include Retry-After. In-memory limits do not share state across replicas. |
+| 8 | Passwords | Implemented (design) | Owner auth uses signed links and signed Bearer sessions; no owner password table is part of the documented design. | Keep documentation explicit: owner login is link-based; no password is accepted or stored. |
+| 9 | MFA / session invalidation | Open | Signed owner sessions expire after seven days; see `api/src/chatfront/owner/sessions.py`. | Document WhatsApp possession factor; implement sign-out-all/session versioning and fresh links for team, payout/money settings and erasure actions. |
+| 10 | Server permissions | Partial | Owner routes use `needs(Can.X)` patterns; courier routes declare role-specific dependencies. | Automated route audit for every owner route, reviewer dependency on every platform route, and role-specific 403 tests. |
+| 11 | RLS | Partial | `api/tests/integration/test_rls.py` checks tenant visibility, write isolation, append-only tables and table policy coverage. | Extend coverage to every tenant table and verify every tenant policy/grant against current migrations and production role semantics. |
+| 12 | Production secrets | Implemented (code) | `Settings.require_production_secrets()` rejects development/default secrets and requires at least 32 bytes for SECRET_KEY, PHONE_HASH_KEY and CRON_SECRET. | Confirm deployment values are independently random and document a safe rotation procedure; tests are being added. |
+| 13 | API secrets | Partial | Pydantic `SecretStr` is used for provider keys; logging redaction lives in `api/src/chatfront/core/logging.py`. CI adds a Python dependency audit. | Add full-history Gitleaks scanning; audit API responses/logs and ensure no secret enters `VITE_*` bundles. |
+| 14 | Browser token storage | Open | `web/src/owner.ts` stores owner tokens in localStorage; fragment tokens are parsed by `tokenFromHash`. | Replace long-lived localStorage owner tokens with short-lived in-memory/sessionStorage tokens plus revocation; remove URL hash token immediately and test browser history/referrer leakage. |
+| 15 | Default credentials | Partial | Production secret validation blocks known development defaults; demo shops are described in README. | Prove demo sign-in cannot authenticate against production shops and demo copies expire; audit all seed/admin credentials. |
+| 16 | CORS | Implemented (code) | `Settings._validate_cors_origins` rejects wildcard, malformed/path-bearing origins and non-HTTPS production origins. | Add focused tests and verify no other middleware configures permissive CORS. |
+| 17 | Webhooks | Partial | Meta signature verification is used by channel routes; cron and provider callback secrets are configured. | Verify constant-time comparisons for every SMS/courier/provider secret, timestamp replay protection where available, and tests for invalid signatures/replays. |
+| 18 | Source maps | Implemented (CI guard added) | `web/vite.config.ts` sets `build.sourcemap: false`; CI fails if `dist/` contains `.map` files. | Confirm the build job passes on this branch. |
+| 19 | Sensitive data / headers | Partial | Logging redaction exists; baseline CSP, frame denial, nosniff, Referrer-Policy and production HSTS headers are added in `api/src/chatfront/main.py`. | Test headers and errors; audit analytics, stack traces, phone/message/token/address/payment logging and the CSP against production assets. |
+| 20 | Dependencies | Partial | CI adds `pip-audit` and `npm audit --omit=dev --audit-level=high`; source maps guard is part of web CI. | Add Dependabot for Python, npm and GitHub Actions; fix confirmed high/critical advisories and Node action runtime warnings; verify audit jobs pass. |
+
+## Production deployment notes
+
+- `SECRET_KEY`, `PHONE_HASH_KEY`, and `CRON_SECRET` must each be independently generated random values of at least 32 bytes. Do not paste them into issues, chats, commits, or this document.
+- `CORS_ORIGINS` must be a comma-separated list of explicit origins. In production each origin must use HTTPS; wildcard origins, paths, credentials, queries and fragments are rejected.
+- Production source maps are disabled. CI checks that the built `web/dist` contains no `.map` files.
+- Security headers are emitted by the API. HSTS is emitted only when `ENV=prod`; deploy behind HTTPS.
+- No new Render environment variables are introduced by this phase.
+
+## Validation policy
+
+Only report a control as verified after the relevant code, tests and CI run have been inspected. Keep this table current as each remaining audit is completed.

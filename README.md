@@ -12,6 +12,8 @@ fits any market that pays by wallet transfer instead of WhatsApp Pay.
 
 Built with Muse Spark Open.
 
+Security hardening status and deployment requirements: [docs/SECURITY.md](docs/SECURITY.md).
+
 ## Try it
 
 Every shop gets a page at `/s/<shop>` with a chat that runs the same agent as the shop's

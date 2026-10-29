@@ -1264,3 +1264,8 @@ stays the same.
 - The workspace exposes buyer orders, seller approval/rejection, buyer confirmation, and the split-ledger status. It clearly states that a payment ledger entry is not a checkout or payout; those require a real provider adapter.
 - Added localized network labels to all nine language catalogs and a browser test for branch creation from the owner console.
 - Validation: current PR branch CI must pass the web type/build/E2E suite and the underlying API/migration suite before merge.
+
+
+## Security hardening (29 October 2026)
+
+The checklist-hardening branch is in progress. CI results are recorded from the GitHub Actions run for the current commit; do not treat the table in docs/SECURITY.md as proof that unverified routes are secure. Current branch changes include production secret length checks, strict CORS-origin validation, baseline security response headers, and production source maps disabled. Full route-by-route authorization, upload, webhook, tenant-isolation, and storage review remains in progress.
