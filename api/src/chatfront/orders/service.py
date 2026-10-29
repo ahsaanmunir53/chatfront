@@ -21,7 +21,7 @@ from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.ids import short_code
-from chatfront.core.models import Tenant
+from chatfront.core.models import Branch, Tenant
 from chatfront.delivery.address import Address, local_phone
 from chatfront.delivery.pins import Pin
 from chatfront.offers import service as offers
@@ -50,6 +50,18 @@ async def _new_code(session: AsyncSession, tenant_id: uuid.UUID) -> str:
             return code
 
 
+async def _default_branch_id(
+    session: AsyncSession, tenant_id: uuid.UUID
+) -> uuid.UUID | None:
+    return await session.scalar(
+        select(Branch.id).where(
+            Branch.tenant_id == tenant_id,
+            Branch.active.is_(True),
+            Branch.is_default.is_(True),
+        )
+    )
+
+
 async def open_cart(
     session: AsyncSession,
     tenant: Tenant,
@@ -62,6 +74,8 @@ async def open_cart(
         select(Order).where(Order.customer_id == customer_id, Order.status == OrderStatus.CART)
     )
     if cart is not None:
+        if cart.branch_id is None:
+            cart.branch_id = await _default_branch_id(session, tenant.id)
         return cart
     return await new_order(session, tenant, customer_id, conversation_id=conversation_id)
 
@@ -80,6 +94,7 @@ async def new_order(
         code=await _new_code(session, tenant.id),
         customer_id=customer_id,
         conversation_id=conversation_id,
+        branch_id=await _default_branch_id(session, tenant.id),
         status=OrderStatus.CART,
         currency=tenant.currency,
         source=source,

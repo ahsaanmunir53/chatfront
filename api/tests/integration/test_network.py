@@ -5,9 +5,12 @@ import hmac
 import json
 
 from pydantic import SecretStr
+from sqlalchemy import select
 
+from chatfront.core.models import Tenant
+from chatfront.orders.models import Order
 from chatfront.services import Services
-from tests.integration.chat import Client, sign_in
+from tests.integration.chat import Client, customer, shop_id, sign_in
 
 
 async def test_branches_wholesale_bargaining_and_signed_split_ledger(
@@ -38,6 +41,58 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
         json={"branch_id": seller_branch["id"]},
     )
     assert assigned.status_code == 200, assigned.text
+    second_branch_response = await client.post(
+        "/api/network/branches",
+        headers=seller_auth,
+        json={"name": "Lahore Retail", "code": "lahore-retail", "city": "Lahore"},
+    )
+    assert second_branch_response.status_code == 200, second_branch_response.text
+    second_branch = second_branch_response.json()
+
+    # Normal customer checkout uses the default branch, or a validated explicit branch.
+    guest_headers, token = await customer(client, seller_slug)
+    public_products = (
+        await client.get(f"/api/shops/{seller_slug}/products")
+    ).json()
+    catalog_id = public_products[0]["variants"][0]["catalog_id"]
+    checkout_body = {
+        "lines": [{"item": catalog_id, "quantity": 1}],
+        "details": {
+            "name": "Ayesha Khan",
+            "phone": "0300 1234567",
+            "city": "Lahore",
+            "address": "House 12, Street 4",
+            "area": "Gulberg",
+            "landmark": "",
+        },
+        "payment_method": "cod",
+    }
+    default_order_response = await client.post(
+        f"/api/shops/{seller_slug}/checkout", json=checkout_body, headers=guest_headers
+    )
+    assert default_order_response.status_code == 200, default_order_response.text
+    async with services.db.system() as system:
+        seller_tenant_id = await shop_id(system, seller_slug)
+    async with services.db.tenant(seller_tenant_id) as db:
+        default_order = await db.scalar(
+            select(Order).where(Order.code == default_order_response.json()["code"])
+        )
+    assert default_order is not None
+    assert str(default_order.branch_id) == seller_branch["id"]
+
+    explicit_order_response = await client.post(
+        f"/api/shops/{seller_slug}/checkout",
+        json={**checkout_body, "branch_id": second_branch["id"]},
+        headers=guest_headers,
+    )
+    assert explicit_order_response.status_code == 200, explicit_order_response.text
+    async with services.db.tenant(seller_tenant_id) as db:
+        explicit_order = await db.scalar(
+            select(Order).where(Order.code == explicit_order_response.json()["code"])
+        )
+    assert explicit_order is not None
+    assert str(explicit_order.branch_id) == second_branch["id"]
+
     outsider = await client.put(
         f"/api/network/team/{owner_me['staff_id']}/branch",
         headers=buyer_auth,
