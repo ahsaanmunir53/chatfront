@@ -90,6 +90,18 @@ def needs(right: Can) -> Any:
     return Depends(check)
 
 
+def needs_recent(right: Can) -> Any:
+    """Require a fresh sign-in link as well as the given role permission."""
+    async def check(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+        staff = await _staff(services, session)
+        if right not in rights(staff.role):
+            raise Forbidden("Your role in this shop does not allow this")
+        require_recent(session)
+        return session
+
+    return Depends(check)
+
+
 ChatsDep = Annotated[OwnerSession, needs(Can.CHATS)]
 
 
