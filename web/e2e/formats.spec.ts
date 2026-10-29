@@ -13,8 +13,11 @@ test("the owner sees which wallets are read and agrees to share unread shapes", 
   await expect(wallets).toContainText("not yet checked on a real message");
 
   const share = payments.getByRole("checkbox", { name: /Share the shape of wallet messages/ });
-  await share.check();
+  const shareLabel = payments.locator("label.pay-share");
+  await shareLabel.click();
+  await expect(share).toBeChecked();
   await expect(payments).toContainText("0 messages kept to add");
-  await share.uncheck();
+  await shareLabel.click();
+  await expect(share).not.toBeChecked();
   await expect(payments).not.toContainText("messages kept to add");
 });
