@@ -95,11 +95,19 @@ function AddMember({ token, onAdded }: { token: string; onAdded: (invite: Invite
   );
 }
 
-export function TeamPanel({ token }: { token: string }) {
+export function TeamPanel({
+  token,
+  onSignedOut,
+}: {
+  token: string;
+  onSignedOut: () => void;
+}) {
   const { t } = useLang();
   const { state } = useServer();
   const [team, setTeam] = useState<Member[] | null>(null);
   const [invite, setInvite] = useState<Invite | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const load = useCallback(() => {
     api.team(token).then(setTeam, () => {
       // Shown again on the next change.
@@ -119,6 +127,19 @@ export function TeamPanel({ token }: { token: string }) {
     load();
   }
 
+  async function signOutAll() {
+    if (!window.confirm(t("console.sign_out_all_confirm"))) return;
+    setSigningOut(true);
+    setSignOutFailed(false);
+    try {
+      await api.signOutAll(token);
+      onSignedOut();
+    } catch {
+      setSigningOut(false);
+      setSignOutFailed(true);
+    }
+  }
+
   if (!team) return null;
   return (
     <section className="team-panel" aria-labelledby="team-title">
@@ -126,6 +147,17 @@ export function TeamPanel({ token }: { token: string }) {
         {t("console.team_title")}
         <span className="console-count">{team.filter((m) => m.active).length}</span>
       </h2>
+      <div className="team-security-actions">
+        <button
+          type="button"
+          className="action"
+          disabled={signingOut}
+          onClick={() => void signOutAll()}
+        >
+          {signingOut ? t("console.sign_out_all_busy") : t("console.sign_out_all")}
+        </button>
+        {signOutFailed && <span role="alert">{t("console.sign_out_all_failed")}</span>}
+      </div>
       <div className="pay-columns team-columns">
         <div className="pay-block">
           <ul className="pay-rows">
