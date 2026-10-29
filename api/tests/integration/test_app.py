@@ -26,7 +26,10 @@ from chatfront.ai.health import Health
 from chatfront.ai.types import Effort, Role
 from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import verify_chain
+from chatfront.catalog.models import Product
+from chatfront.catalog.share import page as share_page
 from chatfront.channels.models import Conversation, Direction, Message
+from chatfront.core.models import Tenant
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
 from chatfront.jobs.models import Job
@@ -69,6 +72,32 @@ async def test_health_and_shop(app: tuple[httpx.AsyncClient, Services]) -> None:
     ]
     assert shop["channels"] == trust["channels"]
     assert (await client.get("/api/shops/nope/trust")).status_code == 404
+
+
+async def test_shared_product_page_escapes_untrusted_shop_and_product_text(
+    seeded: Database,
+) -> None:
+    async with seeded.system() as session:
+        tenant = await session.scalar(select(Tenant).where(Tenant.slug == SHOP))
+        product = await session.scalar(select(Product).where(Product.tenant_id == tenant.id))
+        assert tenant is not None and product is not None
+        tenant.name = '"><img onerror="alert(2)">'
+        product.name = "<script>alert(1)</script>"
+        product.description = '"><img onerror="alert(3)">'
+        html = share_page(
+            tenant,
+            product,
+            share_url="https://shop.example/s/shop/p/item",
+            card_url="https://shop.example/cards/item.png",
+            shop_url="https://shop.example/s/shop",
+        )
+
+    assert "<script>alert(1)</script>" not in html
+    assert '<img onerror="alert(2)">' not in html
+    assert '<img onerror="alert(3)">' not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "&lt;img onerror=&quot;alert(2)&quot;&gt;" in html
+    assert "&lt;img onerror=&quot;alert(3)&quot;&gt;" in html
 
 
 async def test_webhook_verification(app: tuple[httpx.AsyncClient, Services]) -> None:
