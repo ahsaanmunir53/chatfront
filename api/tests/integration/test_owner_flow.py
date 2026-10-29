@@ -45,7 +45,8 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
     async with services.db.system() as session:
         copied = await session.scalar(select(Tenant).where(Tenant.slug == slug))
     assert copied is not None
-    assert copied.is_demo and not copied.is_platform
+    assert copied.is_demo
+    assert not copied.is_platform
     assert copied.expires_at is not None
     assert utcnow() < copied.expires_at <= utcnow() + timedelta(days=3, minutes=1)
     assert me["languages"][:2] == ["ur-Latn", "ur"]  # Pakistan's customer languages
