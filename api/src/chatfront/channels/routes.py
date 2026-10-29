@@ -303,7 +303,7 @@ async def list_chat_messages(
     """The chat so far. Tokens travel in headers so they never land in access logs."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, chat_token, authorization)
+    identity = await _identity(services, account, chat_token, authorization)
     external_hash = hash_phone(
         f"{Channel.WEBCHAT}:{identity.sender_id}", services.keys.phone_hash_key
     )
