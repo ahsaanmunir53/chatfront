@@ -440,7 +440,7 @@ function Console({
       {me.is_platform && can("trust") && <ScamReviewPanel token={token} />}
       {me.is_platform && can("trust") && <SmsFormatsPanel token={token} />}
       {can("trust") && !me.is_platform && <ScamsPanel token={token} />}
-      {can("team") && <TeamPanel token={token} />}
+      {can("team") && <TeamPanel token={token} onSignedOut={onSignOut} />}
       {(can("catalog") || can("orders") || can("team")) && (
         <NetworkCommercePanel
           me={me}
