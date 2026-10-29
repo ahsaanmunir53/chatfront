@@ -414,6 +414,13 @@ async def test_sensitive_actions_require_a_fresh_sign_in_link(
 
     client, services = app
     _, owner_auth = await sign_in(client)
+    invited = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": "Link Recovery Test", "role": "sales"},
+    )
+    assert invited.status_code == 200, invited.text
+    staff_id = invited.json()["member"]["id"]
     raw = owner_auth["Authorization"].removeprefix("Bearer ")
     current = owner_sessions.verify(raw, services.settings.secret_key.get_secret_value())
     actual_clock = owner_sessions.utcnow
@@ -438,6 +445,12 @@ async def test_sensitive_actions_require_a_fresh_sign_in_link(
     )
     assert team_change.status_code == 403
     assert team_change.json()["error"]["code"] == "fresh_link_required"
+
+    link_regeneration = await client.post(
+        f"/api/owner/team/{staff_id}/link", headers=stale_auth
+    )
+    assert link_regeneration.status_code == 403
+    assert link_regeneration.json()["error"]["code"] == "fresh_link_required"
 
     payment_settings = await client.post("/api/owner/sms-forwarding", headers=stale_auth)
     assert payment_settings.status_code == 403
