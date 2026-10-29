@@ -6,6 +6,14 @@ async function say(page: Page, text: string) {
   await page.getByRole("button", { name: "Send", exact: true }).click();
 }
 
+async function switchToTyping(page: Page) {
+  const toggle = page.getByRole("region", { name: "Your assistant" }).getByRole("button", {
+    name: "Voice mode",
+  });
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+}
+
 const SHEET = ["Item,Colour,Qty,Rate", "Linen kurta,L,6,1900", "Silk saree,,2,"].join("\n");
 
 test("stock comes in by chat, form and sheet; the price is settled; a batch is thrown away", async ({
