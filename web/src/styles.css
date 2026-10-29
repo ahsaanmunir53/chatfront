@@ -3233,6 +3233,8 @@ button {
 }
 
 .pay-share {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 8px;
   align-items: flex-start;
