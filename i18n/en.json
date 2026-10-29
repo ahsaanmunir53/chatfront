@@ -1869,5 +1869,17 @@
   "console.price_check_above": "Yours is higher",
   "console.price_check_item": "Item",
   "console.price_check_yours": "Your price",
-  "console.price_check_others": "Other shops"
+  "console.price_check_others": "Other shops",
+  "stock.camera_title": "Shelf camera mode",
+  "stock.camera_lede": "Move the camera slowly along the shelves. Chatfront reads a frame every few seconds and keeps the highest count seen for each item so repeated frames are not added twice. Review or edit the tally before confirming; stock will not change until you confirm.",
+  "stock.camera_start": "Start camera",
+  "stock.camera_stop": "Stop camera",
+  "stock.camera_starting": "Opening the camera…",
+  "stock.camera_scanning": "Reading shelf frame…",
+  "stock.camera_error": "The camera could not be opened. Allow camera access and try again.",
+  "stock.camera_unsupported": "This browser does not support camera access.",
+  "stock.camera_updated": "Tally updated.",
+  "stock.camera_clear": "Clear tally",
+  "stock.camera_confirm": "Confirm stock count",
+  "stock.camera_spoken": "Shelf tally: {products} products, {pieces} pieces."
 }

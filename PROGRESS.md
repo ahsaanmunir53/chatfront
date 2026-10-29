@@ -1223,3 +1223,12 @@ stays the same.
   one must pass the replay before it goes in.
 - Every "Try as the owner" makes a demo copy; after many browser test runs `chatfront_e2e`
   reaches the copy limit and the owner tests fail. Drop and recreate that database.
+
+
+## 28 October: phone shelf mode (feature 69)
+
+- Added a phone-camera mode to the owner console. It captures a frame every four seconds and reuses the existing shelf-count endpoint. Each variant keeps the highest count seen during the scan to avoid adding repeated views twice; the owner can edit the resulting tally.
+- Changed counts are read aloud using the browser's speech synthesis in the owner's language when the browser supports it. Stopping or leaving the panel releases the camera.
+- Stock is not written during scanning. Only the existing owner-confirm action submits the final tally to the stock-count endpoint.
+- Limitation: the Meta glasses SDK is not available, so glasses support remains partial. The phone-camera fallback is implemented.
+- Validation: remote CI is the source of truth for typecheck, build, tests and browser coverage; this editing session does not have a local checkout to run them.

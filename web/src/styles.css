@@ -6286,3 +6286,28 @@ button {
 .picture-preview figcaption {
   margin-top: 6px;
 }
+
+
+/* Phone shelf camera mode (feature 69). */
+.shelf-camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.shelf-camera-video {
+  display: block;
+  width: min(100%, 560px);
+  max-height: 380px;
+  aspect-ratio: 4 / 3;
+  margin: 10px 0;
+  border-radius: 12px;
+  background: var(--ink);
+  object-fit: contain;
+}
+
+.shelf-camera-video[hidden] {
+  display: none;
+}

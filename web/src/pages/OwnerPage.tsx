@@ -38,6 +38,7 @@ import { OffersPanel } from "../components/Offers";
 import { RefundsPanel, ReturnsPanel } from "../components/Returns";
 import { ReviewsPanel } from "../components/Reviews";
 import { ShelfCountPanel } from "../components/ShelfCount";
+import { ShelfCameraPanel } from "../components/ShelfCamera";
 import { SizeChartsPanel } from "../components/SizeCharts";
 import { WaitingPanel } from "../components/Waiting";
 import { PostsPanel } from "../components/Posts";
@@ -392,6 +393,7 @@ function Console({
       {can("stock") && (
         <StockPanel me={me} token={token} products={products} onChange={stockChanged} />
       )}
+      {can("stock") && <ShelfCameraPanel token={token} lang={me.lang} onSaved={stockChanged} />}
       {can("stock") && <ShelfCountPanel token={token} onSaved={stockChanged} />}
       {can("stock") && <SuppliersPanel me={me} token={token} />}
       {can("catalog") && <PriceCheckPanel me={me} token={token} />}

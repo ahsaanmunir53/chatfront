@@ -1869,5 +1869,17 @@
   "console.price_check_above": "سعرك أعلى",
   "console.price_check_item": "الصنف",
   "console.price_check_yours": "سعرك",
-  "console.price_check_others": "متاجر أخرى"
+  "console.price_check_others": "متاجر أخرى",
+  "stock.camera_title": "وضع كاميرا الرفوف",
+  "stock.camera_lede": "حرّك الكاميرا ببطء على طول الرفوف. يقرأ Chatfront إطارًا كل بضع ثوانٍ ويحتفظ بأعلى عدد شوهد لكل صنف، حتى لا تُضاف الإطارات المتكررة مرتين. راجع العدد أو عدّله قبل التأكيد؛ لن يتغير المخزون حتى تؤكد.",
+  "stock.camera_start": "تشغيل الكاميرا",
+  "stock.camera_stop": "إيقاف الكاميرا",
+  "stock.camera_starting": "جارٍ فتح الكاميرا…",
+  "stock.camera_scanning": "جارٍ قراءة إطار الرف…",
+  "stock.camera_error": "تعذّر فتح الكاميرا. اسمح لهذا الموقع باستخدام الكاميرا ثم حاول مرة أخرى.",
+  "stock.camera_unsupported": "هذا المتصفح لا يدعم الوصول إلى الكاميرا.",
+  "stock.camera_updated": "تم تحديث العدد.",
+  "stock.camera_clear": "مسح العدد",
+  "stock.camera_confirm": "تأكيد عدد المخزون",
+  "stock.camera_spoken": "عدد الرفوف: {products} منتجات، بإجمالي {pieces} قطعة."
 }

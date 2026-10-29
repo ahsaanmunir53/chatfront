@@ -1869,5 +1869,17 @@
   "console.price_check_above": "Aap ki zyada hai",
   "console.price_check_item": "Cheez",
   "console.price_check_yours": "Aap ki qeemat",
-  "console.price_check_others": "Doosri dukaanein"
+  "console.price_check_others": "Doosri dukaanein",
+  "stock.camera_title": "Shelf camera mode",
+  "stock.camera_lede": "Camera ko shelf ke saath ahista ahista move karein. Chatfront har kuch seconds baad frame read karta hai aur har item ki ab tak dekhi gayi sab se zyada ginti rakhta hai, taake repeated frames dobara add na hon. Confirm se pehle tally check ya edit karein; stock sirf aap ke confirm karne par badlega.",
+  "stock.camera_start": "Camera shuru karein",
+  "stock.camera_stop": "Camera band karein",
+  "stock.camera_starting": "Camera khul raha hai…",
+  "stock.camera_scanning": "Shelf frame read ho raha hai…",
+  "stock.camera_error": "Camera nahi khul saka. Is site ko camera access dein aur dobara try karein.",
+  "stock.camera_unsupported": "Yeh browser camera access support nahi karta.",
+  "stock.camera_updated": "Tally update ho gayi.",
+  "stock.camera_clear": "Tally saaf karein",
+  "stock.camera_confirm": "Stock count confirm karein",
+  "stock.camera_spoken": "Shelf tally: {products} products, kul {pieces} pieces."
 }

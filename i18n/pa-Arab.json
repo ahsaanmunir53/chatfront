@@ -1869,5 +1869,17 @@
   "console.price_check_above": "تہاڈی ودھ اے",
   "console.price_check_item": "چیز",
   "console.price_check_yours": "تہاڈی قیمت",
-  "console.price_check_others": "دوجیاں دکاناں"
+  "console.price_check_others": "دوجیاں دکاناں",
+  "stock.camera_title": "شیلف کیمرہ موڈ",
+  "stock.camera_lede": "کیمرہ شیلف دے نال ہولی ہولی لے جاؤ۔ Chatfront ہر کجھ سیکنڈ بعد اک فریم پڑھدا اے تے ہر چیز دی ویکھی گئی سب توں ودھ گنتی رکھدا اے، تاں جو اوہی فریم دوبارہ شامل نہ ہووے۔ تصدیق توں پہلاں گنتی ویکھ لو یا بدلو؛ تصدیق توں بغیر اسٹاک نہیں بدلے گا۔",
+  "stock.camera_start": "کیمرہ چالو کرو",
+  "stock.camera_stop": "کیمرہ بند کرو",
+  "stock.camera_starting": "کیمرہ کھل ریا اے…",
+  "stock.camera_scanning": "شیلف دا فریم پڑھیا جا ریا اے…",
+  "stock.camera_error": "کیمرہ نہیں کھل سکیا۔ ایس سائٹ نوں کیمرے دی اجازت دیو تے فیر کوشش کرو۔",
+  "stock.camera_unsupported": "ایہہ براؤزر کیمرے دی رسائی دی سہولت نہیں دیندا۔",
+  "stock.camera_updated": "گنتی اپ ڈیٹ ہو گئی۔",
+  "stock.camera_clear": "گنتی صاف کرو",
+  "stock.camera_confirm": "اسٹاک دی گنتی دی تصدیق کرو",
+  "stock.camera_spoken": "شیلف دی گنتی: {products} مصنوعات، کل {pieces} پیس۔"
 }
