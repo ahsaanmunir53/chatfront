@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from chatfront.ai.types import ImagePart
+from chatfront.ai.types import ImagePart, Part
 from chatfront.audit.service import Actor, ActorType
 from chatfront.books import ledger
 from chatfront.catalog.drafts import prompt_context
@@ -219,6 +219,7 @@ async def count_photo(
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await _tenant(db, session)
         staff = await db.get(Staff, session.staff_id)
+        part: Part
         if ephemeral:
             # The camera mode sends a short-lived frame only; avoid creating a permanent Media row.
             part = ImagePart(
