@@ -156,7 +156,7 @@ async def demo_owner(body: DemoRequest, request: Request, services: ServicesDep)
 
 
 @router.get("/me")
-async def me(session: OwnerDep, services: ServicesDep) -> Me:
+async def me(session: StaffDep, services: ServicesDep) -> Me:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
         staff = await db.get(Staff, session.staff_id)
