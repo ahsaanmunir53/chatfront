@@ -118,9 +118,7 @@ async def test_whatsapp_message_to_reply(
 ) -> None:
     client, services = app
     body, headers = signed(wa_message("wamid.in1"))
-    assert (
-        await client.post("/webhooks/whatsapp", content=body)
-    ).status_code == 401
+    assert (await client.post("/webhooks/whatsapp", content=body)).status_code == 401
     assert (
         await client.post(
             "/webhooks/whatsapp",
