@@ -214,7 +214,7 @@ export function ChatView({
   const { t } = useLang();
   const chat = useChat(slug, ownerToken, onSignedOut);
   const recorder = useRecorder();
-  const [voiceMode, setVoiceMode] = useState(ownerToken !== null);
+  const [voiceMode, setVoiceMode] = useState(false);
   const [voiceUnavailable, setVoiceUnavailable] = useState(false);
   const holding = useRef(false);
   const holdStart = useRef<Promise<void> | null>(null);
