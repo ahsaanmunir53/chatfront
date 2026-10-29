@@ -1869,5 +1869,18 @@
   "console.price_check_above": "آپ کی زیادہ ہے",
   "console.price_check_item": "چیز",
   "console.price_check_yours": "آپ کی قیمت",
-  "console.price_check_others": "دوسری دکانیں"
+  "console.price_check_others": "دوسری دکانیں",
+  "stock.camera_limit": "اس اسکین میں 20 فریم مکمل ہو گئے ہیں۔ جاری رکھنے کے لیے کیمرہ دوبارہ شروع کریں۔",
+  "stock.camera_title": "شیلف کیمرہ موڈ",
+  "stock.camera_lede": "کیمرہ شیلف کے ساتھ آہستہ آہستہ حرکت دیں۔ Chatfront ہر چند سیکنڈ بعد ایک فریم پڑھتا ہے اور ہر آئٹم کی اب تک دیکھی گئی سب سے زیادہ گنتی رکھتا ہے تاکہ ایک ہی فریم دوبارہ شامل نہ ہو۔ تصدیق سے پہلے گنتی دیکھیں یا بدلیں؛ اسٹاک صرف آپ کی تصدیق پر بدلے گا۔ ہر کیمرہ سیشن میں زیادہ سے زیادہ 20 فریم ہوں گے؛ جاری رکھنے کے لیے دوبارہ شروع کریں۔",
+  "stock.camera_start": "کیمرہ شروع کریں",
+  "stock.camera_stop": "کیمرہ بند کریں",
+  "stock.camera_starting": "کیمرہ کھل رہا ہے…",
+  "stock.camera_scanning": "شیلف کا فریم پڑھا جا رہا ہے…",
+  "stock.camera_error": "کیمرہ نہیں کھل سکا۔ اس سائٹ کو کیمرے کی اجازت دیں اور دوبارہ کوشش کریں۔",
+  "stock.camera_unsupported": "یہ براؤزر کیمرے تک رسائی کی سہولت نہیں دیتا۔",
+  "stock.camera_updated": "گنتی اپ ڈیٹ ہو گئی۔",
+  "stock.camera_clear": "گنتی صاف کریں",
+  "stock.camera_confirm": "اسٹاک کی گنتی کی تصدیق کریں",
+  "stock.camera_spoken": "شیلف کی گنتی: {products} مصنوعات، کل {pieces} عدد۔"
 }

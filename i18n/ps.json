@@ -1869,5 +1869,18 @@
   "console.price_check_above": "ستاسو لوړه ده",
   "console.price_check_item": "شی",
   "console.price_check_yours": "ستاسو بیه",
-  "console.price_check_others": "نور دوکانونه"
+  "console.price_check_others": "نور دوکانونه",
+  "stock.camera_limit": "دې سکین ۲۰ چوکاټونه بشپړ کړل. د دوام لپاره کمره بیا چالانه کړئ.",
+  "stock.camera_title": "د المارۍ د کمرې حالت",
+  "stock.camera_lede": "کمره د المارۍ په اوږدو کې ورو ورو وخوځوئ. Chatfront هر څو ثانیې وروسته یو چوکاټ لولي او د هر توکي تر ټولو لوړه لیدل شوې شمېرنه ساتي، څو یو شان چوکاټونه دوه ځله ورزیات نه شي. له تایید مخکې شمېرنه وګورئ یا یې بدله کړئ؛ تر تایید مخکې زېرمه نه بدلېږي. هره کمره غونډه تر ۲۰ چوکاټونو محدوده ده؛ د دوام لپاره یې بیا پیل کړئ.",
+  "stock.camera_start": "کمره چالان کړئ",
+  "stock.camera_stop": "کمره بنده کړئ",
+  "stock.camera_starting": "کمره پرانیستل کېږي…",
+  "stock.camera_scanning": "د المارۍ چوکاټ لوستل کېږي…",
+  "stock.camera_error": "کمره پرانیستل نه شوه. دې وېبپاڼې ته د کمرې اجازه ورکړئ او بیا هڅه وکړئ.",
+  "stock.camera_unsupported": "دا لټونګر د کمرې لاسرسی نه لري.",
+  "stock.camera_updated": "شمېرنه تازه شوه.",
+  "stock.camera_clear": "شمېرنه پاکه کړئ",
+  "stock.camera_confirm": "د زېرمې شمېرنه تایید کړئ",
+  "stock.camera_spoken": "د المارۍ شمېرنه: {products} توکي، ټول {pieces} دانې."
 }

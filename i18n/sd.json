@@ -1869,5 +1869,18 @@
   "console.price_check_above": "توهان جي وڌيڪ آهي",
   "console.price_check_item": "شيءِ",
   "console.price_check_yours": "توهان جي قيمت",
-  "console.price_check_others": "ٻيا دڪان"
+  "console.price_check_others": "ٻيا دڪان",
+  "stock.camera_limit": "هن اسڪين ۾ 20 فريم مڪمل ٿيا. جاري رکڻ لاءِ ڪئميرا ٻيهر شروع ڪريو.",
+  "stock.camera_title": "شيلف ڪئميرا موڊ",
+  "stock.camera_lede": "ڪئميرا کي شيلفن سان آهستي آهستي هلايو. Chatfront هر ٿورن سيڪنڊن کان پوءِ هڪ فريم پڙهي ٿو ۽ هر شيءِ لاءِ ڏٺل سڀ کان وڏي ڳڻپ رکي ٿو، جيئن ساڳيا فريم ٻه ڀيرا شامل نه ٿين. تصديق کان اڳ ڳڻپ ڏسو يا تبديل ڪريو؛ توهان جي تصديق تائين اسٽاڪ نه بدلجندو. هر ڪئميرا سيشن وڌ ۾ وڌ 20 فريم تائين محدود آهي؛ جاري رکڻ لاءِ ٻيهر شروع ڪريو.",
+  "stock.camera_start": "ڪئميرا شروع ڪريو",
+  "stock.camera_stop": "ڪئميرا بند ڪريو",
+  "stock.camera_starting": "ڪئميرا کلي رهي آهي…",
+  "stock.camera_scanning": "شيلف جو فريم پڙهيو پيو وڃي…",
+  "stock.camera_error": "ڪئميرا نه کلي سگهي. هن سائيٽ کي ڪئميرا جي اجازت ڏيو ۽ ٻيهر ڪوشش ڪريو.",
+  "stock.camera_unsupported": "هي برائوزر ڪئميرا جي رسائي جي سهولت نٿو ڏئي.",
+  "stock.camera_updated": "ڳڻپ اپڊيٽ ٿي وئي.",
+  "stock.camera_clear": "ڳڻپ صاف ڪريو",
+  "stock.camera_confirm": "اسٽاڪ جي ڳڻپ جي تصديق ڪريو",
+  "stock.camera_spoken": "شيلف جي ڳڻپ: {products} شيون، ڪل {pieces} عدد."
 }
