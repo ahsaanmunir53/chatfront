@@ -26,7 +26,7 @@ from chatfront.media.models import Media
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.payments import receipts
 from chatfront.payments.credits import Forwarded, take_sms
@@ -113,7 +113,7 @@ class Forwarding(BaseModel):
 
 @router.post("/api/owner/sms-forwarding")
 async def set_up_forwarding(
-    session: Annotated[OwnerSession, needs(Can.SETTINGS)], services: ServicesDep
+    session: Annotated[OwnerSession, needs_recent(Can.SETTINGS)], services: ServicesDep
 ) -> Forwarding:
     """A new secret for the shop's SMS forwarder; the old one stops working."""
     secret = secrets.token_urlsafe(24)
@@ -197,7 +197,7 @@ async def _screenshot_url(services: Services, media: Media | None) -> str | None
 
 @router.get("/api/owner/payments")
 async def payments(
-    session: Annotated[OwnerSession, needs(Can.PAYMENTS)], services: ServicesDep
+    session: Annotated[OwnerSession, needs_recent(Can.PAYMENTS)], services: ServicesDep
 ) -> PaymentsOut:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
@@ -280,7 +280,7 @@ class Sharing(BaseModel):
 @router.put("/api/owner/sms-samples")
 async def share_unread(
     body: Sharing,
-    session: Annotated[OwnerSession, needs(Can.SETTINGS)],
+    session: Annotated[OwnerSession, needs_recent(Can.SETTINGS)],
     services: ServicesDep,
 ) -> Sharing:
     """Agree, or stop, keeping the shape of wallet messages no parser read; stopping deletes
@@ -342,7 +342,7 @@ class DecisionOut(BaseModel):
 async def decide_payment(
     claim_id: uuid.UUID,
     answer: str,
-    session: Annotated[OwnerSession, needs(Can.PAYMENTS)],
+    session: Annotated[OwnerSession, needs_recent(Can.PAYMENTS)],
     services: ServicesDep,
 ) -> DecisionOut:
     if answer not in ("approve", "reject"):
