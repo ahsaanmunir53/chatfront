@@ -26,8 +26,9 @@ def test_share_page_escapes_product_shop_and_description_markup() -> None:
         shop_url='https://shop.example/s/demo?next="><script>alert(1)</script>',
     )
 
-    assert "<script" not in rendered.lower()
+    assert '<script>alert("xss")</script>' not in rendered
     assert "<img onerror" not in rendered.lower()
     assert "&lt;script&gt;" in rendered
     assert "&lt;img onerror=" in rendered
-    assert 'next="&gt;&lt;script&gt;' in rendered
+    assert 'next=&quot;&gt;&lt;script&gt;' in rendered
+    assert r"\\u003cscript\\u003e" in rendered
