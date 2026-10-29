@@ -48,6 +48,21 @@ You need Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22 and PostgreS
    Add `BASETEN_API_KEY` to `api/.env` for real answers.
 10. Tests: `cd api && uv run pytest --cov`, then `cd web && npm test && npm run e2e`.
 
+## Local Glimmer privacy mode
+
+For model inference on the shop's own PC, run an OpenAI-compatible Glimmer server and set
+`GLIMMER_BASE_URL` to its `/v1` endpoint (for example,
+`http://127.0.0.1:1234/v1` when the API runs on the same host). Set
+`GLIMMER_API_KEY` only if that local server requires one, then set
+`AI_PRIVACY_MODE=true`. In this mode every model role uses only the configured local Glimmer
+endpoint: it never falls back to Modal, Baseten, Fireworks or Meta. If the local endpoint is
+missing, production model calls fail closed. A Dockerized API may need a host-reachable address
+such as `host.docker.internal` rather than `127.0.0.1`.
+
+This localizes model inference, not the whole application: PostgreSQL, media storage, WhatsApp
+and other connected services still need their own connectivity. Leave `AI_PRIVACY_MODE=false`
+to retain the normal provider chains.
+
 ## Evaluation
 
 | Set | What it checks | Replay (CI, every push) | Live (the real model) |

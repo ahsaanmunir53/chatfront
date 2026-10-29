@@ -144,27 +144,44 @@ def spark_endpoints(settings: Settings) -> list[Endpoint]:
 
 
 def glimmer_endpoints(settings: Settings) -> list[Endpoint]:
-    if not settings.modal_glimmer_base_url:
-        return []
-    # Glimmer runs on Modal GPU time paid from credits, not per token.
-    return [
-        Endpoint(
-            "modal-glimmer",
-            settings.modal_glimmer_base_url,
-            _secret(settings.modal_glimmer_api_key),
-            settings.glimmer_model,
-            Decimal(0),
-            Decimal(0),
+    endpoints: list[Endpoint] = []
+    if settings.glimmer_base_url:
+        endpoints.append(
+            Endpoint(
+                "local-glimmer",
+                settings.glimmer_base_url,
+                _secret(settings.glimmer_api_key),
+                settings.glimmer_model,
+                Decimal(0),
+                Decimal(0),
+            )
         )
-    ]
+    if settings.modal_glimmer_base_url:
+        # The hosted Glimmer endpoint runs on Modal GPU time paid from credits, not per token.
+        endpoints.append(
+            Endpoint(
+                "modal-glimmer",
+                settings.modal_glimmer_base_url,
+                _secret(settings.modal_glimmer_api_key),
+                settings.glimmer_model,
+                Decimal(0),
+                Decimal(0),
+            )
+        )
+    return endpoints
 
 
 def build_roles(settings: Settings) -> dict[Role, RoleConfig]:
     spark = spark_endpoints(settings)
     glimmer = glimmer_endpoints(settings)
+    local_glimmer = [endpoint for endpoint in glimmer if endpoint.name == "local-glimmer"]
     roles: dict[Role, RoleConfig] = {}
     for role, (effort, max_tokens, prefers_glimmer) in _ROLE_SETTINGS.items():
-        chain = [*glimmer, *spark] if prefers_glimmer else spark
+        if settings.ai_privacy_mode:
+            # Privacy mode deliberately fails closed if a local endpoint is not configured.
+            chain = local_glimmer
+        else:
+            chain = [*glimmer, *spark] if prefers_glimmer else spark
         roles[role] = RoleConfig(tuple(chain), effort, max_tokens)
     return roles
 
