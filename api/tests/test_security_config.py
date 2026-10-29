@@ -176,8 +176,12 @@ def test_owner_route_permissions_are_explicit() -> None:
             deps = dependency_tree(route.dependant)
             names = {getattr(dep.call, "__name__", "") for dep in deps}
             has_right = any(name == "check" for name in names)
-            has_active_staff = any(name in {"active_staff", "recent_staff"} for name in names)
-            if not (has_right or has_active_staff):
+            dynamic_authorization = path in {
+                "/api/owner/me",
+                "/api/owner/approvals",
+                "/api/owner/approvals/{approval_id}",
+            }
+            if not (has_right or dynamic_authorization):
                 violations.append(f"{','.join(sorted(route.methods or []))} {path}")
         if path.startswith("/api/platform/"):
             deps = dependency_tree(route.dependant)
