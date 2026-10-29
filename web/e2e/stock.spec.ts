@@ -24,6 +24,8 @@ test("stock comes in by chat, form and sheet; the price is settled; a batch is t
   await page.getByRole("button", { name: "Try as the owner" }).click();
   await expect(page).toHaveURL(/\/owner$/);
 
+  await switchToTyping(page);
+
   // By chat: the card shows before and after, and nothing changes until it is confirmed.
   await say(page, "rust ke 20 aa gaye, 2700 ka ek");
   const card = page.locator(".bubble-out").filter({ hasText: "4 + 20 = 24" }).last();
