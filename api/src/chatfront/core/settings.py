@@ -167,7 +167,9 @@ class Settings(BaseSettings):
             secret: SecretStr = getattr(self, name)
             value = secret.get_secret_value()
             if value.startswith("dev-only") or len(value.encode("utf-8")) < 32:
-                raise RuntimeError(f"{name.upper()} must be set to a random value of at least 32 bytes")
+                raise RuntimeError(
+                    f"{name.upper()} must be set to a random value of at least 32 bytes"
+                )
 
 
 @lru_cache
