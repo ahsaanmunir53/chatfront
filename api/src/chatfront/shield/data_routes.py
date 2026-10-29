@@ -16,7 +16,7 @@ from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Tenant
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import ServicesDep, needs_recent
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.routes.public import shop_by_slug
 from chatfront.services import Services
