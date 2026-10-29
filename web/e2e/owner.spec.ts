@@ -49,8 +49,11 @@ test("a visitor runs a demo shop as its owner: a product from a photo, a new pri
 
   // A photo, with the typed words as its caption: the card waits for Confirm.
   await showChat();
-  await page.getByLabel("Type a message").fill("Lawn suit 4850");
   const assistant = page.getByRole("region", { name: "Your assistant" });
+  const voiceToggle = assistant.getByRole("button", { name: "Voice mode" });
+  await expect(voiceToggle).toHaveAttribute("aria-pressed", "true");
+  await voiceToggle.click();
+  await page.getByLabel("Type a message").fill("Lawn suit 4850");
   await assistant.locator('input[type="file"]').setInputFiles(PHOTO);
   await expect(page.locator(".bubble-in .bubble-photo")).toBeVisible();
   await tapFirstButton(page, "Lawn suit: Rs 4,850");
