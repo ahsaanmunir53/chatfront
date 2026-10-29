@@ -1,14 +1,17 @@
 """Security regression tests for server-rendered product share pages."""
 
-from html import unescape
-
 from chatfront.catalog.models import Product
 from chatfront.catalog.share import page
 from chatfront.core.models import Tenant
 
 
 def test_share_page_escapes_product_shop_and_description_markup() -> None:
-    tenant = Tenant(name='Shop "><img onerror="alert(1)">', default_lang="en", country="PK", currency="PKR")
+    tenant = Tenant(
+        name='Shop "><img onerror="alert(1)">',
+        default_lang="en",
+        country="PK",
+        currency="PKR",
+    )
     product = Product(
         name='<script>alert("xss")</script>',
         description='"><img onerror="alert(1)">',
@@ -27,4 +30,4 @@ def test_share_page_escapes_product_shop_and_description_markup() -> None:
     assert "<img onerror" not in rendered.lower()
     assert "&lt;script&gt;" in rendered
     assert "&lt;img onerror=" in rendered
-    assert unescape(rendered).count("<script") >= 2  # escaped text only; never raw markup
+    assert 'next="&gt;&lt;script&gt;' in rendered
