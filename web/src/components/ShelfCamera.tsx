@@ -8,6 +8,7 @@ import { useLang } from "../lang";
 
 const FRAME_INTERVAL_MS = 4_000;
 const MAX_FRAME_SIDE = 1280;
+const MAX_FRAMES_PER_SESSION = 20;
 
 type TallyRow = ShelfCount["rows"][number];
 type Notice = { key: Key; count?: number; alert?: boolean };
@@ -25,6 +26,7 @@ export function ShelfCameraPanel({
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const busy = useRef(false);
+  const framesCaptured = useRef(0);
   const tallyRef = useRef<Record<string, TallyRow>>({});
   const [cameraOn, setCameraOn] = useState(false);
   const [opening, setOpening] = useState(false);
@@ -101,7 +103,8 @@ export function ShelfCameraPanel({
           0.82,
         );
       });
-      const found = await api.countShelf(token, frame);
+      framesCaptured.current += 1;
+      const found = await api.countShelf(token, frame, true);
       if (stream.current !== activeStream) return;
       if (found.rows.length === 0) {
         setNotice({ key: "stock.count_nothing" });
@@ -139,9 +142,14 @@ export function ShelfCameraPanel({
       });
     } finally {
       busy.current = false;
-      if (stream.current) setReading(false);
+      if (stream.current && framesCaptured.current >= MAX_FRAMES_PER_SESSION) {
+        stopCamera();
+        setNotice({ key: "stock.camera_limit" });
+      } else if (stream.current) {
+        setReading(false);
+      }
     }
-  }, [speak, token]);
+  }, [speak, stopCamera, token]);
 
   useEffect(() => {
     if (!cameraOn) return;
@@ -156,6 +164,7 @@ export function ShelfCameraPanel({
       return;
     }
     setOpening(true);
+    framesCaptured.current = 0;
     setNotice(null);
     try {
       const opened = await navigator.mediaDevices.getUserMedia({

@@ -1799,10 +1799,13 @@ export const api = {
       method: "POST",
       headers: bearer(token),
     }),
-  countShelf: (token: string, file: Blob) => {
+  countShelf: (token: string, file: Blob, ephemeral = false) => {
     const form = new FormData();
     form.append("file", file);
-    return call<ShelfCount>("/api/owner/stock/count/photo", {
+    const path = ephemeral
+      ? "/api/owner/stock/count/photo?ephemeral=true"
+      : "/api/owner/stock/count/photo";
+    return call<ShelfCount>(path, {
       method: "POST",
       headers: bearer(token),
       body: form,

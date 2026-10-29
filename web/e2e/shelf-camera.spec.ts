@@ -31,7 +31,7 @@ test("phone shelf mode changes stock only after owner confirmation", async ({ pa
   });
 
   let saves = 0;
-  await page.route("**/api/owner/stock/count/photo", (route) =>
+  await page.route("**/api/owner/stock/count/photo*", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",

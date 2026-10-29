@@ -22,6 +22,7 @@ from chatfront.catalog.stock import label
 from chatfront.channels.language import staff_language
 from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
+from chatfront.ai.types import ImagePart
 from chatfront.core.i18n import t
 from chatfront.core.models import Staff, Tenant
 from chatfront.media import service as media_service
@@ -202,24 +203,39 @@ class CountIn(BaseModel):
 
 @router.post("/stock/count/photo")
 async def count_photo(
-    session: StockDep, services: ServicesDep, file: Annotated[UploadFile, File()]
+    session: StockDep,
+    services: ServicesDep,
+    file: Annotated[UploadFile, File()],
+    ephemeral: bool = False,
 ) -> dict[str, Any]:
-    """Count a shelf from its photo (feature 87); nothing changes until the owner confirms."""
+    """Count a shelf; ephemeral frames are analyzed in memory and are not persisted."""
     data = await file.read(services.settings.max_upload_bytes + 1)
+    if len(data) > services.settings.max_upload_bytes:
+        raise AppError("media_too_large", "The file is too large", status_code=413)
+    file_type = media_service.sniff(data)
+    if file_type.kind != MediaKind.IMAGE:
+        raise AppError("not_a_photo", "Send a photo of the shelf", status_code=415)
+
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await _tenant(db, session)
         staff = await db.get(Staff, session.staff_id)
-        media = await media_service.store(
-            db,
-            services.storage,
-            tenant.id,
-            data,
-            source="console",
-            max_bytes=services.settings.max_upload_bytes,
-        )
+        if ephemeral:
+            # The camera mode sends a short-lived frame only; avoid creating a permanent Media row.
+            part = ImagePart(
+                url=media_service.data_url("image/jpeg", media_service.shrink_image(data))
+            )
+        else:
+            media = await media_service.store(
+                db,
+                services.storage,
+                tenant.id,
+                data,
+                source="console",
+                max_bytes=services.settings.max_upload_bytes,
+            )
+            part = await media_service.model_part(services.storage, media)
         items = await load_items(db)
-    if media.kind != MediaKind.IMAGE:
-        raise AppError("not_a_photo", "Send a photo of the shelf", status_code=415)
+
     lang = staff_language(staff, tenant) if staff else tenant.default_lang
     try:
         reading = await count.read_shelf(
@@ -227,7 +243,7 @@ async def count_photo(
             tenant_id=tenant.id,
             context=prompt_context(tenant),
             items=items,
-            media=[await media_service.model_part(services.storage, media)],
+            media=[part],
             words="",
             lang=lang,
         )
