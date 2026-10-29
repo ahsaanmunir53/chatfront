@@ -4,7 +4,8 @@ The full feature searches the web with the Meta Model API, which is not availabl
 Pakistan. The stand-in looks only inside Chatfront: the public prices of similar items at
 other shops in the same currency, matched by the words of their names. It says how many shops
 and the lowest, middle and highest price, never which shops. Demo shops, their copies and
-Chatfront's own shop are left out. The console labels it as other Chatfront shops, not the whole market.
+Chatfront's own shop are left out. The console labels the results as other Chatfront shops,
+not the whole market.
 """
 
 from __future__ import annotations
