@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import base64
 import hashlib
 import hmac
@@ -493,3 +495,41 @@ async def test_meta_webhook_rate_limit_returns_retry_after(
     second = await client.post("/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
     assert second.status_code == 429
     assert second.headers["retry-after"] == "60"
+
+
+async def test_public_route_families_are_rate_limited_with_retry_after(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, services = app
+    services.limiter.per_minute = 1
+
+    async def rate_limited(method: str, path: str, **kwargs: Any) -> None:
+        services.limiter.hits.clear()
+        first = await client.request(method, path, **kwargs)
+        assert first.status_code != 429, f"{method} {path} was limited before its first request"
+        second = await client.request(method, path, **kwargs)
+        assert second.status_code == 429, f"{method} {path} was not rate limited"
+        assert second.headers["retry-after"] == "60"
+
+    # Public shop discovery, trust and product/price lookups.
+    await rate_limited("GET", "/api/demo-shops")
+    await rate_limited("GET", f"/api/shops/{SHOP}/trust/check", params={"value": "0300"})
+    await rate_limited("GET", f"/api/shops/{SHOP}/products")
+    await rate_limited("GET", f"/api/shops/{SHOP}/products/NO-SUCH-CODE/photo")
+    await rate_limited("GET", f"/s/{SHOP}/p/NO-SUCH-CODE")
+
+    # Owner demo/link sign-in, anonymous chat, webhook callbacks and public lookups.
+    await rate_limited("POST", "/api/owner/demo", json={"slug": SHOP})
+    await rate_limited("POST", f"/api/shops/{SHOP}/chat/session")
+    await rate_limited("POST", "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    await rate_limited("POST", f"/webhooks/sms/{SHOP}", json={"sender": "test", "message": "test"})
+    await rate_limited("GET", "/api/receipts/NO-SUCH-CODE")
+    await rate_limited("GET", "/api/passport/NO-SUCH-CODE")
+
+    # Anonymous chat uploads are rate-limited before token validation or file processing.
+    await rate_limited(
+        "POST",
+        f"/api/shops/{SHOP}/chat/media",
+        data={"client_id": "00000000-0000-4000-8000-000000000001"},
+        files={"file": ("renamed.html", b"<html>nope</html>", "text/html")},
+    )
