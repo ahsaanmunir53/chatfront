@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "গণনা আপডেট হয়েছে।",
   "stock.camera_clear": "গণনা মুছুন",
   "stock.camera_confirm": "স্টকের গণনা নিশ্চিত করুন",
-  "stock.camera_spoken": "শেলফের গণনা: {products}টি পণ্য, মোট {pieces}টি পিস।"
+  "stock.camera_spoken": "শেলফের গণনা: {products}টি পণ্য, মোট {pieces}টি পিস।",
+  "owner.voice_mode": "ভয়েস মোড",
+  "owner.voice_mode_hint": "মাইক্রোফোন বোতাম চেপে ধরে আপনার কথা বলুন, তারপর ছেড়ে দিন। আমি আমার উত্তর জোরে পড়ে শোনাব।",
+  "owner.voice_hold": "কথা বলতে চেপে ধরে রাখুন",
+  "owner.voice_release": "পাঠাতে ছেড়ে দিন",
+  "owner.voice_type": "টাইপ করে লিখুন",
+  "owner.voice_recording": "শুনছি",
+  "owner.voice_tts_unavailable": "এই ব্রাউজারে উত্তর পড়ে শোনানোর সুবিধা নেই।"
 }

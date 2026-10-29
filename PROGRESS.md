@@ -1240,3 +1240,10 @@ stays the same.
 - Deployment example: `GLIMMER_BASE_URL=http://127.0.0.1:1234/v1` and `AI_PRIVACY_MODE=true` when the API runs on the same PC as the local inference server. In Docker, use an address reachable from the API container.
 - Limitation: this keeps model inference local, but does not make PostgreSQL, media storage, WhatsApp or the full application stack offline; feature 70 remains partial.
 - Validation: API lint, type checks and coverage tests passed on the feature commit. The browser suite failed on old shelf-camera and consent-checkbox assertions; the branch now carries the updated E2E tests and needs a fresh green run before merge.
+
+## 28 October: voice-first owner chat (feature 71)
+
+- The owner console starts in voice mode, with press-and-hold microphone input. Releasing the pointer or keyboard key sends the recorded note to the existing owner assistant; a cancel control and a return-to-typing option remain available.
+- New assistant replies are read aloud by browser speech synthesis using the shop owner's language. Browsers without speech synthesis show a visible limitation notice; no new external key is required for the browser-only speech output.
+- Limitation: this is web-console voice support. WhatsApp responses are still text because a server-side text-to-speech provider is not configured, so feature 71 remains partial.
+- Validation: web typecheck, unit tests and build passed on the initial run. A fresh browser run is needed against the updated shelf-camera base; do not merge until all current checks are green.

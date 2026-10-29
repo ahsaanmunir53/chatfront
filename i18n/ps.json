@@ -1882,5 +1882,12 @@
   "stock.camera_updated": "شمېرنه تازه شوه.",
   "stock.camera_clear": "شمېرنه پاکه کړئ",
   "stock.camera_confirm": "د زېرمې شمېرنه تایید کړئ",
-  "stock.camera_spoken": "د المارۍ شمېرنه: {products} توکي، ټول {pieces} دانې."
+  "stock.camera_spoken": "د المارۍ شمېرنه: {products} توکي، ټول {pieces} دانې.",
+  "owner.voice_mode": "غږیز حالت",
+  "owner.voice_mode_hint": "د مایکروفون تڼۍ کېکاږلې وساتئ، خپله غوښتنه ووایئ او بیا یې خوشې کړئ. زه به خپل ځوابونه په غږ درته ولولم.",
+  "owner.voice_hold": "د خبرو لپاره کېکاږلې وساتئ",
+  "owner.voice_release": "د لېږلو لپاره خوشې کړئ",
+  "owner.voice_type": "لیکل وکاروئ",
+  "owner.voice_recording": "اورم",
+  "owner.voice_tts_unavailable": "په دې لټونګر کې د ځوابونو غږیز لوستل نشته."
 }
