@@ -463,3 +463,33 @@ async def test_cors_for_a_separately_hosted_frontend(seeded: Database) -> None:
             stranger = await client.get("/health", headers={"Origin": "https://evil.test"})
     assert preflight.headers["access-control-allow-origin"] == origin
     assert "access-control-allow-origin" not in stranger.headers
+
+
+async def test_meta_webhook_requires_signature_and_caps_body(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, _ = app
+    missing = await client.post(
+        "/webhooks/meta",
+        content=b'{"object":"page","entry":[]}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert missing.status_code == 401
+    oversized = await client.post(
+        "/webhooks/meta",
+        content=b"x" * 1_000_001,
+        headers={"Content-Type": "application/json"},
+    )
+    assert oversized.status_code == 413
+
+
+async def test_meta_webhook_rate_limit_returns_retry_after(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, services = app
+    services.limiter.per_minute = 1
+    first = await client.post("/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    assert first.status_code == 401
+    second = await client.post("/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    assert second.status_code == 429
+    assert second.headers["retry-after"] == "60"
