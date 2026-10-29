@@ -691,8 +691,7 @@ async def order_rounds(
 ) -> list[RoundOut]:
     async with services.db.tenant(session.tenant_id) as db:
         item = await db.scalar(
-            select(B2BOrder)
-            .where(
+            select(B2BOrder).where(
                 B2BOrder.id == order_id,
                 (B2BOrder.tenant_id == session.tenant_id)
                 | (B2BOrder.seller_tenant_id == session.tenant_id),
