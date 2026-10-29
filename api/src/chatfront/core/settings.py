@@ -93,7 +93,6 @@ class Settings(BaseSettings):
     marketplace_webhook_secret: SecretStr | None = None
     marketplace_fee_bps: int = Field(default=500, ge=0, le=3000)
 
-
     # Media storage.
     storage_backend: Literal["local", "supabase"] = "local"
     local_media_dir: Path = REPO_ROOT / ".media"
