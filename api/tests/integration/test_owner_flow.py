@@ -446,9 +446,7 @@ async def test_sensitive_actions_require_a_fresh_sign_in_link(
     assert team_change.status_code == 403
     assert team_change.json()["error"]["code"] == "fresh_link_required"
 
-    link_regeneration = await client.post(
-        f"/api/owner/team/{staff_id}/link", headers=stale_auth
-    )
+    link_regeneration = await client.post(f"/api/owner/team/{staff_id}/link", headers=stale_auth)
     assert link_regeneration.status_code == 403
     assert link_regeneration.json()["error"]["code"] == "fresh_link_required"
 
