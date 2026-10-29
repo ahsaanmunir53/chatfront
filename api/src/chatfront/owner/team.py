@@ -26,7 +26,7 @@ from chatfront.core.models import Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights
-from chatfront.owner.routes import RecentStaffDep, ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession, console_link, issue
 from chatfront.services import Services
 
