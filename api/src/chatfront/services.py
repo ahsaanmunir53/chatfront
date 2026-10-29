@@ -245,7 +245,10 @@ def _storage(settings: Settings, http: httpx.AsyncClient) -> Storage:
 
 def build_services(settings: Settings, registries: Registries) -> Services:
     db = Database(settings.database_url, pool_size=settings.db_pool_size)
-    http = httpx.AsyncClient(timeout=httpx.Timeout(settings.ai_timeout_seconds, connect=10.0))
+    http = httpx.AsyncClient(
+        timeout=httpx.Timeout(settings.ai_timeout_seconds, connect=10.0),
+        follow_redirects=False,
+    )
     ai = build_ai_client(settings, http, db)
     services = Services(
         settings=settings,
