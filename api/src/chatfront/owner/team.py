@@ -26,12 +26,13 @@ from chatfront.core.models import Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession, console_link, issue
 from chatfront.services import Services
 
 router = APIRouter(prefix="/api/owner")
 TeamDep = Annotated[OwnerSession, needs(Can.TEAM)]
+RecentTeamDep = Annotated[OwnerSession, needs_recent(Can.TEAM)]
 AuditDep = Annotated[OwnerSession, needs(Can.AUDIT)]
 
 MAX_TEAM = 25
@@ -136,7 +137,7 @@ async def team(session: TeamDep, services: ServicesDep) -> list[Member]:
 
 
 @router.post("/team")
-async def add_member(body: NewMember, session: TeamDep, services: ServicesDep) -> Invite:
+async def add_member(body: NewMember, session: RecentTeamDep, services: ServicesDep) -> Invite:
     if body.role == StaffRole.OWNER:
         raise AppError("one_owner", "A shop has one owner; pick another role")
     async with services.db.tenant(session.tenant_id) as db:
