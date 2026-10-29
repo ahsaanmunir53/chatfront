@@ -28,7 +28,6 @@ from chatfront.audit.service import verify_chain
 from chatfront.catalog.models import Product
 from chatfront.catalog.share import page as share_page
 from chatfront.channels.models import Conversation, Direction, Message
-from chatfront.core.models import Tenant
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
 from chatfront.core.models import Tenant
