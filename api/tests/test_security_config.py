@@ -104,3 +104,49 @@ def test_owner_session_claims_include_version_and_reject_oversized_tokens() -> N
         verify("x" * (MAX_TOKEN_LENGTH + 1), "test-key")
     with pytest.raises(NotSignedIn):
         verify(token, "different-key")
+
+
+def test_recent_sign_in_is_required_for_sensitive_changes() -> None:
+    import uuid
+    from datetime import timedelta
+
+    from chatfront.core.clock import utcnow
+    from chatfront.owner.sessions import (
+        FreshLinkRequired,
+        OwnerSession,
+        require_recent,
+    )
+
+    now = utcnow()
+    recent = OwnerSession(
+        uuid.uuid4(), uuid.uuid4(), now + timedelta(days=1), 3, now - timedelta(minutes=5)
+    )
+    stale = OwnerSession(
+        recent.staff_id,
+        recent.tenant_id,
+        recent.expires_at,
+        recent.session_version,
+        now - timedelta(minutes=16),
+    )
+    missing_issue_time = OwnerSession(
+        recent.staff_id, recent.tenant_id, recent.expires_at, recent.session_version, None
+    )
+    require_recent(recent, now=now)
+    with pytest.raises(FreshLinkRequired, match="fresh sign-in link"):
+        require_recent(stale, now=now)
+    with pytest.raises(FreshLinkRequired):
+        require_recent(missing_issue_time, now=now)
+
+
+def test_session_verification_preserves_issue_time_and_version() -> None:
+    import uuid
+
+    from chatfront.owner.sessions import issue, verify
+
+    staff_id, tenant_id = uuid.uuid4(), uuid.uuid4()
+    token = issue(staff_id, tenant_id, "test-key", session_version=9)
+    session = verify(token, "test-key")
+    assert session.session_version == 9
+    assert session.issued_at is not None
+    assert session.staff_id == staff_id
+    assert session.tenant_id == tenant_id
