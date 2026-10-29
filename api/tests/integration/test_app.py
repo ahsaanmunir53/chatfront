@@ -79,8 +79,9 @@ async def test_shared_product_page_escapes_untrusted_shop_and_product_text(
 ) -> None:
     async with seeded.system() as session:
         tenant = await session.scalar(select(Tenant).where(Tenant.slug == SHOP))
+        assert tenant is not None
         product = await session.scalar(select(Product).where(Product.tenant_id == tenant.id))
-        assert tenant is not None and product is not None
+        assert product is not None
         tenant.name = '"><img onerror="alert(2)">'
         product.name = "<script>alert(1)</script>"
         product.description = '"><img onerror="alert(3)">'
