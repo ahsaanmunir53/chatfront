@@ -1268,4 +1268,39 @@ stays the same.
 
 ## Security hardening (29 October 2026)
 
-The checklist-hardening branch is in progress. CI results are recorded from the GitHub Actions run for the current commit; do not treat the table in docs/SECURITY.md as proof that unverified routes are secure. Current branch changes include production secret length checks, strict CORS-origin validation, baseline security response headers, and production source maps disabled. Full route-by-route authorization, upload, webhook, tenant-isolation, and storage review remains in progress.
+Work is on `security/checklist-hardening` and remains unmerged in PR #7. The branch is not behind
+`main`; network-commerce changes from main are already present.
+
+Implemented in this phase:
+- Added migration `0029_staff_session_version.py` and the matching `Staff.session_version` model
+  field. Owner tokens carry the version and issue time, owner requests reject stale versions, and
+  removing a member invalidates their tokens. `POST /api/owner/sign-out-all` increments active
+  staff session versions and records an audit event.
+- Added a reusable 15-minute fresh-link guard, but it is not yet wired to every sensitive team,
+  payment/payout setting, and erasure route; those routes and the console UI still need follow-up.
+- Extended the tenant-RLS integration audit to query table schemas correctly and explicitly cover
+  branches, wholesale listings, B2B orders, bargaining policies/rounds, and marketplace payments.
+- Restricted Meta-import photo URLs to HTTPS on the default/443 port, without userinfo and with a
+  known Meta host suffix. Added tests for bad ports, userinfo, HTTP, and deceptive lookalike hosts.
+  The shared HTTP client does not follow redirects by default, so an untrusted redirect target is
+  not followed by the photo-fetch path.
+- Local signed media responses now set `Content-Disposition: attachment` and
+  `X-Content-Type-Options: nosniff`. Media type sniffing has regression tests rejecting HTML and
+  SVG bytes even if their filenames are misleading.
+- Outbound HTTP errors now omit upstream response bodies instead of exposing customer/payment
+  text in errors or retry logs; a regression test checks the body is not exposed.
+- Added regression tests for security headers on success/error responses, token version/size,
+  recent-link age, CORS rejecting HTTP mixed with HTTPS, route authorization dependency inventory,
+  and token/phone/email log redaction.
+
+Verification status:
+- Main/network changes were already present on the branch (compare reported `behind_by = 0`).
+- Web typecheck, unit tests, build, source-map guard, production npm audit and Gitleaks passed on
+  the latest completed checks before the most recent API tests landed.
+- The API CI run is being rerun after Ruff formatting fixes. Do not treat the checklist as closed
+  until the current API lint/types/coverage/evaluation and E2E jobs all finish green.
+- Full BOLA integration coverage for every owner resource, role-by-role 403 matrix, all-public-route
+  limiter inventory, webhook replay tests for every provider, HTML/SVG upload-route matrix, share/
+  receipt/QR XSS coverage, all SQL-injection search-input cases, demo-copy isolation/expiry tests,
+  and a complete sensitive-log capture test are still outstanding. Corresponding rows in
+  `docs/SECURITY.md` must stay Partial/Open until these exist and pass.
