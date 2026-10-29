@@ -322,3 +322,32 @@ async def test_sign_out_all_revokes_owner_session_versions(app: tuple[Client, Se
     revoked = await client.get("/api/owner/me", headers=auth)
     assert revoked.status_code == 401
     assert (await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)).status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("role", "forbidden_path"),
+    [
+        ("sales", "/api/owner/products"),
+        ("packing", "/api/owner/payments"),
+        ("accounts", "/api/owner/team"),
+        ("auditor", "/api/owner/couriers"),
+        ("stock", "/api/owner/payments"),
+    ],
+)
+async def test_staff_roles_are_forbidden_outside_their_rights(
+    app: tuple[Client, Services], role: str, forbidden_path: str
+) -> None:
+    client, _ = app
+    _, owner_auth = await sign_in(client)
+    invited = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": f"Test {role}", "role": role},
+    )
+    assert invited.status_code == 200, invited.text
+    link = invited.json()["link"]
+    token = link.split("#t=", maxsplit=1)[1]
+    staff_auth = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(forbidden_path, headers=staff_auth)
+    assert response.status_code == 403, f"{role} unexpectedly accessed {forbidden_path}: {response.text}"
