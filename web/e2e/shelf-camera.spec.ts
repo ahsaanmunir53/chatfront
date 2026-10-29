@@ -24,7 +24,7 @@ test("phone shelf mode changes stock only after owner confirmation", async ({ pa
     });
     const context = { drawImage: () => undefined } as unknown as CanvasRenderingContext2D;
     HTMLCanvasElement.prototype.getContext = (() =>
-      context) as typeof HTMLCanvasElement.prototype.getContext;
+      context) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.toBlob = function (callback, type) {
       callback(new Blob(["mock shelf frame"], { type: type ?? "image/jpeg" }));
     };
