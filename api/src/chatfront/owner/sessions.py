@@ -97,8 +97,11 @@ def verify(token: str, key: str) -> OwnerSession:
     if not token or len(token) > MAX_TOKEN_LENGTH:
         raise NotSignedIn
     body, separator, signature = token.partition(".")
-    if not separator or not body or not signature or not hmac.compare_digest(
-        signature, _sign(body, key)
+    if (
+        not separator
+        or not body
+        or not signature
+        or not hmac.compare_digest(signature, _sign(body, key))
     ):
         raise NotSignedIn
     try:
