@@ -158,3 +158,13 @@ def test_empty_env_values_mean_the_default(monkeypatch: pytest.MonkeyPatch) -> N
     settings = Settings()
     assert settings.ai_record_dir is None
     assert settings.web_dist_dir.name == "dist"
+
+
+def test_media_sniff_rejects_renamed_html_and_svg() -> None:
+    from chatfront.media.service import sniff
+
+    html_payload = b"<!doctype html><html><script>alert(1)</script></html>"
+    svg_payload = b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+    for payload in (html_payload, svg_payload):
+        with pytest.raises(AppError, match="not supported"):
+            sniff(payload)
