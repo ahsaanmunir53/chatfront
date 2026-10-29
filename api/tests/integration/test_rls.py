@@ -77,14 +77,29 @@ async def test_every_table_with_a_tenant_has_row_level_security(db: Database) ->
             text(
                 """SELECT c.relname, c.relrowsecurity, EXISTS (
                        SELECT 1 FROM pg_policies p
-                       WHERE p.tablename = c.relname AND p.policyname = 'tenant_isolation')
-                   FROM pg_class c JOIN information_schema.columns col
-                     ON col.table_name = c.relname AND col.column_name = 'tenant_id'
-                   WHERE c.relkind = 'r' AND col.table_schema = 'public'"""
+                       WHERE p.schemaname = col.table_schema
+                         AND p.tablename = c.relname AND p.policyname = 'tenant_isolation')
+                   FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                   JOIN information_schema.columns col
+                     ON col.table_schema = n.nspname AND col.table_name = c.relname
+                    AND col.column_name = 'tenant_id'
+                   WHERE c.relkind = 'r' AND n.nspname = 'public'"""
             )
         )
         tables = {name: (enabled, policy) for name, enabled, policy in rows}
-    assert {"products", "variants", "orders", "order_items", "stock_movements"} <= set(tables)
+    assert {
+        "products",
+        "variants",
+        "orders",
+        "order_items",
+        "stock_movements",
+        "branches",
+        "wholesale_listings",
+        "b2b_orders",
+        "a2a_buyer_policies",
+        "a2a_rounds",
+        "marketplace_payments",
+    } <= set(tables)
     assert {name for name, (on, policy) in tables.items() if not (on and policy)} == set()
 
 
