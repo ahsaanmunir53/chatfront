@@ -6,6 +6,14 @@ async function say(page: Page, text: string) {
   await page.getByRole("button", { name: "Send", exact: true }).click();
 }
 
+async function switchToTyping(page: Page) {
+  const toggle = page.getByRole("region", { name: "Your assistant" }).getByRole("button", {
+    name: "Voice mode",
+  });
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+}
+
 test("the owner keeps the books and the khata, runs a team, and sees why", async ({
   browser,
   page,
