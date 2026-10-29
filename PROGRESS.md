@@ -9,6 +9,7 @@ Updated after every phase so a new session can carry on from here.
 - Added integration coverage asserting that a stale but otherwise valid owner session receives `403 fresh_link_required` when attempting to regenerate a staff link.
 - New commit-triggered CI run: [40860785115](https://github.com/ahsaanmunir53/chatfront/actions/runs/40860785115). Do not consider this change validated until all jobs, including Playwright, finish green.
 - The security checklist remains conservative; outstanding Partial rows are not being relabeled complete without route-by-route evidence.
+- The follow-up commit sequence was superseded by GitHub's cancel-in-progress behavior before its run finished; inspect the newest run for the current head before treating these changes as CI-verified.
 
 ## Where things stand (27 October, end of Phase 0)
 
