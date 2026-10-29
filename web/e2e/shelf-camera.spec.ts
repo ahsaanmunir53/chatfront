@@ -60,7 +60,7 @@ test("phone shelf mode changes stock only after owner confirmation", async ({ pa
 
   await page.goto("/s/gulmohar-lawn");
   await page.getByRole("button", { name: "Try as the owner" }).click();
-  await expect(page).toHaveURL(/\\/owner$/);
+  await expect(page).toHaveURL(/\/owner$/);
   const panel = page.getByRole("region", { name: "Shelf camera mode" });
   await expect(panel).toBeVisible();
   await panel.getByRole("button", { name: "Start camera" }).click();
