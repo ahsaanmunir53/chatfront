@@ -52,7 +52,7 @@ from chatfront.network.models import (
     B2BOrder,
     MarketplacePayment,
     WholesaleListing,
-  )
+)
 from chatfront.orders.models import (
     Bundle,
     Coupon,
