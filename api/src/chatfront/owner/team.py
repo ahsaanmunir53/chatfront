@@ -202,7 +202,9 @@ async def new_link(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep)
 
 
 @router.post("/team/{staff_id}/deactivate")
-async def remove_member(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep) -> Member:
+async def remove_member(
+    staff_id: uuid.UUID, session: RecentTeamDep, services: ServicesDep
+) -> Member:
     """Their links stop working at once and their number is a customer's again."""
     async with services.db.tenant(session.tenant_id) as db:
         staff = await _other_member(db, session, staff_id)
