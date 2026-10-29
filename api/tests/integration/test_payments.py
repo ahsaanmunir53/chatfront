@@ -96,6 +96,7 @@ async def test_a_screenshot_waits_for_the_sms_and_a_verified_sms_settles_it(
     qr = await client.get(f"/api/receipts/{code}/qr.svg")
     assert qr.headers["content-type"] == "image/svg+xml"
     assert b"<svg" in qr.content
+    assert b"<script" not in qr.content.lower()
     assert (await client.get("/api/receipts/NOSUCHCODE")).status_code == 404
     async with services.db.system() as session:
         payment = await session.scalar(select(Payment))
