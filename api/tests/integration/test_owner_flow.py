@@ -67,6 +67,37 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
     assert peek.status_code == 401
 
 
+@pytest.mark.parametrize(
+    ("role", "forbidden_path"),
+    [
+        ("sales", "/api/owner/settings"),
+        ("packing", "/api/owner/payments"),
+        ("accounts", "/api/owner/settings"),
+        ("auditor", "/api/owner/payments"),
+        ("stock", "/api/owner/payments"),
+    ],
+)
+async def test_staff_roles_cannot_open_routes_outside_their_rights(
+    app: tuple[Client, Services], role: str, forbidden_path: str
+) -> None:
+    from urllib.parse import parse_qs, urlsplit
+
+    client, _ = app
+    _, owner_auth = await sign_in(client)
+    created = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": f"Test {role}", "role": role},
+    )
+    assert created.status_code == 200, created.text
+    link = created.json()["link"]
+    token = parse_qs(urlsplit(link).fragment)["t"][0]
+    staff_auth = {"Authorization": f"Bearer {token}"}
+
+    denied = await client.get(forbidden_path, headers=staff_auth)
+    assert denied.status_code == 403, f"{role} unexpectedly accessed {forbidden_path}"
+
+
 async def test_product_from_a_photo_and_typed_words(app: tuple[Client, Services]) -> None:
     client, services = app
     slug, auth = await sign_in(client)
