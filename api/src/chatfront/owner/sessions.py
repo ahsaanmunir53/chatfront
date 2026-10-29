@@ -110,9 +110,7 @@ def verify(token: str, key: str) -> OwnerSession:
         if not isinstance(version, int) or version < 0:
             raise ValueError("invalid session version")
         issued_at = (
-            datetime.fromtimestamp(int(claims["i"]), utcnow().tzinfo)
-            if "i" in claims
-            else None
+            datetime.fromtimestamp(int(claims["i"]), utcnow().tzinfo) if "i" in claims else None
         )
         session = OwnerSession(
             uuid.UUID(claims["s"]),
