@@ -255,3 +255,22 @@ async def test_security_headers_apply_to_success_and_error_responses() -> None:
         assert response.headers["referrer-policy"] == "no-referrer"
         assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
         assert "Traceback" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_unhandled_errors_never_return_tracebacks_or_exception_text() -> None:
+    app = create_app(Settings(env="test", worker_enabled=False))
+
+    @app.get("/security-unhandled-error")
+    async def unhandled() -> None:
+        raise RuntimeError("private upstream response with customer message")
+
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/security-unhandled-error")
+    assert response.status_code == 500
+    assert "Traceback" not in response.text
+    assert "private upstream response" not in response.text
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "no-referrer"
