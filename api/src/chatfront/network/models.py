@@ -89,9 +89,7 @@ class B2BOrder(Base):
     paid_at: Mapped[datetime | None]
     fulfilled_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = created_at_column()
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
-    )
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
 
 class A2ABuyerPolicy(Base):

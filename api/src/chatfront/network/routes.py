@@ -723,7 +723,8 @@ async def approve_seller_order(
 ) -> OrderOut:
     async with services.db.tenant(session.tenant_id) as db:
         item = await db.scalar(
-            select(B2BOrder).where(
+            select(B2BOrder)
+            .where(
                 B2BOrder.id == order_id,
                 B2BOrder.seller_tenant_id == session.tenant_id,
                 B2BOrder.status == "awaiting_seller_confirmation",
@@ -755,7 +756,8 @@ async def reject_seller_order(
                 B2BOrder.id == order_id,
                 B2BOrder.seller_tenant_id == session.tenant_id,
                 B2BOrder.status == "awaiting_seller_confirmation",
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         if item is None:
             raise NotFound("negotiated wholesale order")
@@ -933,7 +935,8 @@ async def provider_webhook(
                 B2BOrder.id == payment.b2b_order_id,
                 B2BOrder.tenant_id == payment.tenant_id,
                 B2BOrder.seller_tenant_id == payment.seller_tenant_id,
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         if order is None or order.total != payment.amount or order.currency != payment.currency:
             raise AppError(
