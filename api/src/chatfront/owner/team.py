@@ -190,7 +190,7 @@ async def _other_member(db: AsyncSession, session: OwnerSession, staff_id: uuid.
 
 
 @router.post("/team/{staff_id}/link")
-async def new_link(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep) -> Invite:
+async def new_link(staff_id: uuid.UUID, session: RecentTeamDep, services: ServicesDep) -> Invite:
     """A fresh sign-in link for someone who lost theirs."""
     async with services.db.tenant(session.tenant_id) as db:
         staff = await _other_member(db, session, staff_id)
