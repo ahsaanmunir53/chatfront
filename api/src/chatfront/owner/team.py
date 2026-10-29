@@ -114,9 +114,9 @@ async def sign_out_all(session: TeamDep, services: ServicesDep) -> dict[str, boo
     """
     async with services.db.tenant(session.tenant_id) as db:
         await db.execute(
-            update(Staff).where(Staff.active.is_(True)).values(
-                session_version=Staff.session_version + 1
-            )
+            update(Staff)
+            .where(Staff.active.is_(True))
+            .values(session_version=Staff.session_version + 1)
         )
         await record(
             db,
