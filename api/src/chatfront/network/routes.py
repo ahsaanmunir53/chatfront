@@ -751,7 +751,8 @@ async def reject_seller_order(
 ) -> OrderOut:
     async with services.db.tenant(session.tenant_id) as db:
         item = await db.scalar(
-            select(B2BOrder).where(
+            select(B2BOrder)
+            .where(
                 B2BOrder.id == order_id,
                 B2BOrder.seller_tenant_id == session.tenant_id,
                 B2BOrder.status == "awaiting_seller_confirmation",
@@ -779,11 +780,13 @@ async def confirm_buyer_order(
     settings = services.settings
     async with services.db.tenant(session.tenant_id) as db:
         item = await db.scalar(
-            select(B2BOrder).where(
+            select(B2BOrder)
+            .where(
                 B2BOrder.id == order_id,
                 B2BOrder.tenant_id == session.tenant_id,
                 B2BOrder.status == "awaiting_buyer_confirmation",
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         if item is None or item.agreed_unit_price is None or item.total is None:
             raise NotFound("order awaiting buyer confirmation")
