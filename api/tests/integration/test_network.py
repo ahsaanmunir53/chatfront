@@ -49,7 +49,7 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
     second_branch = second_branch_response.json()
 
     # Normal customer checkout uses the default branch, or a validated explicit branch.
-    guest_headers, token = await customer(client, seller_slug)
+    guest_headers, _token = await customer(client, seller_slug)
     public_products = (
         await client.get(f"/api/shops/{seller_slug}/products")
     ).json()
