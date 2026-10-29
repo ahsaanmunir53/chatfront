@@ -1242,3 +1242,11 @@ stays the same.
 - Added a split ledger and a signed normalized-provider-event endpoint. It checks HMAC, configured provider, unique event/transaction IDs, exact amount and currency, then records the platform fee and seller share. It does not create hosted checkout or transfer a payout; seller payout stays pending.
 - Configure `MARKETPLACE_PROVIDER` and `MARKETPLACE_WEBHOOK_SECRET` with a random secret of at least 32 characters. The normalized event sender must HMAC-SHA256 the exact raw request body and send `X-Marketplace-Signature: sha256=<hex>`. No real provider key or payout API has been configured.
 - Validation: CI must run the migration, tenant-RLS integration tests, API lint/type/coverage checks and browser tests before merge. These are PR changes only; nothing was deployed.
+
+
+## 29 October: network commerce owner UI
+
+- Added an owner-console workspace to manage branches and staff assignments, opt into wholesale discovery, publish/deactivate wholesale listings, browse other opted-in shops, and start policy-bounded buyer/seller negotiations.
+- The workspace exposes buyer orders, seller approval/rejection, buyer confirmation, and the split-ledger status. It clearly states that a payment ledger entry is not a checkout or payout; those require a real provider adapter.
+- Added localized network labels to all nine language catalogs and a browser test for branch creation from the owner console.
+- Validation: current PR branch CI must pass the web type/build/E2E suite and the underlying API/migration suite before merge.

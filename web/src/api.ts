@@ -227,6 +227,68 @@ export type OwnerProduct = {
   variants: { id: string; options: Record<string, string>; price: number; stock: number | null }[];
 };
 
+export type NetworkBranch = {
+  id: string;
+  name: string;
+  code: string;
+  city: string | null;
+  address: string | null;
+  active: boolean;
+  is_default: boolean;
+};
+export type NetworkSettings = {
+  wholesale_enabled: boolean;
+  provider_ready: boolean;
+  provider: string | null;
+};
+export type WholesaleListing = {
+  id: string;
+  seller_tenant_id: string;
+  seller_slug: string;
+  seller_name: string;
+  title: string;
+  description: string;
+  unit_price: number;
+  minimum_quantity: number;
+  maximum_quantity: number;
+  currency: string;
+  active: boolean;
+};
+export type NetworkOrder = {
+  id: string;
+  listing_title: string;
+  buyer_name: string;
+  seller_name: string;
+  quantity: number;
+  initial_offer_unit_price: number;
+  agreed_unit_price: number | null;
+  total: number | null;
+  currency: string;
+  status: string;
+  rounds: number;
+  created_at: string;
+  checkout_reference: string | null;
+};
+export type NetworkRound = {
+  round: number;
+  buyer_offer: number;
+  seller_counter: number | null;
+  outcome: string;
+  created_at: string;
+};
+export type NetworkPayment = {
+  id: string;
+  checkout_reference: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  platform_fee: number;
+  seller_amount: number;
+  status: string;
+  payout_status: string;
+  checkout_available: boolean;
+};
+
 export type InboxState = "assistant" | "waiting" | "person";
 export type InboxPerson = { id: string; name: string };
 export type InboxItem = {
@@ -1158,6 +1220,7 @@ export type Member = {
   role: string;
   active: boolean;
   whatsapp: boolean;
+  branch_id?: string | null;
   rights: string[];
   created_at: string;
 };
@@ -2026,4 +2089,115 @@ export const api = {
       headers: bearer(token),
       body: JSON.stringify({ text }),
     }),
+  networkSettings: (token: string) =>
+    call<NetworkSettings>("/api/network/settings", { headers: bearer(token) }),
+  saveNetworkSettings: (token: string, wholesaleEnabled: boolean) =>
+    call<NetworkSettings>("/api/network/settings", {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ wholesale_enabled: wholesaleEnabled }),
+    }),
+  networkBranches: (token: string) =>
+    call<NetworkBranch[]>("/api/network/branches", { headers: bearer(token) }),
+  createNetworkBranch: (
+    token: string,
+    branch: { name: string; code: string; city?: string; address?: string; is_default?: boolean },
+  ) =>
+    call<NetworkBranch>("/api/network/branches", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(branch),
+    }),
+  updateNetworkBranch: (
+    token: string,
+    id: string,
+    change: { name?: string; city?: string | null; address?: string | null; active?: boolean; is_default?: boolean },
+  ) =>
+    call<NetworkBranch>(\`/api/network/branches/\${encodeURIComponent(id)}\`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(change),
+    }),
+  assignStaffBranch: (token: string, staffId: string, branchId: string | null) =>
+    call<{ saved: boolean }>(\`/api/network/team/\${encodeURIComponent(staffId)}/branch\`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify({ branch_id: branchId }),
+    }),
+  networkListings: (token: string) =>
+    call<WholesaleListing[]>("/api/network/listings", { headers: bearer(token) }),
+  myNetworkListings: (token: string) =>
+    call<WholesaleListing[]>("/api/network/my-listings", { headers: bearer(token) }),
+  createWholesaleListing: (
+    token: string,
+    listing: {
+      product_id: string;
+      variant_id?: string | null;
+      branch_id?: string | null;
+      title: string;
+      description?: string;
+      unit_price: number;
+      minimum_unit_price?: number | null;
+      minimum_quantity: number;
+      maximum_quantity: number;
+    },
+  ) =>
+    call<WholesaleListing>("/api/network/listings", {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(listing),
+    }),
+  updateWholesaleListing: (
+    token: string,
+    id: string,
+    change: {
+      title?: string;
+      description?: string;
+      unit_price?: number;
+      minimum_unit_price?: number | null;
+      minimum_quantity?: number;
+      maximum_quantity?: number;
+      active?: boolean;
+    },
+  ) =>
+    call<WholesaleListing>(\`/api/network/listings/\${encodeURIComponent(id)}\`, {
+      method: "PUT",
+      headers: bearer(token),
+      body: JSON.stringify(change),
+    }),
+  placeWholesaleOrder: (
+    token: string,
+    listingId: string,
+    order: { quantity: number; initial_offer_unit_price: number; budget_unit_price: number; branch_id?: string | null },
+  ) =>
+    call<NetworkOrder>(\`/api/network/listings/\${encodeURIComponent(listingId)}/orders\`, {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify(order),
+    }),
+  buyerNetworkOrders: (token: string) =>
+    call<NetworkOrder[]>("/api/network/buyer/orders", { headers: bearer(token) }),
+  sellerNetworkOrders: (token: string) =>
+    call<NetworkOrder[]>("/api/network/seller/orders", { headers: bearer(token) }),
+  networkOrderRounds: (token: string, orderId: string) =>
+    call<NetworkRound[]>(\`/api/network/orders/\${encodeURIComponent(orderId)}/rounds\`, {
+      headers: bearer(token),
+    }),
+  approveNetworkOrder: (token: string, orderId: string) =>
+    call<NetworkOrder>(\`/api/network/seller/orders/\${encodeURIComponent(orderId)}/approve\`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  rejectNetworkOrder: (token: string, orderId: string) =>
+    call<NetworkOrder>(\`/api/network/seller/orders/\${encodeURIComponent(orderId)}/reject\`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  confirmNetworkOrder: (token: string, orderId: string) =>
+    call<NetworkPayment>(\`/api/network/buyer/orders/\${encodeURIComponent(orderId)}/confirm\`, {
+      method: "POST",
+      headers: bearer(token),
+    }),
+  networkPayments: (token: string) =>
+    call<NetworkPayment[]>("/api/network/payments", { headers: bearer(token) }),
 };

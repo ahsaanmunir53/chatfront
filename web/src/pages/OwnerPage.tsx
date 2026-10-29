@@ -39,6 +39,7 @@ import { RefundsPanel, ReturnsPanel } from "../components/Returns";
 import { ReviewsPanel } from "../components/Reviews";
 import { ShelfCountPanel } from "../components/ShelfCount";
 import { ShelfCameraPanel } from "../components/ShelfCamera";
+import { NetworkCommercePanel } from "../components/NetworkCommerce";
 import { SizeChartsPanel } from "../components/SizeCharts";
 import { WaitingPanel } from "../components/Waiting";
 import { PostsPanel } from "../components/Posts";
@@ -439,6 +440,16 @@ function Console({
       {me.is_platform && can("trust") && <SmsFormatsPanel token={token} />}
       {can("trust") && !me.is_platform && <ScamsPanel token={token} />}
       {can("team") && <TeamPanel token={token} />}
+      {(can("catalog") || can("orders") || can("team")) && (
+        <NetworkCommercePanel
+          me={me}
+          token={token}
+          products={products ?? []}
+          canCatalog={can("catalog")}
+          canOrders={can("orders")}
+          canTeam={can("team")}
+        />
+      )}
       {can("team") && <StaffPayPanel me={me} token={token} />}
       {can("settings") && <OffersPanel me={me} token={token} products={products ?? []} />}
       {can("settings") && <SalesPanel me={me} token={token} products={products ?? []} />}
