@@ -193,7 +193,9 @@ async def me(session: StaffDep, services: ServicesDep) -> Me:
 
 
 @router.get("/products")
-async def products(session: StaffDep, services: ServicesDep) -> list[OwnerProduct]:
+async def products(
+    session: Annotated[OwnerSession, needs(Can.CATALOG)], services: ServicesDep
+) -> list[OwnerProduct]:
     async with services.db.tenant(session.tenant_id) as db:
         items = await load_items(db, statuses=tuple(ProductStatus))
     return [
@@ -221,7 +223,9 @@ class LowStock(BaseModel):
 
 
 @router.get("/low-stock")
-async def low_stock(session: StaffDep, services: ServicesDep) -> list[LowStock]:
+async def low_stock(
+    session: Annotated[OwnerSession, needs(Can.STOCK)], services: ServicesDep
+) -> list[LowStock]:
     """Counted variants at or below their limit (feature 52)."""
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
