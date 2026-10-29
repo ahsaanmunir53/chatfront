@@ -186,3 +186,37 @@ def test_owner_route_permissions_are_explicit() -> None:
                 violations.append(f"platform reviewer missing: {path}")
 
     assert violations == [], "Unprotected routes: " + "; ".join(violations)
+
+
+def test_log_redaction_removes_tokens_phone_numbers_and_email() -> None:
+    from chatfront.core.logging import redact
+
+    message = "Authorization: Bearer secret-token-123, caller +923001234567, mail user@example.com"
+    redacted = redact(message)
+    assert "secret-token-123" not in redacted
+    assert "+923001234567" not in redacted
+    assert "user@example.com" not in redacted
+
+
+def test_production_cors_rejects_http_even_when_other_origin_is_valid() -> None:
+    with pytest.raises(ValidationError):
+        production_settings(cors_origins="https://good.example, http://bad.example")
+
+
+def test_session_token_has_issue_time_and_old_tokens_require_fresh_link() -> None:
+    import base64
+    import json
+    import uuid
+    from datetime import timedelta
+
+    from chatfront.core.clock import utcnow
+    from chatfront.owner.sessions import FreshLinkRequired, OwnerSession, issue, require_recent, verify
+
+    token = issue(uuid.uuid4(), uuid.uuid4(), "session-key", timedelta(minutes=10))
+    encoded = token.split(".", maxsplit=1)[0]
+    claims = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+    assert claims["i"] <= int(utcnow().timestamp())
+
+    old = OwnerSession(uuid.uuid4(), uuid.uuid4(), utcnow() + timedelta(days=1), 0, None)
+    with pytest.raises(FreshLinkRequired):
+        require_recent(old)
