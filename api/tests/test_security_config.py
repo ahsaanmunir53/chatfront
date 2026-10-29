@@ -155,8 +155,8 @@ def test_session_verification_preserves_issue_time_and_version() -> None:
 def test_owner_route_permissions_are_explicit() -> None:
     from fastapi.routing import APIRoute
 
-    from chatfront.main import create_app
     from chatfront.core.settings import Settings
+    from chatfront.main import create_app
 
     app = create_app(Settings(env="test", worker_enabled=False))
     violations: list[str] = []
@@ -210,7 +210,12 @@ def test_session_token_has_issue_time_and_old_tokens_require_fresh_link() -> Non
     from datetime import timedelta
 
     from chatfront.core.clock import utcnow
-    from chatfront.owner.sessions import FreshLinkRequired, OwnerSession, issue, require_recent, verify
+    from chatfront.owner.sessions import (
+        FreshLinkRequired,
+        OwnerSession,
+        issue,
+        require_recent,
+    )
 
     token = issue(uuid.uuid4(), uuid.uuid4(), "session-key", timedelta(minutes=10))
     encoded = token.split(".", maxsplit=1)[0]
