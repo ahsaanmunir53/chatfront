@@ -168,11 +168,7 @@ def _actor(session: OwnerSession) -> Actor:
 
 def _provider_ready(settings: Settings) -> bool:
     secret = settings.marketplace_webhook_secret
-    return bool(
-        settings.marketplace_provider
-        and secret
-        and len(secret.get_secret_value()) >= 32
-    )
+    return bool(settings.marketplace_provider and secret and len(secret.get_secret_value()) >= 32)
 
 
 def _branch_out(item: Branch) -> BranchOut:
@@ -255,9 +251,7 @@ async def _branch_in_tenant(
     return item
 
 
-async def _tenant_settings(
-    services: Services, tenant_id: uuid.UUID
-) -> tuple[Tenant, bool]:
+async def _tenant_settings(services: Services, tenant_id: uuid.UUID) -> tuple[Tenant, bool]:
     async with services.db.tenant(tenant_id) as db:
         tenant = await db.get(Tenant, tenant_id)
     if tenant is None:
@@ -273,9 +267,7 @@ async def branches(session: TeamDep, services: ServicesDep) -> list[BranchOut]:
 
 
 @router.post("/branches", response_model=BranchOut)
-async def create_branch(
-    body: BranchIn, session: TeamDep, services: ServicesDep
-) -> BranchOut:
+async def create_branch(body: BranchIn, session: TeamDep, services: ServicesDep) -> BranchOut:
     code = body.code.strip().lower()
     async with services.db.tenant(session.tenant_id) as db:
         exists = await db.scalar(
@@ -392,9 +384,7 @@ async def assign_staff_branch(
 
 
 @router.get("/settings", response_model=NetworkSettingsOut)
-async def network_settings(
-    session: CatalogDep, services: ServicesDep
-) -> NetworkSettingsOut:
+async def network_settings(session: CatalogDep, services: ServicesDep) -> NetworkSettingsOut:
     _tenant, enabled = await _tenant_settings(services, session.tenant_id)
     return NetworkSettingsOut(
         wholesale_enabled=enabled,
@@ -430,9 +420,7 @@ async def set_network_settings(
 
 
 @router.get("/listings", response_model=list[ListingOut])
-async def marketplace_listings(
-    session: CatalogDep, services: ServicesDep
-) -> list[ListingOut]:
+async def marketplace_listings(session: CatalogDep, services: ServicesDep) -> list[ListingOut]:
     # Cross-tenant discovery is deliberate, read-only and limited to opted-in seller shops.
     async with services.db.system() as db:
         records = list(
@@ -470,9 +458,7 @@ async def my_listings(session: CatalogDep, services: ServicesDep) -> list[Listin
 
 
 @router.post("/listings", response_model=ListingOut)
-async def create_listing(
-    body: ListingIn, session: CatalogDep, services: ServicesDep
-) -> ListingOut:
+async def create_listing(body: ListingIn, session: CatalogDep, services: ServicesDep) -> ListingOut:
     if body.minimum_quantity > body.maximum_quantity:
         raise AppError("quantity_range", "Minimum quantity must not exceed maximum")
     if body.minimum_unit_price is not None and body.minimum_unit_price > body.unit_price:
@@ -670,8 +656,10 @@ async def _orders_for(
     async with services.db.tenant(session.tenant_id) as db:
         return list(
             await db.scalars(
-                select(B2BOrder).where(field == session.tenant_id)
-                .order_by(B2BOrder.created_at.desc()).limit(100)
+                select(B2BOrder)
+                .where(field == session.tenant_id)
+                .order_by(B2BOrder.created_at.desc())
+                .limit(100)
             )
         )
 
@@ -703,7 +691,8 @@ async def order_rounds(
 ) -> list[RoundOut]:
     async with services.db.tenant(session.tenant_id) as db:
         item = await db.scalar(
-            select(B2BOrder).where(
+            select(B2BOrder)
+            .where(
                 B2BOrder.id == order_id,
                 (B2BOrder.tenant_id == session.tenant_id)
                 | (B2BOrder.seller_tenant_id == session.tenant_id),
@@ -738,7 +727,8 @@ async def approve_seller_order(
                 B2BOrder.id == order_id,
                 B2BOrder.seller_tenant_id == session.tenant_id,
                 B2BOrder.status == "awaiting_seller_confirmation",
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         if item is None:
             raise NotFound("negotiated wholesale order")
@@ -825,9 +815,7 @@ async def confirm_buyer_order(
 
 
 @router.get("/payments", response_model=list[PaymentOut])
-async def list_marketplace_payments(
-    session: OrdersDep, services: ServicesDep
-) -> list[PaymentOut]:
+async def list_marketplace_payments(session: OrdersDep, services: ServicesDep) -> list[PaymentOut]:
     async with services.db.tenant(session.tenant_id) as db:
         items = list(
             await db.scalars(
@@ -940,7 +928,8 @@ async def provider_webhook(
                 status_code=409,
             )
         order = await db.scalar(
-            select(B2BOrder).where(
+            select(B2BOrder)
+            .where(
                 B2BOrder.id == payment.b2b_order_id,
                 B2BOrder.tenant_id == payment.tenant_id,
                 B2BOrder.seller_tenant_id == payment.seller_tenant_id,

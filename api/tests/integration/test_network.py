@@ -50,9 +50,7 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
 
     # Normal customer checkout uses the default branch, or a validated explicit branch.
     guest_headers, _token = await customer(client, seller_slug)
-    public_products = (
-        await client.get(f"/api/shops/{seller_slug}/products")
-    ).json()
+    public_products = (await client.get(f"/api/shops/{seller_slug}/products")).json()
     catalog_id = public_products[0]["variants"][0]["catalog_id"]
     checkout_body = {
         "lines": [{"item": catalog_id, "quantity": 1}],
@@ -164,9 +162,7 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
     seller_order = next(item for item in seller_orders if item["id"] == order["id"])
     assert seller_order["status"] == "awaiting_seller_confirmation"
     assert "budget_unit_price" not in seller_order
-    rounds = await client.get(
-        f"/api/network/orders/{order['id']}/rounds", headers=seller_auth
-    )
+    rounds = await client.get(f"/api/network/orders/{order['id']}/rounds", headers=seller_auth)
     assert rounds.status_code == 200, rounds.text
     assert rounds.json()
 

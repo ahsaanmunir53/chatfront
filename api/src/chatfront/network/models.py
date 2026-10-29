@@ -31,9 +31,7 @@ class WholesaleListing(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tenants.id", ondelete="CASCADE"), index=True
     )
-    product_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("products.id", ondelete="RESTRICT")
-    )
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("products.id", ondelete="RESTRICT"))
     variant_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("variants.id", ondelete="SET NULL")
     )
@@ -49,9 +47,7 @@ class WholesaleListing(Base):
     currency: Mapped[str] = mapped_column(String(3))
     active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = created_at_column()
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
-    )
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
 
 class B2BOrder(Base):

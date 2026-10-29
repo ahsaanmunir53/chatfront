@@ -52,8 +52,15 @@ def upgrade() -> None:
         sa.Column("is_default", sa.Boolean(), server_default=sa.text("false"), nullable=False),
         _created_at(),
         sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_branches_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_branches_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_branches")),
         sa.UniqueConstraint("tenant_id", "code", name=op.f("uq_branches_tenant_id_code")),
@@ -64,14 +71,36 @@ def upgrade() -> None:
     op.add_column("staff", sa.Column("branch_id", sa.UUID(), nullable=True))
     op.create_index(op.f("ix_staff_branch_id"), "staff", ["branch_id"])
     op.create_foreign_key(
-        op.f("fk_staff_branch_id_branches"), "staff", "branches", ["branch_id"], ["id"],
-        ondelete="SET NULL"
+
+        op.f("fk_staff_branch_id_branches"),
+
+        "staff",
+
+        "branches",
+
+        ["branch_id"],
+
+        ["id"],
+
+        ondelete="SET NULL",
+
     )
     op.add_column("orders", sa.Column("branch_id", sa.UUID(), nullable=True))
     op.create_index(op.f("ix_orders_branch_id"), "orders", ["branch_id"])
     op.create_foreign_key(
-        op.f("fk_orders_branch_id_branches"), "orders", "branches", ["branch_id"], ["id"],
-        ondelete="SET NULL"
+
+        op.f("fk_orders_branch_id_branches"),
+
+        "orders",
+
+        "branches",
+
+        ["branch_id"],
+
+        ["id"],
+
+        ondelete="SET NULL",
+
     )
 
     op.create_table(
@@ -90,22 +119,60 @@ def upgrade() -> None:
         sa.Column("currency", sa.String(length=3), nullable=False),
         sa.Column("active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
         _created_at(),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_wholesale_listings_tenant_id_tenants"), ondelete="CASCADE"
+        sa.Column(
+
+            "updated_at",
+
+            sa.DateTime(timezone=True),
+
+            server_default=sa.text("now()"),
+
+            nullable=False,
+
         ),
         sa.ForeignKeyConstraint(
-            ["product_id"], ["products.id"],
-            name=op.f("fk_wholesale_listings_product_id_products"), ondelete="RESTRICT"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_wholesale_listings_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["variant_id"], ["variants.id"],
-            name=op.f("fk_wholesale_listings_variant_id_variants"), ondelete="SET NULL"
+
+            ["product_id"],
+
+            ["products.id"],
+
+            name=op.f("fk_wholesale_listings_product_id_products"),
+
+            ondelete="RESTRICT",
+
         ),
         sa.ForeignKeyConstraint(
-            ["branch_id"], ["branches.id"],
-            name=op.f("fk_wholesale_listings_branch_id_branches"), ondelete="SET NULL"
+
+            ["variant_id"],
+
+            ["variants.id"],
+
+            name=op.f("fk_wholesale_listings_variant_id_variants"),
+
+            ondelete="SET NULL",
+
+        ),
+        sa.ForeignKeyConstraint(
+
+            ["branch_id"],
+
+            ["branches.id"],
+
+            name=op.f("fk_wholesale_listings_branch_id_branches"),
+
+            ondelete="SET NULL",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_wholesale_listings")),
     )
@@ -134,22 +201,60 @@ def upgrade() -> None:
         sa.Column("paid_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("fulfilled_at", sa.DateTime(timezone=True), nullable=True),
         _created_at(),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_b2b_orders_tenant_id_tenants"), ondelete="CASCADE"
+        sa.Column(
+
+            "updated_at",
+
+            sa.DateTime(timezone=True),
+
+            server_default=sa.text("now()"),
+
+            nullable=False,
+
         ),
         sa.ForeignKeyConstraint(
-            ["seller_tenant_id"], ["tenants.id"],
-            name=op.f("fk_b2b_orders_seller_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_b2b_orders_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["listing_id"], ["wholesale_listings.id"],
-            name=op.f("fk_b2b_orders_listing_id_wholesale_listings"), ondelete="SET NULL"
+
+            ["seller_tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_b2b_orders_seller_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["buyer_branch_id"], ["branches.id"],
-            name=op.f("fk_b2b_orders_buyer_branch_id_branches"), ondelete="SET NULL"
+
+            ["listing_id"],
+
+            ["wholesale_listings.id"],
+
+            name=op.f("fk_b2b_orders_listing_id_wholesale_listings"),
+
+            ondelete="SET NULL",
+
+        ),
+        sa.ForeignKeyConstraint(
+
+            ["buyer_branch_id"],
+
+            ["branches.id"],
+
+            name=op.f("fk_b2b_orders_buyer_branch_id_branches"),
+
+            ondelete="SET NULL",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_b2b_orders")),
     )
@@ -167,18 +272,34 @@ def upgrade() -> None:
         sa.Column("budget_unit_price", sa.BigInteger(), nullable=False),
         _created_at(),
         sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_a2a_buyer_policies_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_a2a_buyer_policies_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["b2b_order_id"], ["b2b_orders.id"],
-            name=op.f("fk_a2a_buyer_policies_b2b_order_id_b2b_orders"), ondelete="CASCADE"
+
+            ["b2b_order_id"],
+
+            ["b2b_orders.id"],
+
+            name=op.f("fk_a2a_buyer_policies_b2b_order_id_b2b_orders"),
+
+            ondelete="CASCADE",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_a2a_buyer_policies")),
         sa.UniqueConstraint("b2b_order_id", name=op.f("uq_a2a_buyer_policies_b2b_order_id")),
     )
     op.create_index(op.f("ix_a2a_buyer_policies_tenant_id"), "a2a_buyer_policies", ["tenant_id"])
-    op.create_index(op.f("ix_a2a_buyer_policies_b2b_order_id"), "a2a_buyer_policies", ["b2b_order_id"])
+    op.create_index(
+        op.f("ix_a2a_buyer_policies_b2b_order_id"), "a2a_buyer_policies", ["b2b_order_id"]
+    )
     secure("a2a_buyer_policies")
 
     op.create_table(
@@ -193,16 +314,37 @@ def upgrade() -> None:
         sa.Column("outcome", sa.String(length=16), nullable=False),
         _created_at(),
         sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_a2a_rounds_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_a2a_rounds_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["seller_tenant_id"], ["tenants.id"],
-            name=op.f("fk_a2a_rounds_seller_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["seller_tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_a2a_rounds_seller_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["b2b_order_id"], ["b2b_orders.id"],
-            name=op.f("fk_a2a_rounds_b2b_order_id_b2b_orders"), ondelete="CASCADE"
+
+            ["b2b_order_id"],
+
+            ["b2b_orders.id"],
+
+            name=op.f("fk_a2a_rounds_b2b_order_id_b2b_orders"),
+
+            ondelete="CASCADE",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_a2a_rounds")),
         sa.UniqueConstraint("b2b_order_id", "round", name=op.f("uq_a2a_rounds_b2b_order_id_round")),
@@ -232,27 +374,72 @@ def upgrade() -> None:
         sa.Column("verified_at", sa.DateTime(timezone=True), nullable=True),
         _created_at(),
         sa.ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"],
-            name=op.f("fk_marketplace_payments_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_marketplace_payments_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["seller_tenant_id"], ["tenants.id"],
-            name=op.f("fk_marketplace_payments_seller_tenant_id_tenants"), ondelete="CASCADE"
+
+            ["seller_tenant_id"],
+
+            ["tenants.id"],
+
+            name=op.f("fk_marketplace_payments_seller_tenant_id_tenants"),
+
+            ondelete="CASCADE",
+
         ),
         sa.ForeignKeyConstraint(
-            ["b2b_order_id"], ["b2b_orders.id"],
-            name=op.f("fk_marketplace_payments_b2b_order_id_b2b_orders"), ondelete="CASCADE"
+
+            ["b2b_order_id"],
+
+            ["b2b_orders.id"],
+
+            name=op.f("fk_marketplace_payments_b2b_order_id_b2b_orders"),
+
+            ondelete="CASCADE",
+
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_marketplace_payments")),
-        sa.UniqueConstraint("checkout_reference", name=op.f("uq_marketplace_payments_checkout_reference")),
-        sa.UniqueConstraint("provider", "provider_event_id", name=op.f("uq_marketplace_payments_provider_provider_event_id")),
-        sa.UniqueConstraint("provider", "transaction_id", name=op.f("uq_marketplace_payments_provider_transaction_id")),
+        sa.UniqueConstraint(
+            "checkout_reference", name=op.f("uq_marketplace_payments_checkout_reference")
+        ),
+        sa.UniqueConstraint(
+            "provider",
+            "provider_event_id",
+            name=op.f("uq_marketplace_payments_provider_provider_event_id"),
+        ),
+        sa.UniqueConstraint(
+            "provider",
+            "transaction_id",
+            name=op.f("uq_marketplace_payments_provider_transaction_id"),
+        ),
     )
-    op.create_index(op.f("ix_marketplace_payments_tenant_id"), "marketplace_payments", ["tenant_id"])
-    op.create_index(op.f("ix_marketplace_payments_seller_tenant_id"), "marketplace_payments", ["seller_tenant_id"])
-    op.create_index(op.f("ix_marketplace_payments_b2b_order_id"), "marketplace_payments", ["b2b_order_id"])
-    op.create_index("ix_marketplace_payments_tenant_status", "marketplace_payments", ["tenant_id", "status"])
-    op.create_index("ix_marketplace_payments_seller_status", "marketplace_payments", ["seller_tenant_id", "payout_status"])
+    op.create_index(
+        op.f("ix_marketplace_payments_tenant_id"), "marketplace_payments", ["tenant_id"]
+    )
+    op.create_index(
+        op.f("ix_marketplace_payments_seller_tenant_id"),
+        "marketplace_payments",
+        ["seller_tenant_id"],
+    )
+    op.create_index(
+        op.f("ix_marketplace_payments_b2b_order_id"), "marketplace_payments", ["b2b_order_id"]
+    )
+    op.create_index(
+        "ix_marketplace_payments_tenant_status", "marketplace_payments", ["tenant_id", "status"]
+    )
+    op.create_index(
+        "ix_marketplace_payments_seller_status",
+        "marketplace_payments",
+        ["seller_tenant_id", "payout_status"],
+    )
     _dual_tenant("marketplace_payments")
 
 

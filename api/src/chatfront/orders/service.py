@@ -50,9 +50,7 @@ async def _new_code(session: AsyncSession, tenant_id: uuid.UUID) -> str:
             return code
 
 
-async def _default_branch_id(
-    session: AsyncSession, tenant_id: uuid.UUID
-) -> uuid.UUID | None:
+async def _default_branch_id(session: AsyncSession, tenant_id: uuid.UUID) -> uuid.UUID | None:
     return await session.scalar(
         select(Branch.id).where(
             Branch.tenant_id == tenant_id,
