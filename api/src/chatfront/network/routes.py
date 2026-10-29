@@ -269,9 +269,7 @@ async def branches(session: TeamDep, services: ServicesDep) -> list[BranchOut]:
 
 
 @router.post("/branches", response_model=BranchOut)
-async def create_branch(
-    body: BranchIn, session: RecentTeamDep, services: ServicesDep
-) -> BranchOut:
+async def create_branch(body: BranchIn, session: RecentTeamDep, services: ServicesDep) -> BranchOut:
     code = body.code.strip().lower()
     async with services.db.tenant(session.tenant_id) as db:
         exists = await db.scalar(
