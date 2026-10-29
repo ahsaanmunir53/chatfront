@@ -219,7 +219,7 @@ def _order_out(item: B2BOrder, reference: str | None = None) -> OrderOut:
     )
 
 
-def _payment_out(item: MarketplacePayment, ready: bool) -> PaymentOut:
+def _payment_out(item: MarketplacePayment) -> PaymentOut:
     return PaymentOut(
         id=item.id,
         checkout_reference=item.checkout_reference,
@@ -230,7 +230,8 @@ def _payment_out(item: MarketplacePayment, ready: bool) -> PaymentOut:
         seller_amount=item.seller_amount,
         status=item.status,
         payout_status=item.payout_status,
-        checkout_available=ready,
+        # No hosted checkout adapter exists yet; a webhook secret alone cannot collect money.
+        checkout_available=False,
     )
 
 
@@ -815,7 +816,7 @@ async def confirm_buyer_order(
             entity=("marketplace_payment", str(payment.id)),
             data={"order_id": str(item.id), "provider_ready": _provider_ready(settings)},
         )
-    return _payment_out(payment, _provider_ready(settings))
+    return _payment_out(payment)
 
 
 @router.get("/payments", response_model=list[PaymentOut])
@@ -832,7 +833,7 @@ async def list_marketplace_payments(session: OrdersDep, services: ServicesDep) -
                 .limit(100)
             )
         )
-    return [_payment_out(item, _provider_ready(services.settings)) for item in items]
+    return [_payment_out(item) for item in items]
 
 
 @router.post("/payments/provider-webhook")

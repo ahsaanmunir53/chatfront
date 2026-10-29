@@ -182,7 +182,7 @@ async def test_branches_wholesale_bargaining_and_signed_split_ledger(
     assert prepared.status_code == 200, prepared.text
     payment = prepared.json()
     assert payment["status"] == "pending"
-    assert payment["checkout_available"] is True
+    assert payment["checkout_available"] is False
     assert payment["platform_fee"] + payment["seller_amount"] == payment["amount"]
 
     payload = {
