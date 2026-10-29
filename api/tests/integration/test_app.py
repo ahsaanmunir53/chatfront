@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import base64
 import hashlib
 import hmac
@@ -13,6 +11,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -32,6 +31,7 @@ from chatfront.channels.models import Conversation, Direction, Message
 from chatfront.core.models import Tenant
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
+from chatfront.core.models import Tenant
 from chatfront.jobs.models import Job
 from chatfront.main import create_app
 from chatfront.media import service as media_service
@@ -520,9 +520,13 @@ async def test_meta_webhook_rate_limit_returns_retry_after(
 ) -> None:
     client, services = app
     services.limiter.per_minute = 1
-    first = await client.post("/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    first = await client.post(
+        "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
     assert first.status_code == 401
-    second = await client.post("/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    second = await client.post(
+        "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
     assert second.status_code == 429
     assert second.headers["retry-after"] == "60"
 
@@ -551,7 +555,9 @@ async def test_public_route_families_are_rate_limited_with_retry_after(
     # Owner demo/link sign-in, anonymous chat, webhook callbacks and public lookups.
     await rate_limited("POST", "/api/owner/demo", json={"slug": SHOP})
     await rate_limited("POST", f"/api/shops/{SHOP}/chat/session")
-    await rate_limited("POST", "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"})
+    await rate_limited(
+        "POST", "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
     await rate_limited("POST", f"/webhooks/sms/{SHOP}", json={"sender": "test", "message": "test"})
     await rate_limited("GET", "/api/receipts/NO-SUCH-CODE")
     await rate_limited("GET", "/api/passport/NO-SUCH-CODE")
