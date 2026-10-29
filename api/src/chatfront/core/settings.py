@@ -7,7 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -81,6 +81,12 @@ class Settings(BaseSettings):
     ai_timeout_seconds: float = 60.0
     usd_to_pkr: Decimal = Decimal("280")
     ai_record_dir: Path | None = None
+
+    # Signed provider events for network payments. This verifies callbacks but does not create
+    # hosted checkout sessions or transfer funds to sellers.
+    marketplace_provider: str | None = None
+    marketplace_webhook_secret: SecretStr | None = None
+    marketplace_fee_bps: int = Field(default=500, ge=0, le=3000)
 
     # Media storage.
     storage_backend: Literal["local", "supabase"] = "local"

@@ -1232,3 +1232,13 @@ stays the same.
 - Each camera session stops after 20 frames to cap inference and upload work. The stream is released on stop/unmount. Stock is not written during scanning; only the existing owner-confirm action submits the final tally.
 - Limitation: the Meta glasses SDK is not available, so glasses support remains partial. The phone-camera fallback is implemented.
 - Validation: CI must pass API integration, type/build and browser tests before merge; this editing session does not have a local checkout to run them.
+
+
+## 29 October: network commerce groundwork (features 54, 61, 67 and 68)
+
+- Added tenant-scoped branches and staff branch assignment; retail orders and wholesale listings can reference a branch.
+- Added opt-in wholesale listing discovery and buyer/seller order views. Marketplace discovery returns a curated listing response and never exposes the seller's minimum unit price.
+- Added deterministic buyer/seller bargaining. The buyer budget is stored in a buyer-tenant-only table; the seller floor remains in the seller-owned listing. Proposed orders need seller approval and buyer confirmation.
+- Added a split ledger and a signed normalized-provider-event endpoint. It checks HMAC, configured provider, unique event/transaction IDs, exact amount and currency, then records the platform fee and seller share. It does not create hosted checkout or transfer a payout; seller payout stays pending.
+- Configure `MARKETPLACE_PROVIDER` and `MARKETPLACE_WEBHOOK_SECRET` with a random secret of at least 32 characters. The normalized event sender must HMAC-SHA256 the exact raw request body and send `X-Marketplace-Signature: sha256=<hex>`. No real provider key or payout API has been configured.
+- Validation: CI must run the migration, tenant-RLS integration tests, API lint/type/coverage checks and browser tests before merge. These are PR changes only; nothing was deployed.

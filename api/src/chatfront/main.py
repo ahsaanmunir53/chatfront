@@ -34,6 +34,7 @@ from chatfront.delivery.courier_routes import router as couriers_router
 from chatfront.delivery.routes import router as delivery_router
 from chatfront.insights.routes import router as insights_router
 from chatfront.mcp.routes import router as mcp_router
+from chatfront.network.routes import router as network_router
 from chatfront.offers.routes import router as offers_router
 from chatfront.orders.checkout_routes import router as checkout_router
 from chatfront.orders.custom_routes import router as custom_router
@@ -109,6 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(public_router)
     app.include_router(share_router)
     app.include_router(mcp_router)
+    app.include_router(network_router)
     app.include_router(checkout_router)
     app.include_router(groups_router)
     app.include_router(owner_router)

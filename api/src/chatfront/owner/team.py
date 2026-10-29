@@ -22,7 +22,7 @@ from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import Actor, ActorType, record, verify_chain
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
-from chatfront.core.models import Customer, Staff, StaffRole, Tenant
+from chatfront.core.models import Branch, Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights
@@ -46,6 +46,7 @@ class Member(BaseModel):
     role: str
     active: bool
     whatsapp: bool  # a number is linked
+    branch_id: uuid.UUID | None = None
     rights: list[str]
     created_at: datetime
 
@@ -84,6 +85,7 @@ def _member(staff: Staff) -> Member:
         role=staff.role,
         active=staff.active,
         whatsapp=staff.phone_hash is not None,
+        branch_id=staff.branch_id,
         rights=sorted(rights(staff.role)),
         created_at=staff.created_at,
     )
