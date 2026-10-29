@@ -77,9 +77,7 @@ async def test_sign_out_all_devices_revokes_existing_owner_session(
     assert response.status_code == 200, response.text
     assert response.json() == {"signed_out": True}
     assert (await client.get("/api/owner/me", headers=auth)).status_code == 401
-    assert (
-        await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)
-    ).status_code == 401
+    assert (await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)).status_code == 401
 
 
 @pytest.mark.parametrize(
