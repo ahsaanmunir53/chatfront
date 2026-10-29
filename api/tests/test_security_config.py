@@ -220,3 +220,33 @@ def test_session_token_has_issue_time_and_old_tokens_require_fresh_link() -> Non
     old = OwnerSession(uuid.uuid4(), uuid.uuid4(), utcnow() + timedelta(days=1), 0, None)
     with pytest.raises(FreshLinkRequired):
         require_recent(old)
+
+
+@pytest.mark.asyncio
+async def test_security_headers_apply_to_success_and_error_responses() -> None:
+    app = create_app(Settings(env="test", worker_enabled=False))
+
+    @app.get("/security-success-route")
+    async def success() -> dict[str, bool]:
+        return {"ok": True}
+
+    @app.get("/security-error-route")
+    async def error() -> None:
+        from chatfront.core.errors import AppError
+
+        raise AppError("safe_error", "Safe public message", status_code=400)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        responses = [
+            await client.get("/security-success-route"),
+            await client.get("/security-error-route"),
+            await client.get("/missing-security-route"),
+        ]
+
+    for response in responses:
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-frame-options"] == "DENY"
+        assert response.headers["referrer-policy"] == "no-referrer"
+        assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+        assert "Traceback" not in response.text
