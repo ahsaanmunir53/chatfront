@@ -6386,3 +6386,147 @@ button {
 .shelf-camera-video[hidden] {
   display: none;
 }
+
+
+/* Network commerce owner workspace (features 54, 61, 67 and 68). */
+.network-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.network-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.network-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.network-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.network-form input,
+.network-form select,
+.network-form textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.network-form textarea {
+  resize: vertical;
+}
+
+.network-form h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.network-form-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+.network-assign {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.network-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+}
+
+.network-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.network-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.network-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.network-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+
+.network-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.network-card h4,
+.network-card p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.network-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+
+.network-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.network-error {
+  margin: 0;
+  padding: 9px 12px;
+  border-inline-start: 3px solid var(--chili);
+  background: var(--paper);
+  color: var(--text);
+}
+
+.network-branch-label {
+  overflow-wrap: anywhere;
+}
