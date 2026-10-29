@@ -350,7 +350,9 @@ async def test_staff_roles_are_forbidden_outside_their_rights(
     staff_auth = {"Authorization": f"Bearer {token}"}
 
     response = await client.get(forbidden_path, headers=staff_auth)
-    assert response.status_code == 403, f"{role} unexpectedly accessed {forbidden_path}: {response.text}"
+    assert response.status_code == 403, (
+        f"{role} unexpectedly accessed {forbidden_path}: {response.text}"
+    )
 
 
 async def test_sensitive_actions_require_a_fresh_sign_in_link(
