@@ -54,7 +54,7 @@ OwnerDep = Annotated[OwnerSession, Depends(owner_session)]
 async def _staff(services: Services, session: OwnerSession) -> Staff:
     async with services.db.tenant(session.tenant_id) as db:
         staff = await db.get(Staff, session.staff_id)
-    if staff is None or not staff.active:
+    if staff is None or not staff.active or staff.session_version != session.session_version:
         raise NotSignedIn
     return staff
 
