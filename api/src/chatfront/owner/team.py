@@ -92,7 +92,12 @@ def _member(staff: Staff) -> Member:
 
 
 def _link(services: Services, staff: Staff) -> str:
-    token = issue(staff.id, staff.tenant_id, services.settings.secret_key.get_secret_value())
+    token = issue(
+        staff.id,
+        staff.tenant_id,
+        services.settings.secret_key.get_secret_value(),
+        session_version=staff.session_version,
+    )
     return console_link(services.settings.web_url, token)
 
 
@@ -178,6 +183,7 @@ async def remove_member(staff_id: uuid.UUID, session: TeamDep, services: Service
     async with services.db.tenant(session.tenant_id) as db:
         staff = await _other_member(db, session, staff_id)
         staff.active = False
+        staff.session_version += 1
         await db.execute(
             update(Customer).where(Customer.staff_id == staff.id).values(staff_id=None)
         )
