@@ -66,6 +66,16 @@ EXPORT = [
 ]
 
 
+
+def test_meta_photo_url_rejects_nonstandard_ports_and_userinfo() -> None:
+    assert from_meta("https://lookaside.fbsbx.com/photo.jpg")
+    assert from_meta("https://cdninstagram.com/photo.jpg")
+    assert not from_meta("https://lookaside.fbsbx.com:8443/photo.jpg")
+    assert not from_meta("https://user:pass@lookaside.fbsbx.com/photo.jpg")
+    assert not from_meta("http://lookaside.fbsbx.com/photo.jpg")
+    assert not from_meta("https://lookaside.fbsbx.com.evil.example/photo.jpg")
+
+
 class TestSheets:
     def test_an_export_from_commerce_manager_reads_by_its_headers(self) -> None:
         columns = sheet_import.keyword_columns(EXPORT[0], CLOTHES)
