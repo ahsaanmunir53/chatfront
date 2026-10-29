@@ -71,6 +71,11 @@ class Settings(BaseSettings):
     modal_spark_base_url: str | None = None
     modal_spark_api_key: SecretStr | None = None
     spark_model_modal: str = "muse-spark-open"
+    # Optional local OpenAI-compatible Glimmer endpoint, reachable from this API process.
+    glimmer_base_url: str | None = None
+    glimmer_api_key: SecretStr | None = None
+    # When enabled, all AI roles use only GLIMMER_BASE_URL; no remote model failover.
+    ai_privacy_mode: bool = False
     modal_glimmer_base_url: str | None = None
     modal_glimmer_api_key: SecretStr | None = None
     glimmer_model: str = "meta-models/Muse-Glimmer-30B"

@@ -130,6 +130,50 @@ class TestConfig:
         watcher = [e.name for e in roles[Role.WATCHER].endpoints]
         assert watcher == ["modal-glimmer", "baseten", "modal", "fireworks"]
 
+    def test_local_glimmer_is_first_for_roles_that_prefer_it(self) -> None:
+        settings = Settings(
+            glimmer_base_url="http://127.0.0.1:1234/v1",
+            modal_glimmer_base_url="https://modal.test/v1",
+            baseten_api_key=SecretStr("b"),
+        )
+        roles = build_roles(settings)
+        assert [e.name for e in roles[Role.WATCHER].endpoints] == [
+            "local-glimmer",
+            "modal-glimmer",
+            "baseten",
+        ]
+        assert roles[Role.CHAT].endpoints[0].name == "baseten"
+
+    def test_privacy_mode_routes_every_role_only_to_local_glimmer(self) -> None:
+        settings = Settings(
+            ai_privacy_mode=True,
+            glimmer_base_url="http://127.0.0.1:1234/v1",
+            glimmer_api_key=None,
+            modal_glimmer_base_url="https://modal.test/v1",
+            baseten_api_key=SecretStr("b"),
+            fireworks_api_key=SecretStr("f"),
+            modal_spark_base_url="https://spark.modal.test/v1",
+            meta_model_api_enabled=True,
+            meta_model_api_key=SecretStr("m"),
+            meta_model_api_base_url="https://meta.test/v1",
+        )
+        roles = build_roles(settings)
+        assert all(
+            [endpoint.name for endpoint in config.endpoints] == ["local-glimmer"]
+            for config in roles.values()
+        )
+        assert all(config.endpoints[0].api_key is None for config in roles.values())
+
+    def test_privacy_mode_without_local_glimmer_fails_closed(self) -> None:
+        roles = build_roles(
+            Settings(
+                ai_privacy_mode=True,
+                baseten_api_key=SecretStr("b"),
+                modal_glimmer_base_url="https://modal.test/v1",
+            )
+        )
+        assert all(not config.endpoints for config in roles.values())
+
     def test_baseten_uses_the_hackathon_model_unless_configured(self) -> None:
         default = build_roles(Settings(baseten_api_key=SecretStr("b")))
         assert default[Role.CHAT].endpoints[0].model == "meta-models/muse-spark-open-1026"

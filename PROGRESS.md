@@ -1232,3 +1232,11 @@ stays the same.
 - Each camera session stops after 20 frames to cap inference and upload work. The stream is released on stop/unmount. Stock is not written during scanning; only the existing owner-confirm action submits the final tally.
 - Limitation: the Meta glasses SDK is not available, so glasses support remains partial. The phone-camera fallback is implemented.
 - Validation: CI must pass API integration, type/build and browser tests before merge; this editing session does not have a local checkout to run them.
+
+## 28 October: local Glimmer privacy mode (feature 70)
+
+- Added `GLIMMER_BASE_URL` and optional `GLIMMER_API_KEY` for an OpenAI-compatible Glimmer endpoint reachable by the API process, plus `AI_PRIVACY_MODE=true`.
+- Privacy mode routes every AI role only to the configured local Glimmer endpoint, including roles that normally prefer Spark. It does not fail over to Modal, Baseten, Fireworks or Meta. If no local endpoint is configured, production model calls fail closed.
+- Deployment example: `GLIMMER_BASE_URL=http://127.0.0.1:1234/v1` and `AI_PRIVACY_MODE=true` when the API runs on the same PC as the local inference server. In Docker, use an address reachable from the API container.
+- Limitation: this keeps model inference local, but does not make PostgreSQL, media storage, WhatsApp or the full application stack offline; feature 70 remains partial.
+- Validation: API lint, type checks and coverage tests passed on the feature commit. The browser suite failed on old shelf-camera and consent-checkbox assertions; the branch now carries the updated E2E tests and needs a fresh green run before merge.
