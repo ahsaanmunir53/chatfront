@@ -565,12 +565,12 @@ async def place_b2b_order(
     if body.initial_offer_unit_price > body.budget_unit_price:
         raise AppError("offer_over_budget", "Opening offer cannot exceed the private budget")
     async with services.db.system() as system:
-        record = await system.execute(
+        listing_result = await system.execute(
             select(WholesaleListing, Tenant)
             .join(Tenant, Tenant.id == WholesaleListing.tenant_id)
             .where(WholesaleListing.id == listing_id, WholesaleListing.active.is_(True))
         )
-        found = record.first()
+        found = listing_result.first()
     if found is None:
         raise NotFound("listing")
     listing, seller = found
