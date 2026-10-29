@@ -37,11 +37,17 @@ from tests.integration.conftest import SHOP
 
 
 async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) -> None:
-    client, _ = app
+    client, services = app
     slug, auth = await sign_in(client)
     assert slug.startswith(f"{SHOP}-")
     me = (await client.get("/api/owner/me", headers=auth)).json()
     assert (me["shop_name"], me["is_demo"], me["currency"]) == ("Gulmohar Lawn House", True, "PKR")
+    async with services.db.system() as session:
+        copied = await session.scalar(select(Tenant).where(Tenant.slug == slug))
+    assert copied is not None
+    assert copied.is_demo and not copied.is_platform
+    assert copied.expires_at is not None
+    assert utcnow() < copied.expires_at <= utcnow() + timedelta(days=3, minutes=1)
     assert me["languages"][:2] == ["ur-Latn", "ur"]  # Pakistan's customer languages
     assert len((await client.get("/api/owner/products", headers=auth)).json()) == 4
     assert (await client.get("/api/owner/me")).status_code == 401
@@ -52,6 +58,8 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
         await client.post("/api/owner/demo", json={"slug": slug})
     ).status_code == 404  # no copies of copies
     assert (await client.post("/api/owner/demo", json={"slug": "nope"})).status_code == 404
+    # The platform shop is not a demo template and cannot be used as a demo login.
+    assert (await client.post("/api/owner/demo", json={"slug": "chatfront"})).status_code == 404
     other_slug, _ = await sign_in(client)
     assert other_slug != slug
     # A session for one shop opens nothing in another.
