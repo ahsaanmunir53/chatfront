@@ -70,6 +70,26 @@ def _signed_by_us(services: Services, raw: bytes, signature: str | None) -> bool
     return any(verify_meta_signature(raw, signature, s.get_secret_value()) for s in secrets_)
 
 
+MAX_META_WEBHOOK_BYTES = 1_000_000
+
+
+async def _read_limited_body(request: Request, maximum: int) -> bytes:
+    """Read a request body without allowing unbounded webhook payloads into memory."""
+    declared = request.headers.get("content-length")
+    if declared:
+        try:
+            if int(declared) > maximum:
+                raise AppError("webhook_too_large", "Webhook body is too large", status_code=413)
+        except ValueError as exc:
+            raise AppError("bad_content_length", "Invalid Content-Length") from exc
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > maximum:
+            raise AppError("webhook_too_large", "Webhook body is too large", status_code=413)
+    return bytes(body)
+
+
 @router.post("/webhooks/meta")
 @router.post("/webhooks/whatsapp")  # the URL first saved in WhatsApp's settings
 async def meta_webhook(
@@ -78,7 +98,9 @@ async def meta_webhook(
     signature: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
 ) -> dict[str, bool]:
     """WhatsApp, Instagram and Messenger all post here; the body says which one it is."""
-    raw = await request.body()
+    client = request.client.host if request.client else "unknown"
+    services.limiter.check(f"meta-webhook:{client}")
+    raw = await _read_limited_body(request, MAX_META_WEBHOOK_BYTES)
     if not _signed_by_us(services, raw, signature):
         raise AppError("bad_signature", "Signature check failed", status_code=401)
     try:
