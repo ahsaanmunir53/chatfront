@@ -367,3 +367,29 @@ only work built during the event.
 
 Built with Muse Spark Open. Muse Spark Open and Muse Glimmer are Meta's models, used under
 their licenses.
+
+## Network commerce (features 54, 61, 67 and 68)
+
+The owner API exposes network workflows under `/api/network`. Management routes require an active
+signed-in staff session and the relevant staff right. Branches, products and variants are validated
+within the current tenant; buyer and seller order views are limited to their own party. A shop must
+opt in through `PUT /api/network/settings` before its wholesale listings appear to other signed-in
+shops.
+
+- Branches: `GET/POST /api/network/branches`, `PUT /api/network/branches/{branch_id}`, and
+  `PUT /api/network/team/{staff_id}/branch`.
+- Wholesale: `POST /api/network/listings`, `PUT /api/network/listings/{listing_id}`,
+  `GET /api/network/listings` and `GET /api/network/my-listings`.
+- A2A orders: `POST /api/network/listings/{listing_id}/orders`, then the seller uses
+  `GET /api/network/seller/orders` and `POST /api/network/seller/orders/{order_id}/approve`
+  (or `/reject`). The buyer then confirms with
+  `POST /api/network/buyer/orders/{order_id}/confirm`. The buyer budget and seller floor are
+  deliberately absent from the other party's API response.
+- Split ledger: provider events post to `POST /api/network/payments/provider-webhook`. Configure
+  `MARKETPLACE_PROVIDER` and a random `MARKETPLACE_WEBHOOK_SECRET` of 32+ characters. The sender
+  computes HMAC-SHA256 over the exact raw JSON body and sends
+  `X-Marketplace-Signature: sha256=<hex>`. The normalized payload has
+  `provider`, `event_id`, `transaction_id`, `checkout_reference`, integer-minor-unit
+  `amount`, `currency`, and `status: "paid"`. Only signed, exact-amount, exact-currency events
+  settle the ledger. This is a provider-neutral verification hook—not a hosted checkout or payout
+  integration—so seller payout remains pending until a real payout adapter is configured.

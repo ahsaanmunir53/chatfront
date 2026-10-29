@@ -28,7 +28,7 @@ from chatfront.channels.notify import send_to
 from chatfront.channels.types import OutText
 from chatfront.core.errors import AppError
 from chatfront.core.languages import load_registry
-from chatfront.core.models import Tenant
+from chatfront.core.models import Branch, Tenant
 from chatfront.delivery.address import Address
 from chatfront.delivery.risk import assess
 from chatfront.offers import service as offers
@@ -102,6 +102,7 @@ class CheckoutIn(BaseModel):
     # assistant: a cart an outside AI assistant put together (feature 66)
     source: Literal["shop_page", "facebook", "instagram", "assistant"] = "shop_page"
     lang: str | None = Field(default=None, max_length=16)
+    branch_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _one_address(self) -> CheckoutIn:
@@ -237,6 +238,11 @@ async def _place(
         )
         chat = await channels.open_conversation(session, tenant.id, customer.id, account.id)
         cart = await orders.open_cart(session, tenant, customer.id, conversation_id=chat.id)
+        if body.branch_id is not None:
+            branch = await session.get(Branch, body.branch_id)
+            if branch is None or branch.tenant_id != tenant.id or not branch.active:
+                raise AppError("invalid_branch", "Choose an active branch belonging to this shop")
+            cart.branch_id = branch.id
         cart.coupon_code = offers.clean_code(body.coupon) if body.coupon else None
         await _fill_cart(session, tenant, cart, items, body)
         group = await _deliver_to(session, cart, body)

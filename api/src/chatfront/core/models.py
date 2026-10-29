@@ -69,6 +69,25 @@ class TenantModule(Base):
     limits: Mapped[dict[str, Any]] = mapped_column(default=dict)
 
 
+class Branch(Base):
+    """A physical location belonging to one tenant (feature 61)."""
+
+    __tablename__ = "branches"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[uuid.UUID] = id_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    code: Mapped[str] = mapped_column(String(40))
+    city: Mapped[str | None] = mapped_column(String(80))
+    address: Mapped[str | None] = mapped_column(String(240))
+    active: Mapped[bool] = mapped_column(default=True, server_default="true")
+    is_default: Mapped[bool] = mapped_column(default=False, server_default="false")
+    created_at: Mapped[datetime] = created_at_column()
+
+
 class Staff(Base):
     __tablename__ = "staff"
     __table_args__ = (UniqueConstraint("tenant_id", "email"),)
@@ -81,6 +100,9 @@ class Staff(Base):
     email: Mapped[str] = mapped_column(String(254))
     password_hash: Mapped[str | None] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default=StaffRole.OWNER)
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("branches.id", ondelete="SET NULL"), index=True
+    )
     phone_hash: Mapped[str | None] = mapped_column(String(64))
     lang: Mapped[str | None] = mapped_column(String(LANG_TAG))  # None: the shop's default
     active: Mapped[bool] = mapped_column(default=True)

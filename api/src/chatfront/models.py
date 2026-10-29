@@ -34,7 +34,7 @@ from chatfront.channels.models import (
     SocialPost,
 )
 from chatfront.core.db import Base
-from chatfront.core.models import Customer, Staff, Tenant, TenantModule
+from chatfront.core.models import Branch, Customer, Staff, Tenant, TenantModule
 from chatfront.crm.models import Broadcast, BroadcastRecipient
 from chatfront.delivery.models import (
     CodSettlement,
@@ -46,6 +46,13 @@ from chatfront.delivery.models import (
 from chatfront.insights.models import CoachNote
 from chatfront.jobs.models import CronRun, Job
 from chatfront.media.models import Media
+from chatfront.network.models import (
+    A2ABuyerPolicy,
+    A2ARound,
+    B2BOrder,
+    MarketplacePayment,
+    WholesaleListing,
+)
 from chatfront.orders.models import (
     Bundle,
     Coupon,
@@ -81,12 +88,16 @@ from chatfront.sim.models import SimChat, SimRun
 from chatfront.stock.models import BatchAllocation, OwnerNotice, StockBatch
 
 __all__ = [
+    "A2ABuyerPolicy",
+    "A2ARound",
     "AiCall",
     "Appointment",
     "Approval",
     "AuditEntry",
+    "B2BOrder",
     "Base",
     "BatchAllocation",
+    "Branch",
     "Broadcast",
     "BroadcastRecipient",
     "Bundle",
@@ -117,6 +128,7 @@ __all__ = [
     "Lead",
     "LedgerEntry",
     "LoyaltyEntry",
+    "MarketplacePayment",
     "Media",
     "Message",
     "Order",
@@ -154,4 +166,5 @@ __all__ = [
     "Variant",
     "WaitlistEntry",
     "WalletCredit",
+    "WholesaleListing",
 ]
