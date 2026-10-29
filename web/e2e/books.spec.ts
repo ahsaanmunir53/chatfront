@@ -22,6 +22,7 @@ test("the owner keeps the books and the khata, runs a team, and sees why", async
   await page.goto("/s/barkat-kiryana");
   await page.getByRole("button", { name: "Try as the owner" }).click();
   await expect(page).toHaveURL(/\/owner$/);
+  await switchToTyping(page);
   const shopPath =
     (await page.getByRole("link", { name: "Open shop page" }).getAttribute("href")) ?? "";
 
