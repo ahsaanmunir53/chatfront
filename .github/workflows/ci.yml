@@ -42,7 +42,7 @@ jobs:
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
       - name: Audit Python dependencies
-        run: uv export --locked --format requirements-txt --output-file /tmp/chatfront-requirements.txt && uvx pip-audit -r /tmp/chatfront-requirements.txt
+        run: uv export --locked --format requirements-txt --no-emit-project --no-hashes --output-file /tmp/chatfront-requirements.txt && uvx pip-audit -r /tmp/chatfront-requirements.txt
       - name: Types
         run: uv run mypy
       - name: Tests with coverage (85% minimum)
