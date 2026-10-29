@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from chatfront.bookings.routes import router as bookings_router
@@ -102,7 +102,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def security_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:
+            # ServerErrorMiddleware normally builds unhandled 500s outside user middleware,
+            # which would skip these headers. Return a generic response here instead.
+            response = JSONResponse(
+                status_code=500,
+                content={"error": {"code": "internal_error", "message": "Internal server error"}},
+            )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
