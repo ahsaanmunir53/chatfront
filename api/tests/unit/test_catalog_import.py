@@ -65,6 +65,7 @@ EXPORT = [
     ["N1", "Velvet clutch", "", "in stock", "new", "", "x", "", "", "", ""],
 ]
 
+
 def test_meta_photo_url_rejects_nonstandard_ports_and_userinfo() -> None:
     assert from_meta("https://lookaside.fbsbx.com/photo.jpg")
     assert from_meta("https://cdninstagram.com/photo.jpg")
