@@ -217,8 +217,12 @@ def from_meta(url: str | None) -> bool:
         return False
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
-    return parts.scheme == "https" and any(
-        host == allowed or host.endswith("." + allowed) for allowed in PHOTO_HOSTS
+    return (
+        parts.scheme == "https"
+        and parts.port in (None, 443)
+        and parts.username is None
+        and parts.password is None
+        and any(host == allowed or host.endswith("." + allowed) for allowed in PHOTO_HOSTS)
     )
 
 
