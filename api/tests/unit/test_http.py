@@ -42,16 +42,15 @@ async def test_gives_up_after_retries_on_timeouts() -> None:
     assert caught.value.status is None
 
 
-
 @respx.mock
 async def test_upstream_error_body_is_not_exposed_or_logged(caplog: pytest.LogCaptureFixture) -> None:
     secret = "Sensitive customer message: pay at +923001234567"
-    respx.get("https://x.test/private").mock(
-        return_value=httpx.Response(500, text=secret)
-    )
+    respx.get("https://x.test/private").mock(return_value=httpx.Response(500, text=secret))
     async with httpx.AsyncClient() as client:
         with pytest.raises(UpstreamError) as caught:
-            await request(client, "GET", "https://x.test/private", service="x", backoff_seconds=0)
+            await request(
+                client, "GET", "https://x.test/private", service="x", backoff_seconds=0
+            )
     assert secret not in caught.value.message
     assert "+923001234567" not in caught.value.message
     assert secret not in caplog.text
