@@ -67,6 +67,17 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
     assert peek.status_code == 401
 
 
+async def test_sign_out_all_devices_revokes_existing_owner_session(
+    app: tuple[Client, Services],
+) -> None:
+    client, _ = app
+    _, auth = await sign_in(client)
+    response = await client.post("/api/owner/sign-out-all", headers=auth)
+    assert response.status_code == 200, response.text
+    assert response.json() == {"signed_out": True}
+    assert (await client.get("/api/owner/me", headers=auth)).status_code == 401
+
+
 @pytest.mark.parametrize(
     ("role", "forbidden_path"),
     [
