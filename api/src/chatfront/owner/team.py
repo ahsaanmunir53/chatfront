@@ -106,8 +106,12 @@ def _actor(session: OwnerSession) -> Actor:
 
 
 @router.post("/sign-out-all")
-async def sign_out_all(session: RecentStaffDep, services: ServicesDep) -> dict[str, bool]:
-    """Revoke every staff link and bearer session for the current shop."""
+async def sign_out_all(session: TeamDep, services: ServicesDep) -> dict[str, bool]:
+    """Revoke every staff link and bearer session for the current shop.
+
+    This action intentionally accepts an active team-capable session so users can recover
+    when the fresh-link window has passed; authorisation is still enforced by TeamDep.
+    """
     async with services.db.tenant(session.tenant_id) as db:
         await db.execute(
             update(Staff).where(Staff.active.is_(True)).values(
