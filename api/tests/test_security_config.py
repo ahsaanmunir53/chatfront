@@ -83,3 +83,24 @@ async def test_rate_limit_error_includes_retry_after() -> None:
         response = await client.get("/security-rate-limit-test")
     assert response.status_code == 429
     assert response.headers["retry-after"] == "60"
+
+
+def test_owner_session_claims_include_version_and_reject_oversized_tokens() -> None:
+    import uuid
+    from datetime import timedelta
+
+    from chatfront.core.clock import utcnow
+    from chatfront.owner.sessions import MAX_TOKEN_LENGTH, NotSignedIn, issue, verify
+
+    staff_id, tenant_id = uuid.uuid4(), uuid.uuid4()
+    token = issue(staff_id, tenant_id, "test-key", timedelta(minutes=5), session_version=7)
+    parsed = verify(token, "test-key")
+    assert parsed.staff_id == staff_id
+    assert parsed.tenant_id == tenant_id
+    assert parsed.session_version == 7
+    assert parsed.expires_at > utcnow()
+
+    with pytest.raises(NotSignedIn):
+        verify("x" * (MAX_TOKEN_LENGTH + 1), "test-key")
+    with pytest.raises(NotSignedIn):
+        verify(token, "different-key")
