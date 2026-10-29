@@ -26,7 +26,7 @@ from chatfront.core.models import Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import RecentStaffDep, ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession, console_link, issue
 from chatfront.services import Services
 
@@ -103,6 +103,25 @@ def _link(services: Services, staff: Staff) -> str:
 
 def _actor(session: OwnerSession) -> Actor:
     return Actor(ActorType.STAFF, str(session.staff_id))
+
+
+@router.post("/sign-out-all")
+async def sign_out_all(session: RecentStaffDep, services: ServicesDep) -> dict[str, bool]:
+    """Revoke every staff link and bearer session for the current shop."""
+    async with services.db.tenant(session.tenant_id) as db:
+        await db.execute(
+            update(Staff).where(Staff.active.is_(True)).values(
+                session_version=Staff.session_version + 1
+            )
+        )
+        await record(
+            db,
+            session.tenant_id,
+            _actor(session),
+            "staff.sign_out_all",
+            entity=("tenant", str(session.tenant_id)),
+        )
+    return {"signed_out": True}
 
 
 @router.get("/team")
