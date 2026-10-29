@@ -5,7 +5,7 @@ handed over to a person (feature 90)."""
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request
@@ -32,7 +32,7 @@ from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.models import Staff, Tenant
 from chatfront.owner.rights import Can, rights
 from chatfront.owner.sandbox import copy_demo_shop
-from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
+from chatfront.owner.sessions import NotSignedIn, OwnerSession, require_recent, verify
 from chatfront.services import Services, get_services
 
 router = APIRouter(prefix="/api/owner")
@@ -61,8 +61,6 @@ async def _staff(services: Services, session: OwnerSession) -> Staff:
 
 async def recent_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
     """Require both an active staff record and a recently opened sign-in link."""
-    from chatfront.owner.sessions import require_recent
-
     await _staff(services, session)
     require_recent(session)
     return session
