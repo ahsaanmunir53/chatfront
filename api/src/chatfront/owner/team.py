@@ -22,7 +22,7 @@ from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import Actor, ActorType, record, verify_chain
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError, NotFound
-from chatfront.core.models import Branch, Customer, Staff, StaffRole, Tenant
+from chatfront.core.models import Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights

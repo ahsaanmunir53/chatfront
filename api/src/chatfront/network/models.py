@@ -55,7 +55,10 @@ class WholesaleListing(Base):
 
 
 class B2BOrder(Base):
-    """Buyer and seller order record visible to both tenant parties. Buyer budget lives elsewhere."""
+    """Buyer and seller order record visible to both tenant parties.
+
+    The buyer budget lives elsewhere.
+    """
 
     __tablename__ = "b2b_orders"
     __table_args__ = (

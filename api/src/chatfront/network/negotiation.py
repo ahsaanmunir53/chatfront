@@ -56,7 +56,9 @@ def negotiate(
         if decision.outcome in (bargain.Outcome.ACCEPTED, bargain.Outcome.FIXED):
             if decision.price <= buyer_budget:
                 rows.append(RoundResult(round_number, offer, decision.price, "accepted"))
-                return NegotiationResult("awaiting_seller_confirmation", decision.price, tuple(rows))
+                return NegotiationResult(
+                    "awaiting_seller_confirmation", decision.price, tuple(rows)
+                )
             rows.append(RoundResult(round_number, offer, decision.price, "budget_exceeded"))
             return NegotiationResult("no_deal", None, tuple(rows))
 

@@ -30,7 +30,7 @@ from chatfront.network.models import (
     WholesaleListing,
 )
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import OwnerDep, ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs
 from chatfront.owner.sessions import OwnerSession
 from chatfront.services import Services
 
@@ -395,7 +395,7 @@ async def assign_staff_branch(
 async def network_settings(
     session: CatalogDep, services: ServicesDep
 ) -> NetworkSettingsOut:
-    tenant, enabled = await _tenant_settings(services, session.tenant_id)
+    _tenant, enabled = await _tenant_settings(services, session.tenant_id)
     return NetworkSettingsOut(
         wholesale_enabled=enabled,
         provider_ready=_provider_ready(services.settings),
@@ -654,7 +654,11 @@ async def place_b2b_order(
             _actor(session),
             "b2b.order_negotiated",
             entity=("b2b_order", str(item.id)),
-            data={"seller_tenant_id": str(seller.id), "quantity": body.quantity, "rounds": len(result.rounds)},
+            data={
+                "seller_tenant_id": str(seller.id),
+                "quantity": body.quantity,
+                "rounds": len(result.rounds),
+            },
         )
         return _order_out(item)
 
@@ -846,13 +850,22 @@ async def provider_webhook(
     signature: Annotated[str | None, Header(alias="X-Marketplace-Signature")] = None,
 ) -> dict[str, bool]:
     settings = services.settings
-    if not _provider_ready(settings):
-        raise AppError("provider_unconfigured", "Marketplace provider verification is not configured", status_code=503)
+    secret_setting = settings.marketplace_webhook_secret
+    if (
+        not settings.marketplace_provider
+        or secret_setting is None
+        or len(secret_setting.get_secret_value()) < 32
+    ):
+        raise AppError(
+            "provider_unconfigured",
+            "Marketplace provider verification is not configured",
+            status_code=503,
+        )
     body = await request.body()
     if len(body) > MAX_WEBHOOK_BYTES:
         raise AppError("webhook_too_large", "Webhook body is too large", status_code=413)
     supplied = (signature or "").removeprefix("sha256=").strip().lower()
-    secret = settings.marketplace_webhook_secret.get_secret_value()
+    secret = secret_setting.get_secret_value()
     expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     if not supplied or not hmac.compare_digest(supplied, expected):
         raise Forbidden("Invalid marketplace provider signature")
@@ -883,7 +896,10 @@ async def provider_webhook(
             )
         )
         if prior_event is not None:
-            if prior_event.checkout_reference == reference and prior_event.transaction_id == transaction_id:
+            if (
+                prior_event.checkout_reference == reference
+                and prior_event.transaction_id == transaction_id
+            ):
                 return {"accepted": True, "duplicate": True}
             raise AppError("event_conflict", "Provider event ID was already used", status_code=409)
         payment = await db.scalar(
@@ -898,11 +914,19 @@ async def provider_webhook(
         if status not in {"paid", "succeeded"}:
             return {"accepted": True, "duplicate": False}
         if amount != payment.amount or currency != payment.currency:
-            raise AppError("payment_mismatch", "Verified amount or currency does not match", status_code=409)
+            raise AppError(
+                "payment_mismatch",
+                "Verified amount or currency does not match",
+                status_code=409,
+            )
         if payment.status == "verified":
             if payment.transaction_id == transaction_id:
                 return {"accepted": True, "duplicate": True}
-            raise AppError("payment_already_settled", "Checkout was already settled", status_code=409)
+            raise AppError(
+                "payment_already_settled",
+                "Checkout was already settled",
+                status_code=409,
+            )
         used = await db.scalar(
             select(MarketplacePayment.id).where(
                 MarketplacePayment.provider == provider,
@@ -910,7 +934,11 @@ async def provider_webhook(
             )
         )
         if used is not None:
-            raise AppError("transaction_reused", "Provider transaction ID was already used", status_code=409)
+            raise AppError(
+                "transaction_reused",
+                "Provider transaction ID was already used",
+                status_code=409,
+            )
         order = await db.scalar(
             select(B2BOrder).where(
                 B2BOrder.id == payment.b2b_order_id,
@@ -919,7 +947,11 @@ async def provider_webhook(
             ).with_for_update()
         )
         if order is None or order.total != payment.amount or order.currency != payment.currency:
-            raise AppError("order_payment_mismatch", "Checkout no longer matches the order", status_code=409)
+            raise AppError(
+                "order_payment_mismatch",
+                "Checkout no longer matches the order",
+                status_code=409,
+            )
         payment.provider_event_id = event_id
         payment.transaction_id = transaction_id
         payment.status = "verified"
@@ -933,6 +965,10 @@ async def provider_webhook(
             Actor(ActorType.SYSTEM, "marketplace-provider"),
             "marketplace.payment_verified",
             entity=("marketplace_payment", str(payment.id)),
-            data={"order_id": str(order.id), "amount": payment.amount, "currency": payment.currency},
+            data={
+                "order_id": str(order.id),
+                "amount": payment.amount,
+                "currency": payment.currency,
+            },
         )
     return {"accepted": True, "duplicate": False}

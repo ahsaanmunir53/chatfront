@@ -34,7 +34,7 @@ def test_private_budget_below_seller_floor_results_in_no_deal() -> None:
 
 
 def test_invalid_bargaining_inputs_are_rejected() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid bargaining inputs"):
         negotiate(
             list_price=100,
             floor=50,
