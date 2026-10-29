@@ -59,6 +59,18 @@ async def _staff(services: Services, session: OwnerSession) -> Staff:
     return staff
 
 
+async def recent_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+    """Require both an active staff record and a recently opened sign-in link."""
+    from chatfront.owner.sessions import require_recent
+
+    await _staff(services, session)
+    require_recent(session)
+    return session
+
+
+RecentStaffDep = Annotated[OwnerSession, Depends(recent_staff)]
+
+
 async def active_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
     """Any signed-in member of the shop's staff who has not been removed."""
     await _staff(services, session)
