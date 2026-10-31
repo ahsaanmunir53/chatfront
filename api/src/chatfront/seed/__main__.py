@@ -25,6 +25,7 @@ from chatfront.models import (  # all models, so foreign keys resolve when run a
     Product,
 )
 from chatfront.modules.registry import ModuleRegistry, core_modules
+from chatfront.owner.sign_in import link_for
 from chatfront.stock.batches import shop_today
 from chatfront.templates import all_templates
 
@@ -120,11 +121,17 @@ async def main() -> None:
     try:
         created = await seed(db, core_modules())
         connected = await connect_from_settings(db, settings)
+        links = [
+            (shop, await link_for(db, settings, shop, 12))
+            for shop in filter(None, (s.strip() for s in settings.owner_link_shops.split(",")))
+        ]
     finally:
         await db.dispose()
     print("created:", ", ".join(created) or "nothing, all demo shops exist")
     if connected:
         print("WhatsApp connected for:", ", ".join(connected))
+    for shop, link in links:
+        print(f"Owner console for {shop} (12 hours): {link}")
 
 
 if __name__ == "__main__":
