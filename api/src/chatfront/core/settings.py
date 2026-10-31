@@ -154,10 +154,21 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _use_asyncpg(cls, value: str) -> str:
+        """Neon and most hosts give a libpq URL; asyncpg takes `ssl` instead of `sslmode` and
+        has no `channel_binding`, so the URL is turned into one asyncpg accepts."""
         for prefix in ("postgresql://", "postgres://"):
             if value.startswith(prefix):
-                return "postgresql+asyncpg://" + value.removeprefix(prefix)
-        return value
+                value = "postgresql+asyncpg://" + value.removeprefix(prefix)
+        base, _, query = value.partition("?")
+        if not query:
+            return value
+        params = []
+        for pair in query.split("&"):
+            key, _, setting = pair.partition("=")
+            if key == "channel_binding":
+                continue
+            params.append(f"ssl={setting}" if key == "sslmode" else pair)
+        return f"{base}?{'&'.join(params)}" if params else base
 
     def require_production_secrets(self) -> None:
         """Refuse to start in production with any of the development secrets."""

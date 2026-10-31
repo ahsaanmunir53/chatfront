@@ -310,3 +310,11 @@ def test_a_shared_product_page_redirects_without_a_script() -> None:
     )
     assert "<script" not in html
     assert '<meta http-equiv="refresh" content="0; url=https://x.test/s/s#p-1" />' in html
+
+
+def test_a_neon_connection_string_becomes_one_asyncpg_accepts() -> None:
+    neon = "postgresql://u:p@ep-x.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    url = Settings(env="test", database_url=neon).database_url
+    assert url == "postgresql+asyncpg://u:p@ep-x.aws.neon.tech/neondb?ssl=require"
+    plain = "postgresql+asyncpg://u:p@localhost:5432/db"
+    assert Settings(env="test", database_url=plain).database_url == plain
