@@ -306,7 +306,8 @@ calendar, Safe Browsing), and are marked `model-api-only` in FEATURES.md.
 The API is one free Docker web service on Render (`render.yaml`). The web app can be served by
 it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
 
-1. Neon: create a project and copy the direct connection string into `DATABASE_URL`.
+1. Neon: create a project and copy the direct (not pooled) connection string into
+   `DATABASE_URL` as Neon gives it; the app turns `sslmode` into what asyncpg expects.
 2. Supabase: create a private bucket `chatfront-media`; set `SUPABASE_URL` and
    `SUPABASE_SERVICE_KEY`.
 3. Render: New > Blueprint > this repository. Fill the values marked "sync: false".
@@ -346,8 +347,8 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    Pages" workflow.
 11. Model keys: add `BASETEN_API_KEY` (and `FIREWORKS_API_KEY`, `MODAL_GLIMMER_*` when they
    come; `deploy/modal_glimmer.py` says how to start Glimmer on Modal) in Render's Environment for the app, and as repository secrets for the manual
-   "Live model evaluation" workflow. They never go in the repository or the chat. Until they
-   come, set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
+   "Live model evaluation" workflow. They never go in the repository or the chat. Render's blueprint sets `AI_MODE=auto`; until a key is in,
+   set `AI_MODE=mock` on Render so the demo answers with recorded replies, which say so;
    `https://<service>.onrender.com/health` shows `mock`, `live` or `no keys`. Optional:
    `SAFE_BROWSING_API_KEY` (where to get it is in `.env.example`) adds Google's lists of
    phishing sites to the link check (feature 40); code catches fake support links without it.

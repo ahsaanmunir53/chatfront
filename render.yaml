@@ -42,6 +42,9 @@ services:
       # The GitHub Pages address of the web app, e.g. https://ahsaanmunir53.github.io
       - key: CORS_ORIGINS
         sync: false
+      # auto: real models once a key is set; mock: recorded replies that say so
+      - key: AI_MODE
+        value: auto
       - key: BASETEN_API_KEY
         sync: false
       - key: FIREWORKS_API_KEY
@@ -58,3 +61,16 @@ services:
         sync: false
       - key: DB_POOL_SIZE
         value: "3"
+      # Optional; each one turns a feature on (.env.example says where to get it)
+      - key: SAFE_BROWSING_API_KEY
+        sync: false
+      - key: WHATSAPP_ALERT_TEMPLATE
+        sync: false
+      - key: WHATSAPP_OFFER_TEMPLATE
+        sync: false
+      - key: WHATSAPP_FLOW_PRODUCT_ID
+        sync: false
+      - key: WHATSAPP_FLOW_BOOKING_ID
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
