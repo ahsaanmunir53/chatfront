@@ -13,6 +13,7 @@ import logging
 from sqlalchemy import func, select
 
 from chatfront.catalog.demo import add_demo_offers, add_demo_products, demo_profile
+from chatfront.channels.connect import connect_from_settings
 from chatfront.core.countries import get_pack
 from chatfront.core.db import Database
 from chatfront.core.models import Tenant, Tier
@@ -118,9 +119,12 @@ async def main() -> None:
     db = Database(settings.database_url, pool_size=1)
     try:
         created = await seed(db, core_modules())
+        connected = await connect_from_settings(db, settings)
     finally:
         await db.dispose()
     print("created:", ", ".join(created) or "nothing, all demo shops exist")
+    if connected:
+        print("WhatsApp connected for:", ", ".join(connected))
 
 
 if __name__ == "__main__":

@@ -74,6 +74,47 @@ async def connect(
     return account
 
 
+def planned(value: str) -> list[tuple[str, str, str]]:
+    """(shop, phone number id, number) for each entry of WHATSAPP_CONNECT."""
+    found = []
+    for entry in value.split(";"):
+        parts = [part.strip() for part in entry.split(":")]
+        if len(parts) == 3 and all(parts):
+            found.append((parts[0], parts[1], parts[2]))
+        elif entry.strip():
+            raise ValueError(f"WHATSAPP_CONNECT entry is not shop:phone_number_id:number: {entry}")
+    return found
+
+
+async def connect_from_settings(db: Database, settings: Settings) -> list[str]:
+    """Connect the numbers in WHATSAPP_CONNECT at start; one already connected is left as it is."""
+    done = []
+    for shop, account_id, number in planned(settings.whatsapp_connect):
+        async with db.system() as session:
+            known = await session.scalar(
+                select(ChannelAccount.id)
+                .join(Tenant, Tenant.id == ChannelAccount.tenant_id)
+                .where(
+                    ChannelAccount.channel == Channel.WHATSAPP,
+                    ChannelAccount.external_id == account_id,
+                    ChannelAccount.active.is_(True),
+                    Tenant.slug == shop,
+                )
+            )
+        if known is None:
+            await connect(
+                db,
+                settings,
+                shop=shop,
+                channel=Channel.WHATSAPP,
+                account_id=account_id,
+                handle=number,
+                token=None,
+            )
+            done.append(shop)
+    return done
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--shop", required=True, help="the shop's slug, e.g. gulmohar-lawn")

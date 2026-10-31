@@ -320,8 +320,9 @@ it, or on its own from GitHub Pages so it never sleeps. Before the first deploy:
    token. Subscribe WhatsApp to `messages`, Instagram to `messages`, `messaging_postbacks`
    and `comments`, and the Page to `messages`, `messaging_postbacks` and `feed` (the last two
    bring comments under posts, feature 77).
-6. Connect each account to its shop (tokens come from environment variables, never the
-   command line):
+6. Connect each account to its shop. For WhatsApp the simplest way is the Render variable
+   `WHATSAPP_CONNECT=<shop>:<phone number id>:<number>`; the app connects it when it starts.
+   Otherwise (tokens come from environment variables, never the command line):
    `python -m chatfront.channels.connect --shop gulmohar-lawn --channel whatsapp --account-id <phone number id> --handle <public number> --token-env WA_TOKEN`
    and the same with `--channel instagram` (Instagram account id, username) and
    `--channel messenger` (Page id, Page username). A number connected to the shop

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     meta_graph_version: str = "v23.0"
     meta_graph_base_url: str = "https://graph.facebook.com"
     whatsapp_access_token: SecretStr | None = None
+    # WhatsApp numbers to connect at start, so no shell is needed on a free host:
+    # "<shop slug>:<phone number id>:<public number>", several separated by ";".
+    whatsapp_connect: str = ""
     # Owner alerts outside the 24-hour window go as this approved utility template (one body
     # parameter); without it they wait in the console (feature 118).
     whatsapp_alert_template: str | None = None

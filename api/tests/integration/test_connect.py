@@ -97,3 +97,23 @@ async def test_connect_refuses_bad_requests(clean_db: Database) -> None:
             handle="x",
             token=None,
         )
+
+
+async def test_numbers_in_the_settings_are_connected_once_at_start(clean_db: Database) -> None:
+    from chatfront.channels.connect import connect_from_settings, planned
+
+    await seed(clean_db, core_modules())
+    settings = get_settings().model_copy(
+        update={"whatsapp_connect": "gulmohar-lawn:1187238694481159:+1 (555) 158-0703"}
+    )
+    assert await connect_from_settings(clean_db, settings) == ["gulmohar-lawn"]
+    assert await connect_from_settings(clean_db, settings) == []  # already connected
+    async with clean_db.system() as session:
+        account = await session.scalar(
+            select(ChannelAccount).where(ChannelAccount.external_id == "1187238694481159")
+        )
+    assert account is not None
+    assert (account.channel, account.public_handle) == (Channel.WHATSAPP, "15551580703")
+    assert planned("") == []
+    with pytest.raises(ValueError, match="shop:phone_number_id:number"):
+        planned("gulmohar-lawn:123")
