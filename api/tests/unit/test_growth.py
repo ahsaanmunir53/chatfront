@@ -211,7 +211,8 @@ class TestShareCards:
         assert '<meta name="twitter:card" content="summary_large_image" />' in html
         assert "<b>" not in html
         assert "&quot;&lt;b&gt;&quot;" in html
-        assert "\\u003c/script\\u003e" in html  # the redirect cannot close its script
+        assert "<script" not in html  # the redirect is a meta refresh, allowed by the CSP
+        assert 'content="0; url=https://web.example/s/gulmohar#p-KR01&lt;/script&gt;"' in html
         assert t("share.description", "en", price="Rs 2,750", shop=SHOP.name) in html
 
 

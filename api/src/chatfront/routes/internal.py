@@ -104,5 +104,9 @@ async def local_media(key: str, exp: int, sig: str, services: ServicesDep) -> Re
     return Response(
         await storage.get(key),
         media_type=content_type,
-        headers={"Cache-Control": "private, max-age=300"},
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "Content-Disposition": 'attachment; filename="download"',
+            "X-Content-Type-Options": "nosniff",
+        },
     )

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from chatfront.bookings.routes import router as bookings_router
@@ -65,6 +65,27 @@ from chatfront.sim.routes import router as busy_day_router
 from chatfront.stock.routes import router as stock_router
 
 
+def content_security_policy(prod: bool) -> str:
+    """Scripts only from this origin; styles and fonts also from Google Fonts; pictures, voice
+    notes and videos also from the storage's signed https links and the browser's own blobs."""
+    parts = [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' blob: https:",
+        "connect-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+    ]
+    if prod:
+        parts.append("upgrade-insecure-requests")
+    return "; ".join(parts)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     settings.require_production_secrets()
@@ -97,6 +118,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/api/openapi.json",
     )
     install_error_handlers(app)
+
+    csp = content_security_policy(settings.env == "prod")
+
+    @app.middleware("http")
+    async def security_headers(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        try:
+            response = await call_next(request)
+        except Exception:
+            # ServerErrorMiddleware normally builds unhandled 500s outside user middleware,
+            # which would skip these headers. Return a generic response here instead.
+            response = JSONResponse(
+                status_code=500,
+                content={"error": {"code": "internal_error", "message": "Internal server error"}},
+            )
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Content-Security-Policy", csp)
+        if settings.env == "prod":
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response
+
     if settings.cors_origin_list:  # the frontend hosted apart from the API
         app.add_middleware(
             CORSMiddleware,

@@ -32,7 +32,7 @@ from chatfront.core.errors import AppError, Forbidden, NotFound
 from chatfront.core.models import Staff, Tenant
 from chatfront.owner.rights import Can, rights
 from chatfront.owner.sandbox import copy_demo_shop
-from chatfront.owner.sessions import NotSignedIn, OwnerSession, verify
+from chatfront.owner.sessions import NotSignedIn, OwnerSession, require_recent, verify
 from chatfront.services import Services, get_services
 
 router = APIRouter(prefix="/api/owner")
@@ -54,9 +54,19 @@ OwnerDep = Annotated[OwnerSession, Depends(owner_session)]
 async def _staff(services: Services, session: OwnerSession) -> Staff:
     async with services.db.tenant(session.tenant_id) as db:
         staff = await db.get(Staff, session.staff_id)
-    if staff is None or not staff.active:
+    if staff is None or not staff.active or staff.session_version != session.session_version:
         raise NotSignedIn
     return staff
+
+
+async def recent_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+    """Require both an active staff record and a recently opened sign-in link."""
+    await _staff(services, session)
+    require_recent(session)
+    return session
+
+
+RecentStaffDep = Annotated[OwnerSession, Depends(recent_staff)]
 
 
 async def active_staff(session: OwnerDep, services: ServicesDep) -> OwnerSession:
@@ -75,6 +85,19 @@ def needs(right: Can) -> Any:
         staff = await _staff(services, session)
         if right not in rights(staff.role):
             raise Forbidden("Your role in this shop does not allow this")
+        return session
+
+    return Depends(check)
+
+
+def needs_recent(right: Can) -> Any:
+    """Require a fresh sign-in link as well as the given role permission."""
+
+    async def check(session: OwnerDep, services: ServicesDep) -> OwnerSession:
+        staff = await _staff(services, session)
+        if right not in rights(staff.role):
+            raise Forbidden("Your role in this shop does not allow this")
+        require_recent(session)
         return session
 
     return Depends(check)
@@ -146,7 +169,7 @@ async def demo_owner(body: DemoRequest, request: Request, services: ServicesDep)
 
 
 @router.get("/me")
-async def me(session: OwnerDep, services: ServicesDep) -> Me:
+async def me(session: StaffDep, services: ServicesDep) -> Me:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)
         staff = await db.get(Staff, session.staff_id)
@@ -170,7 +193,9 @@ async def me(session: OwnerDep, services: ServicesDep) -> Me:
 
 
 @router.get("/products")
-async def products(session: StaffDep, services: ServicesDep) -> list[OwnerProduct]:
+async def products(
+    session: Annotated[OwnerSession, needs(Can.CATALOG)], services: ServicesDep
+) -> list[OwnerProduct]:
     async with services.db.tenant(session.tenant_id) as db:
         items = await load_items(db, statuses=tuple(ProductStatus))
     return [
@@ -198,7 +223,9 @@ class LowStock(BaseModel):
 
 
 @router.get("/low-stock")
-async def low_stock(session: StaffDep, services: ServicesDep) -> list[LowStock]:
+async def low_stock(
+    session: Annotated[OwnerSession, needs(Can.STOCK)], services: ServicesDep
+) -> list[LowStock]:
     """Counted variants at or below their limit (feature 52)."""
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)

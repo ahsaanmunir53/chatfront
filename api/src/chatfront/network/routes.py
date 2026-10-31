@@ -30,7 +30,7 @@ from chatfront.network.models import (
     WholesaleListing,
 )
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.services import Services
 
@@ -38,6 +38,7 @@ router = APIRouter(prefix="/api/network", tags=["network"])
 CatalogDep = Annotated[OwnerSession, needs(Can.CATALOG)]
 OrdersDep = Annotated[OwnerSession, needs(Can.ORDERS)]
 TeamDep = Annotated[OwnerSession, needs(Can.TEAM)]
+RecentTeamDep = Annotated[OwnerSession, needs_recent(Can.TEAM)]
 MAX_LISTINGS = 100
 MAX_WEBHOOK_BYTES = 64 * 1024
 
@@ -268,7 +269,7 @@ async def branches(session: TeamDep, services: ServicesDep) -> list[BranchOut]:
 
 
 @router.post("/branches", response_model=BranchOut)
-async def create_branch(body: BranchIn, session: TeamDep, services: ServicesDep) -> BranchOut:
+async def create_branch(body: BranchIn, session: RecentTeamDep, services: ServicesDep) -> BranchOut:
     code = body.code.strip().lower()
     async with services.db.tenant(session.tenant_id) as db:
         exists = await db.scalar(
@@ -358,7 +359,7 @@ async def update_branch(
 async def assign_staff_branch(
     staff_id: uuid.UUID,
     body: AssignBranchIn,
-    session: TeamDep,
+    session: RecentTeamDep,
     services: ServicesDep,
 ) -> dict[str, bool]:
     async with services.db.tenant(session.tenant_id) as db:

@@ -27,6 +27,7 @@ from chatfront.channels.models import (
 from chatfront.channels.types import Kind
 from chatfront.channels.webchat import ChatIdentity, accept_web
 from chatfront.core.errors import AppError, Forbidden, NotFound
+from chatfront.core.models import Staff
 from chatfront.core.phone import hash_phone
 from chatfront.media import service as media_service
 from chatfront.media.models import Media, MediaKind
@@ -70,6 +71,26 @@ def _signed_by_us(services: Services, raw: bytes, signature: str | None) -> bool
     return any(verify_meta_signature(raw, signature, s.get_secret_value()) for s in secrets_)
 
 
+MAX_META_WEBHOOK_BYTES = 1_000_000
+
+
+async def _read_limited_body(request: Request, maximum: int) -> bytes:
+    """Read a request body without allowing unbounded webhook payloads into memory."""
+    declared = request.headers.get("content-length")
+    if declared:
+        try:
+            if int(declared) > maximum:
+                raise AppError("webhook_too_large", "Webhook body is too large", status_code=413)
+        except ValueError as exc:
+            raise AppError("bad_content_length", "Invalid Content-Length") from exc
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > maximum:
+            raise AppError("webhook_too_large", "Webhook body is too large", status_code=413)
+    return bytes(body)
+
+
 @router.post("/webhooks/meta")
 @router.post("/webhooks/whatsapp")  # the URL first saved in WhatsApp's settings
 async def meta_webhook(
@@ -78,7 +99,9 @@ async def meta_webhook(
     signature: Annotated[str | None, Header(alias="X-Hub-Signature-256")] = None,
 ) -> dict[str, bool]:
     """WhatsApp, Instagram and Messenger all post here; the body says which one it is."""
-    raw = await request.body()
+    client = request.client.host if request.client else "unknown"
+    services.limiter.check(f"meta-webhook:{client}")
+    raw = await _read_limited_body(request, MAX_META_WEBHOOK_BYTES)
     if not _signed_by_us(services, raw, signature):
         raise AppError("bad_signature", "Signature check failed", status_code=401)
     try:
@@ -172,16 +195,20 @@ def _limit(services: Services, request: Request, slug: str) -> None:
     services.limiter.check(f"chat:{slug}:{client}")
 
 
-def _identity(
+async def _identity(
     services: Services, account: ChannelAccount, chat_token: str | None, authorization: str | None
 ) -> ChatIdentity:
-    """The owner (a valid session for this shop) or a customer (their chat token)."""
+    """The owner (an active, unrevoked session for this shop) or a customer chat token."""
     if authorization:
         scheme, _, value = authorization.partition(" ")
         if scheme.lower() != "bearer":
             raise NotSignedIn
         session = verify(value, services.settings.secret_key.get_secret_value())
         if session.tenant_id != account.tenant_id:
+            raise NotSignedIn
+        async with services.db.tenant(session.tenant_id) as db:
+            staff = await db.get(Staff, session.staff_id)
+        if staff is None or not staff.active or staff.session_version != session.session_version:
             raise NotSignedIn
         return ChatIdentity(f"staff:{session.staff_id}", session.staff_id)
     if chat_token is None or len(chat_token) < 20:
@@ -206,7 +233,7 @@ async def post_chat_message(
 ) -> dict[str, bool]:
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, body.token, authorization)
+    identity = await _identity(services, account, body.token, authorization)
     kind, payload = Kind.TEXT, dict[str, Any]()
     if body.location is not None:
         kind, payload = Kind.LOCATION, {"location": body.location.model_dump()}
@@ -242,7 +269,7 @@ async def post_chat_media(
     """A photo or voice note typed into the chat. The type is read from the bytes."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, chat_token, authorization)
+    identity = await _identity(services, account, chat_token, authorization)
     data = await file.read(services.settings.max_upload_bytes + 1)
     async with services.db.tenant(account.tenant_id) as session:
         media = await media_service.store(
@@ -276,7 +303,7 @@ async def list_chat_messages(
     """The chat so far. Tokens travel in headers so they never land in access logs."""
     _limit(services, request, slug)
     account = await _webchat_account(services, slug)
-    identity = _identity(services, account, chat_token, authorization)
+    identity = await _identity(services, account, chat_token, authorization)
     external_hash = hash_phone(
         f"{Channel.WEBCHAT}:{identity.sender_id}", services.keys.phone_hash_key
     )

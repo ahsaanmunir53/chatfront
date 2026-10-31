@@ -2,6 +2,15 @@
 
 Updated after every phase so a new session can carry on from here.
 
+## Security checklist continuation (29 October)
+
+- The latest branch CI run before the newest commits passed API (Ruff, strict mypy, coverage, pip-audit and evaluation replay), web (typecheck, Vitest, production build, source-map guard and npm audit), and Gitleaks. E2E was still running at the time of the check; see [run 40858710174](https://github.com/ahsaanmunir53/chatfront/actions/runs/40858710174).
+- Tightened `POST /api/owner/team/{staff_id}/link` to require a recent sign-in link, matching the guard on team creation/removal and the existing payment/data-erasure controls.
+- Added integration coverage asserting that a stale but otherwise valid owner session receives `403 fresh_link_required` when attempting to regenerate a staff link.
+- New commit-triggered CI run: [40860785115](https://github.com/ahsaanmunir53/chatfront/actions/runs/40860785115). Do not consider this change validated until all jobs, including Playwright, finish green.
+- The security checklist remains conservative; outstanding Partial rows are not being relabeled complete without route-by-route evidence.
+- The follow-up commit sequence was superseded by GitHub's cancel-in-progress behavior before its run finished; inspect the newest run for the current head before treating these changes as CI-verified.
+
 ## Where things stand (27 October, end of Phase 0)
 
 Phase 0, the foundation, is done and every check passes:
@@ -1264,3 +1273,43 @@ stays the same.
 - The workspace exposes buyer orders, seller approval/rejection, buyer confirmation, and the split-ledger status. It clearly states that a payment ledger entry is not a checkout or payout; those require a real provider adapter.
 - Added localized network labels to all nine language catalogs and a browser test for branch creation from the owner console.
 - Validation: current PR branch CI must pass the web type/build/E2E suite and the underlying API/migration suite before merge.
+
+
+## Security hardening (29 October 2026)
+
+Work is on `security/checklist-hardening` and remains unmerged in PR #7. The branch is not behind
+`main`; network-commerce changes from main are already present.
+
+Implemented in this phase:
+- Added migration `0029_staff_session_version.py` and the matching `Staff.session_version` model
+  field. Owner tokens carry the version and issue time, owner requests reject stale versions, and
+  removing a member invalidates their tokens. `POST /api/owner/sign-out-all` increments active
+  staff session versions and records an audit event.
+- Added a reusable 15-minute fresh-link guard, but it is not yet wired to every sensitive team,
+  payment/payout setting, and erasure route; those routes and the console UI still need follow-up.
+- Extended the tenant-RLS integration audit to query table schemas correctly and explicitly cover
+  branches, wholesale listings, B2B orders, bargaining policies/rounds, and marketplace payments.
+- Restricted Meta-import photo URLs to HTTPS on the default/443 port, without userinfo and with a
+  known Meta host suffix. Added tests for bad ports, userinfo, HTTP, and deceptive lookalike hosts.
+  The shared HTTP client does not follow redirects by default, so an untrusted redirect target is
+  not followed by the photo-fetch path.
+- Local signed media responses now set `Content-Disposition: attachment` and
+  `X-Content-Type-Options: nosniff`. Media type sniffing has regression tests rejecting HTML and
+  SVG bytes even if their filenames are misleading.
+- Outbound HTTP errors now omit upstream response bodies instead of exposing customer/payment
+  text in errors or retry logs; a regression test checks the body is not exposed.
+- Added regression tests for security headers on success/error responses, token version/size,
+  recent-link age, CORS rejecting HTTP mixed with HTTPS, route authorization dependency inventory,
+  and token/phone/email log redaction.
+
+Verification status:
+- Main/network changes were already present on the branch (compare reported `behind_by = 0`).
+- Web typecheck, unit tests, build, source-map guard, production npm audit and Gitleaks passed on
+  the latest completed checks before the most recent API tests landed.
+- The API CI run is being rerun after Ruff formatting fixes. Do not treat the checklist as closed
+  until the current API lint/types/coverage/evaluation and E2E jobs all finish green.
+- Full BOLA integration coverage for every owner resource, role-by-role 403 matrix, all-public-route
+  limiter inventory, webhook replay tests for every provider, HTML/SVG upload-route matrix, share/
+  receipt/QR XSS coverage, all SQL-injection search-input cases, demo-copy isolation/expiry tests,
+  and a complete sensitive-log capture test are still outstanding. Corresponding rows in
+  `docs/SECURITY.md` must stay Partial/Open until these exist and pass.

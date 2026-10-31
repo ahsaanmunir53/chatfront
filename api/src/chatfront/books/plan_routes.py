@@ -21,7 +21,7 @@ from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Tenant
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.payments.receipts import check
 
@@ -29,6 +29,7 @@ router = APIRouter(prefix="/api/owner")
 ReadDep = Annotated[OwnerSession, needs(Can.BOOKS)]
 WriteDep = Annotated[OwnerSession, needs(Can.BOOKS_WRITE)]
 TeamDep = Annotated[OwnerSession, needs(Can.TEAM)]
+RecentTeamDep = Annotated[OwnerSession, needs_recent(Can.TEAM)]
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
@@ -200,7 +201,7 @@ async def team_pay(
 
 @router.put("/team/{staff_id}/pay")
 async def set_team_pay(
-    staff_id: uuid.UUID, body: PayIn, session: TeamDep, services: ServicesDep
+    staff_id: uuid.UUID, body: PayIn, session: RecentTeamDep, services: ServicesDep
 ) -> dict[str, int]:
     async with services.db.tenant(session.tenant_id) as db:
         pay = await staff_pay.set_pay(
@@ -217,7 +218,7 @@ async def set_team_pay(
 
 @router.post("/team/{staff_id}/pay/{month}")
 async def pay_month(
-    staff_id: uuid.UUID, month: str, session: TeamDep, services: ServicesDep
+    staff_id: uuid.UUID, month: str, session: RecentTeamDep, services: ServicesDep
 ) -> PayOut:
     first = staff_pay.month_of(month)
     async with services.db.tenant(session.tenant_id) as db:

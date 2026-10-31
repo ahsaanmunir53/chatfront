@@ -26,12 +26,13 @@ from chatfront.core.models import Customer, Staff, StaffRole, Tenant
 from chatfront.core.phone import hash_phone
 from chatfront.delivery.address import local_phone
 from chatfront.owner.rights import Can, rights
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession, console_link, issue
 from chatfront.services import Services
 
 router = APIRouter(prefix="/api/owner")
 TeamDep = Annotated[OwnerSession, needs(Can.TEAM)]
+RecentTeamDep = Annotated[OwnerSession, needs_recent(Can.TEAM)]
 AuditDep = Annotated[OwnerSession, needs(Can.AUDIT)]
 
 MAX_TEAM = 25
@@ -92,12 +93,40 @@ def _member(staff: Staff) -> Member:
 
 
 def _link(services: Services, staff: Staff) -> str:
-    token = issue(staff.id, staff.tenant_id, services.settings.secret_key.get_secret_value())
+    token = issue(
+        staff.id,
+        staff.tenant_id,
+        services.settings.secret_key.get_secret_value(),
+        session_version=staff.session_version,
+    )
     return console_link(services.settings.web_url, token)
 
 
 def _actor(session: OwnerSession) -> Actor:
     return Actor(ActorType.STAFF, str(session.staff_id))
+
+
+@router.post("/sign-out-all")
+async def sign_out_all(session: TeamDep, services: ServicesDep) -> dict[str, bool]:
+    """Revoke every staff link and bearer session for the current shop.
+
+    This action intentionally accepts an active team-capable session so users can recover
+    when the fresh-link window has passed; authorisation is still enforced by TeamDep.
+    """
+    async with services.db.tenant(session.tenant_id) as db:
+        await db.execute(
+            update(Staff)
+            .where(Staff.active.is_(True))
+            .values(session_version=Staff.session_version + 1)
+        )
+        await record(
+            db,
+            session.tenant_id,
+            _actor(session),
+            "staff.sign_out_all",
+            entity=("tenant", str(session.tenant_id)),
+        )
+    return {"signed_out": True}
 
 
 @router.get("/team")
@@ -108,7 +137,7 @@ async def team(session: TeamDep, services: ServicesDep) -> list[Member]:
 
 
 @router.post("/team")
-async def add_member(body: NewMember, session: TeamDep, services: ServicesDep) -> Invite:
+async def add_member(body: NewMember, session: RecentTeamDep, services: ServicesDep) -> Invite:
     if body.role == StaffRole.OWNER:
         raise AppError("one_owner", "A shop has one owner; pick another role")
     async with services.db.tenant(session.tenant_id) as db:
@@ -161,7 +190,7 @@ async def _other_member(db: AsyncSession, session: OwnerSession, staff_id: uuid.
 
 
 @router.post("/team/{staff_id}/link")
-async def new_link(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep) -> Invite:
+async def new_link(staff_id: uuid.UUID, session: RecentTeamDep, services: ServicesDep) -> Invite:
     """A fresh sign-in link for someone who lost theirs."""
     async with services.db.tenant(session.tenant_id) as db:
         staff = await _other_member(db, session, staff_id)
@@ -173,11 +202,14 @@ async def new_link(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep)
 
 
 @router.post("/team/{staff_id}/deactivate")
-async def remove_member(staff_id: uuid.UUID, session: TeamDep, services: ServicesDep) -> Member:
+async def remove_member(
+    staff_id: uuid.UUID, session: RecentTeamDep, services: ServicesDep
+) -> Member:
     """Their links stop working at once and their number is a customer's again."""
     async with services.db.tenant(session.tenant_id) as db:
         staff = await _other_member(db, session, staff_id)
         staff.active = False
+        staff.session_version += 1
         await db.execute(
             update(Customer).where(Customer.staff_id == staff.id).values(staff_id=None)
         )

@@ -16,7 +16,7 @@ from chatfront.core.clock import utcnow
 from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Tenant
 from chatfront.owner.rights import Can
-from chatfront.owner.routes import ServicesDep, needs
+from chatfront.owner.routes import ServicesDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.routes.public import shop_by_slug
 from chatfront.services import Services
@@ -24,6 +24,7 @@ from chatfront.shield import data_rights
 
 router = APIRouter()
 TrustDep = Annotated[OwnerSession, needs(Can.TRUST)]
+TrustRecentDep = Annotated[OwnerSession, needs_recent(Can.TRUST)]
 
 
 class ErasedOut(BaseModel):
@@ -75,7 +76,7 @@ async def customer_data(
 
 @router.post("/api/owner/customers/{customer_id}/erase")
 async def erase_customer(
-    customer_id: uuid.UUID, session: TrustDep, services: ServicesDep
+    customer_id: uuid.UUID, session: TrustRecentDep, services: ServicesDep
 ) -> ErasedOut:
     """Erase a customer's data now, as they asked the shop outside the chat."""
     actor = Actor(ActorType.STAFF, str(session.staff_id))

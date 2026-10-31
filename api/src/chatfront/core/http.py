@@ -57,10 +57,9 @@ async def request(
             if response.is_success:
                 return response
             retryable = response.status_code in RETRYABLE_STATUS
-            detail = response.text[:300]
             error = UpstreamError(
                 service,
-                f"HTTP {response.status_code} {detail}",
+                f"HTTP {response.status_code}",
                 status=response.status_code,
                 retryable=retryable,
             )

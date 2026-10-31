@@ -11,6 +11,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -24,9 +25,12 @@ from chatfront.ai.health import Health
 from chatfront.ai.types import Effort, Role
 from chatfront.audit.models import AuditEntry
 from chatfront.audit.service import verify_chain
+from chatfront.catalog.models import Product
+from chatfront.catalog.share import page as share_page
 from chatfront.channels.models import Conversation, Direction, Message
 from chatfront.core.clock import utcnow
 from chatfront.core.db import Database
+from chatfront.core.models import Tenant
 from chatfront.jobs.models import Job
 from chatfront.main import create_app
 from chatfront.media import service as media_service
@@ -69,6 +73,33 @@ async def test_health_and_shop(app: tuple[httpx.AsyncClient, Services]) -> None:
     assert (await client.get("/api/shops/nope/trust")).status_code == 404
 
 
+async def test_shared_product_page_escapes_untrusted_shop_and_product_text(
+    seeded: Database,
+) -> None:
+    async with seeded.system() as session:
+        tenant = await session.scalar(select(Tenant).where(Tenant.slug == SHOP))
+        assert tenant is not None
+        product = await session.scalar(select(Product).where(Product.tenant_id == tenant.id))
+        assert product is not None
+        tenant.name = '"><img onerror="alert(2)">'
+        product.name = "<script>alert(1)</script>"
+        product.description = '"><img onerror="alert(3)">'
+        html = share_page(
+            tenant,
+            product,
+            share_url="https://shop.example/s/shop/p/item",
+            card_url="https://shop.example/cards/item.png",
+            shop_url="https://shop.example/s/shop",
+        )
+
+    assert "<script>alert(1)</script>" not in html
+    assert '<img onerror="alert(2)">' not in html
+    assert '<img onerror="alert(3)">' not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "&lt;img onerror=&quot;alert(2)&quot;&gt;" in html
+    assert "&lt;img onerror=&quot;alert(3)&quot;&gt;" in html
+
+
 async def test_webhook_verification(app: tuple[httpx.AsyncClient, Services]) -> None:
     client, _ = app
     params = {
@@ -87,6 +118,7 @@ async def test_whatsapp_message_to_reply(
 ) -> None:
     client, services = app
     body, headers = signed(wa_message("wamid.in1"))
+    assert (await client.post("/webhooks/whatsapp", content=body)).status_code == 401
     assert (
         await client.post(
             "/webhooks/whatsapp",
@@ -463,3 +495,77 @@ async def test_cors_for_a_separately_hosted_frontend(seeded: Database) -> None:
             stranger = await client.get("/health", headers={"Origin": "https://evil.test"})
     assert preflight.headers["access-control-allow-origin"] == origin
     assert "access-control-allow-origin" not in stranger.headers
+
+
+async def test_meta_webhook_requires_signature_and_caps_body(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, _ = app
+    missing = await client.post(
+        "/webhooks/meta",
+        content=b'{"object":"page","entry":[]}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert missing.status_code == 401
+    oversized = await client.post(
+        "/webhooks/meta",
+        content=b"x" * 1_000_001,
+        headers={"Content-Type": "application/json"},
+    )
+    assert oversized.status_code == 413
+
+
+async def test_meta_webhook_rate_limit_returns_retry_after(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, services = app
+    services.limiter.per_minute = 1
+    first = await client.post(
+        "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
+    assert first.status_code == 401
+    second = await client.post(
+        "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
+    assert second.status_code == 429
+    assert second.headers["retry-after"] == "60"
+
+
+async def test_public_route_families_are_rate_limited_with_retry_after(
+    app: tuple[httpx.AsyncClient, Services],
+) -> None:
+    client, services = app
+    services.limiter.per_minute = 1
+
+    async def rate_limited(method: str, path: str, **kwargs: Any) -> None:
+        services.limiter.hits.clear()
+        first = await client.request(method, path, **kwargs)
+        assert first.status_code != 429, f"{method} {path} was limited before its first request"
+        second = await client.request(method, path, **kwargs)
+        assert second.status_code == 429, f"{method} {path} was not rate limited"
+        assert second.headers["retry-after"] == "60"
+
+    # Public shop discovery, trust and product/price lookups.
+    await rate_limited("GET", "/api/demo-shops")
+    await rate_limited("GET", f"/api/shops/{SHOP}/trust/check", params={"value": "0300"})
+    await rate_limited("GET", f"/api/shops/{SHOP}/products")
+    await rate_limited("GET", f"/api/shops/{SHOP}/products/NO-SUCH-CODE/photo")
+    await rate_limited("GET", f"/s/{SHOP}/p/NO-SUCH-CODE")
+
+    # Owner demo/link sign-in, anonymous chat, webhook callbacks and public lookups.
+    await rate_limited("POST", "/api/owner/demo", json={"slug": SHOP})
+    await rate_limited("POST", f"/api/shops/{SHOP}/chat/session")
+    await rate_limited(
+        "POST", "/webhooks/meta", content=b"{}", headers={"Content-Type": "application/json"}
+    )
+    await rate_limited("POST", f"/webhooks/sms/{SHOP}", json={"sender": "test", "message": "test"})
+    await rate_limited("GET", "/api/receipts/NO-SUCH-CODE")
+    await rate_limited("GET", "/api/passport/NO-SUCH-CODE")
+
+    # Anonymous chat uploads are rate-limited before token validation or file processing.
+    await rate_limited(
+        "POST",
+        f"/api/shops/{SHOP}/chat/media",
+        data={"client_id": "00000000-0000-4000-8000-000000000001"},
+        files={"file": ("renamed.html", b"<html>nope</html>", "text/html")},
+    )

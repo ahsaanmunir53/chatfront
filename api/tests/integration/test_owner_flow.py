@@ -37,11 +37,18 @@ from tests.integration.conftest import SHOP
 
 
 async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) -> None:
-    client, _ = app
+    client, services = app
     slug, auth = await sign_in(client)
     assert slug.startswith(f"{SHOP}-")
     me = (await client.get("/api/owner/me", headers=auth)).json()
     assert (me["shop_name"], me["is_demo"], me["currency"]) == ("Gulmohar Lawn House", True, "PKR")
+    async with services.db.system() as session:
+        copied = await session.scalar(select(Tenant).where(Tenant.slug == slug))
+    assert copied is not None
+    assert copied.is_demo
+    assert not copied.is_platform
+    assert copied.expires_at is not None
+    assert utcnow() < copied.expires_at <= utcnow() + timedelta(days=3, minutes=1)
     assert me["languages"][:2] == ["ur-Latn", "ur"]  # Pakistan's customer languages
     assert len((await client.get("/api/owner/products", headers=auth)).json()) == 4
     assert (await client.get("/api/owner/me")).status_code == 401
@@ -52,11 +59,56 @@ async def test_a_demo_owner_gets_their_own_copy(app: tuple[Client, Services]) ->
         await client.post("/api/owner/demo", json={"slug": slug})
     ).status_code == 404  # no copies of copies
     assert (await client.post("/api/owner/demo", json={"slug": "nope"})).status_code == 404
+    # The platform shop is not a demo template and cannot be used as a demo login.
+    assert (await client.post("/api/owner/demo", json={"slug": "chatfront"})).status_code == 404
     other_slug, _ = await sign_in(client)
     assert other_slug != slug
     # A session for one shop opens nothing in another.
     peek = await client.get(f"/api/shops/{other_slug}/chat/messages", headers=auth)
     assert peek.status_code == 401
+
+
+async def test_sign_out_all_devices_revokes_existing_owner_session(
+    app: tuple[Client, Services],
+) -> None:
+    client, _ = app
+    slug, auth = await sign_in(client)
+    response = await client.post("/api/owner/sign-out-all", headers=auth)
+    assert response.status_code == 200, response.text
+    assert response.json() == {"signed_out": True}
+    assert (await client.get("/api/owner/me", headers=auth)).status_code == 401
+    assert (await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)).status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("role", "forbidden_path"),
+    [
+        ("sales", "/api/owner/settings"),
+        ("packing", "/api/owner/payments"),
+        ("accounts", "/api/owner/settings"),
+        ("auditor", "/api/owner/payments"),
+        ("stock", "/api/owner/payments"),
+    ],
+)
+async def test_staff_roles_cannot_open_routes_outside_their_rights(
+    app: tuple[Client, Services], role: str, forbidden_path: str
+) -> None:
+    from urllib.parse import parse_qs, urlsplit
+
+    client, _ = app
+    _, owner_auth = await sign_in(client)
+    created = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": f"Test {role}", "role": role},
+    )
+    assert created.status_code == 200, created.text
+    link = created.json()["link"]
+    token = parse_qs(urlsplit(link).fragment)["t"][0]
+    staff_auth = {"Authorization": f"Bearer {token}"}
+
+    denied = await client.get(forbidden_path, headers=staff_auth)
+    assert denied.status_code == 403, f"{role} unexpectedly accessed {forbidden_path}"
 
 
 async def test_product_from_a_photo_and_typed_words(app: tuple[Client, Services]) -> None:
@@ -306,3 +358,98 @@ async def test_product_texts_by_the_owner_are_kept(app: tuple[Client, Services])
         product = await session.get(Product, uuid.UUID(product_id))
     assert product is not None
     assert product.translations["ur"]["by"] == "owner"
+
+
+async def test_sign_out_all_revokes_owner_session_versions(app: tuple[Client, Services]) -> None:
+    client, _ = app
+    slug, auth = await sign_in(client)
+    before = await client.get("/api/owner/me", headers=auth)
+    assert before.status_code == 200
+
+    result = await client.post("/api/owner/sign-out-all", headers=auth)
+    assert result.status_code == 200, result.text
+    assert result.json() == {"signed_out": True}
+
+    # A correctly signed but old token must not work after the stored session version changes.
+    revoked = await client.get("/api/owner/me", headers=auth)
+    assert revoked.status_code == 401
+    assert (await client.get(f"/api/shops/{slug}/chat/messages", headers=auth)).status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("role", "forbidden_path"),
+    [
+        ("sales", "/api/owner/products"),
+        ("packing", "/api/owner/payments"),
+        ("accounts", "/api/owner/team"),
+        ("auditor", "/api/owner/couriers"),
+        ("stock", "/api/owner/payments"),
+    ],
+)
+async def test_staff_roles_are_forbidden_outside_their_rights(
+    app: tuple[Client, Services], role: str, forbidden_path: str
+) -> None:
+    client, _ = app
+    _, owner_auth = await sign_in(client)
+    invited = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": f"Test {role}", "role": role},
+    )
+    assert invited.status_code == 200, invited.text
+    link = invited.json()["link"]
+    token = link.split("#t=", maxsplit=1)[1]
+    staff_auth = {"Authorization": f"Bearer {token}"}
+
+    response = await client.get(forbidden_path, headers=staff_auth)
+    assert response.status_code == 403, (
+        f"{role} unexpectedly accessed {forbidden_path}: {response.text}"
+    )
+
+
+async def test_sensitive_actions_require_a_fresh_sign_in_link(
+    app: tuple[Client, Services], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import chatfront.owner.sessions as owner_sessions
+
+    client, services = app
+    _, owner_auth = await sign_in(client)
+    invited = await client.post(
+        "/api/owner/team",
+        headers=owner_auth,
+        json={"name": "Link Recovery Test", "role": "sales"},
+    )
+    assert invited.status_code == 200, invited.text
+    staff_id = invited.json()["member"]["id"]
+    raw = owner_auth["Authorization"].removeprefix("Bearer ")
+    current = owner_sessions.verify(raw, services.settings.secret_key.get_secret_value())
+    actual_clock = owner_sessions.utcnow
+    monkeypatch.setattr(
+        owner_sessions,
+        "utcnow",
+        lambda: actual_clock() - timedelta(minutes=16),
+    )
+    stale_token = owner_sessions.issue(
+        current.staff_id,
+        current.tenant_id,
+        services.settings.secret_key.get_secret_value(),
+        session_version=current.session_version,
+    )
+    monkeypatch.setattr(owner_sessions, "utcnow", actual_clock)
+    stale_auth = {"Authorization": f"Bearer {stale_token}"}
+
+    team_change = await client.post(
+        "/api/owner/team",
+        headers=stale_auth,
+        json={"name": "Stale Link Member", "role": "sales"},
+    )
+    assert team_change.status_code == 403
+    assert team_change.json()["error"]["code"] == "fresh_link_required"
+
+    link_regeneration = await client.post(f"/api/owner/team/{staff_id}/link", headers=stale_auth)
+    assert link_regeneration.status_code == 403
+    assert link_regeneration.json()["error"]["code"] == "fresh_link_required"
+
+    payment_settings = await client.post("/api/owner/sms-forwarding", headers=stale_auth)
+    assert payment_settings.status_code == 403
+    assert payment_settings.json()["error"]["code"] == "fresh_link_required"

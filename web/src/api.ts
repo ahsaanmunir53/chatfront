@@ -1751,6 +1751,11 @@ export const api = {
       method: "POST",
       headers: bearer(token),
     }),
+  signOutAll: (token: string) =>
+    call<{ signed_out: boolean }>("/api/owner/sign-out-all", {
+      method: "POST",
+      headers: bearer(token),
+    }),
   activity: (token: string) => call<ActivityLog>("/api/owner/activity", { headers: bearer(token) }),
   why: (token: string, code: string) =>
     call<Why>(`/api/owner/orders/${encodeURIComponent(code)}/why`, { headers: bearer(token) }),

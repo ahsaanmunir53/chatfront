@@ -21,13 +21,14 @@ from chatfront.core.errors import AppError, NotFound
 from chatfront.core.models import Customer, Staff, Tenant
 from chatfront.orders.models import Order
 from chatfront.owner.rights import Can, rights
-from chatfront.owner.routes import ServicesDep, StaffDep, needs
+from chatfront.owner.routes import ServicesDep, StaffDep, needs, needs_recent
 from chatfront.owner.sessions import OwnerSession
 from chatfront.shield import approvals, autonomy, buyers, fraud, why
 from chatfront.shield.models import FraudReason, FraudReport
 
 router = APIRouter(prefix="/api/owner")
 SettingsDep = Annotated[OwnerSession, needs(Can.SETTINGS)]
+RecentSettingsDep = Annotated[OwnerSession, needs_recent(Can.SETTINGS)]
 OrdersDep = Annotated[OwnerSession, needs(Can.ORDERS)]
 TrustDep = Annotated[OwnerSession, needs(Can.TRUST)]
 
@@ -118,7 +119,7 @@ async def shop_settings(session: SettingsDep, services: ServicesDep) -> ShopSett
 
 @router.put("/settings")
 async def change_settings(
-    body: SettingsChange, session: SettingsDep, services: ServicesDep
+    body: SettingsChange, session: RecentSettingsDep, services: ServicesDep
 ) -> ShopSettings:
     async with services.db.tenant(session.tenant_id) as db:
         tenant = await db.get(Tenant, session.tenant_id)

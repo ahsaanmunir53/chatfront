@@ -10,7 +10,6 @@ shown.
 from __future__ import annotations
 
 import io
-import json
 from html import escape
 from pathlib import Path
 
@@ -175,15 +174,10 @@ def page(tenant: Tenant, product: Product, *, share_url: str, card_url: str, sho
 <meta name="description" content="{escape(description)}" />
 <link rel="canonical" href="{escape(share_url)}" />
 {metas}
-<script>window.location.replace({_js(shop_url)});</script>
+<meta http-equiv="refresh" content="0; url={target}" />
 </head>
 <body>
 <p><a href="{target}">{escape(title)}: {escape(price)}</a></p>
 </body>
 </html>
 """
-
-
-def _js(value: str) -> str:
-    """A string for a script, safe inside the page."""
-    return json.dumps(value).replace("<", "\\u003c").replace(">", "\\u003e")
