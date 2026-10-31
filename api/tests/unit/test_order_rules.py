@@ -222,3 +222,19 @@ def test_payment_methods_come_from_what_the_shop_said() -> None:
     assert accepted_methods(shop()) == ["cod", "transfer"]  # the clothing template's
     grocery = Tenant(name="G", slug="g", template="grocery", country="PK", profile={})
     assert accepted_methods(grocery) == ["cod", "transfer"]  # credit is not paid at checkout
+
+
+def test_a_total_worked_out_from_known_prices_is_supported() -> None:
+    from decimal import Decimal
+
+    from chatfront.shield.answer_check import Facts, unsupported
+
+    facts = Facts(digits=2)
+    facts.money(395_000)  # Rs 3,950
+    facts.money(15_000)  # Rs 150 delivery
+    facts.count(3)  # 3 in stock
+    facts.text("2 kr do, M size", "ur-Latn")  # what the customer wrote
+    reply = "2 suits: Rs 7,900, with delivery Rs 8,050. Only 3 left."
+    assert unsupported(reply, facts, "en") == []
+    assert unsupported("Total Rs 8,051", facts, "en") == [Decimal(8051)]
+    assert unsupported("Only 7 left", facts, "en") == [Decimal(7)]  # counts stay exact

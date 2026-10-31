@@ -64,10 +64,33 @@ class Facts:
         return text
 
 
+MAX_QUANTITY = 20  # "2 suits", "3 kg": a total may be a known price times a small count
+MAX_KNOWN = 200  # past this many known figures, totals are not worked out (cost bound)
+SMALLEST_TOTAL = Decimal(100)  # stock counts and other small numbers must be quoted exactly
+
+
+def _worked_out(number: Decimal, known: set[Decimal]) -> bool:
+    """A total code can check from known figures: a price times a small count, two figures
+    added, or both (two suits plus delivery). The cart and checkout still compute the real
+    totals; this only stops a correct sum from being treated as made up."""
+    known = {n for n in known if n >= SMALLEST_TOTAL}
+    if number < SMALLEST_TOTAL or len(known) > MAX_KNOWN:
+        return False
+    parts = {n * k for n in known for k in range(1, MAX_QUANTITY + 1)}
+    if number in parts:
+        return True
+    return any(number - part in known for part in parts)
+
+
 def unsupported(reply: str, facts: Facts, lang: str | None) -> list[Decimal]:
     """The numbers in a reply that nothing supports, in the order they appear."""
     found = find_numbers(facts.strip_codes(reply), lang)
-    return [n for n in found if n not in facts.numbers and n not in _ALWAYS]
+    known = {n for n in facts.numbers if n > 0}
+    return [
+        n
+        for n in found
+        if n not in facts.numbers and n not in _ALWAYS and not _worked_out(n, known)
+    ]
 
 
 def describe(numbers: Iterable[Decimal]) -> str:
