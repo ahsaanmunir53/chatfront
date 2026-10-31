@@ -31,4 +31,4 @@ def test_share_page_escapes_product_shop_and_description_markup() -> None:
     assert "&lt;script&gt;" in rendered
     assert "&lt;img onerror=" in rendered
     assert "next=&quot;&gt;&lt;script&gt;" in rendered
-    assert r"\u003cscript\u003e" in rendered
+    assert "<script" not in rendered  # no script at all: the redirect is a meta refresh
