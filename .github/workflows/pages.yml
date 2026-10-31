@@ -41,7 +41,7 @@ jobs:
           npm run build
           # GitHub Pages has no server-side routing: unknown paths get 404.html, which is the app.
           cp dist/index.html dist/404.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: web/dist
 
