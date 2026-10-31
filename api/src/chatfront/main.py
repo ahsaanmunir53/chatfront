@@ -65,6 +65,27 @@ from chatfront.sim.routes import router as busy_day_router
 from chatfront.stock.routes import router as stock_router
 
 
+def content_security_policy(prod: bool) -> str:
+    """Scripts only from this origin; styles and fonts also from Google Fonts; pictures, voice
+    notes and videos also from the storage's signed https links and the browser's own blobs."""
+    parts = [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: blob: https:",
+        "media-src 'self' blob: https:",
+        "connect-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+    ]
+    if prod:
+        parts.append("upgrade-insecure-requests")
+    return "; ".join(parts)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     settings.require_production_secrets()
@@ -98,6 +119,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     install_error_handlers(app)
 
+    csp = content_security_policy(settings.env == "prod")
+
     @app.middleware("http")
     async def security_headers(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -114,11 +137,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'self'; base-uri 'self'; object-src 'none'; "
-            "frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests",
-        )
+        response.headers.setdefault("Content-Security-Policy", csp)
         if settings.env == "prod":
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
