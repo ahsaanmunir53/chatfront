@@ -43,7 +43,7 @@ jobs:
         run: |
           uv run python -m chatfront.eval.languages --live --write ${ONLY_LANG:+--lang "$ONLY_LANG"}
       # The results file is attached to the run; it is committed by hand after a look.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eval-results
           path: i18n/eval-results.json
@@ -86,7 +86,7 @@ jobs:
           uv run python -m chatfront.seed
           uv run python -m chatfront.eval.agent --live --write --markdown \
             ${ONLY_KIND:+--kind "$ONLY_KIND"} | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: agent-eval-results
           path: api/src/chatfront/eval/data/agent/results.json

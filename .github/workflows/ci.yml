@@ -118,7 +118,7 @@ jobs:
         env:
           CI: "true"
           E2E_DATABASE_URL: ${{ env.OWNER_URL }}/chatfront_e2e
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-traces
