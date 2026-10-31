@@ -278,3 +278,35 @@ async def test_unhandled_errors_never_return_tracebacks_or_exception_text() -> N
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["referrer-policy"] == "no-referrer"
+
+
+def test_the_content_security_policy_allows_only_what_the_pages_use() -> None:
+    from chatfront.main import content_security_policy
+
+    dev = content_security_policy(prod=False)
+    assert "script-src 'self';" in dev
+    assert "'unsafe-inline'" not in dev.split("style-src")[0]  # never for scripts
+    assert "https://fonts.gstatic.com" in dev
+    assert "frame-ancestors 'none'" in dev
+    assert "upgrade-insecure-requests" not in dev  # local http stays usable
+    assert content_security_policy(prod=True).endswith("upgrade-insecure-requests")
+
+
+def test_a_shared_product_page_redirects_without_a_script() -> None:
+    import uuid
+
+    from chatfront.catalog import share
+    from chatfront.catalog.models import Product
+    from chatfront.core.models import Tenant
+
+    tenant = Tenant(name="Shop <b>", slug="s", default_lang="en", country="PK", currency="PKR")
+    product = Product(id=uuid.uuid4(), name='<script>alert(1)</script>"', description="", price=1)
+    html = share.page(
+        tenant,
+        product,
+        share_url="https://x.test/p",
+        card_url="https://x.test/c",
+        shop_url="https://x.test/s/s#p-1",
+    )
+    assert "<script" not in html
+    assert '<meta http-equiv="refresh" content="0; url=https://x.test/s/s#p-1" />' in html
