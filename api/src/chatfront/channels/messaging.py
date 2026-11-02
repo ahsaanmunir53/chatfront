@@ -1,9 +1,10 @@
 """Instagram DMs and Facebook Messenger: one adapter, because Meta gives both the same shape.
 
 Webhooks arrive as {"object": "instagram" | "page", "entry": [{"id": <account>, "messaging":
-[...]}]}. Replies go to /<account>/messages with the account's token as a Bearer header:
-graph.instagram.com for Instagram (Instagram API with Instagram Login), graph.facebook.com
-for a Facebook Page. Buttons and lists become quick replies, which both channels support.
+[...]}]}. Replies go to /me/messages with the account's token as a Bearer header, which names the
+sender: a Page token on graph.facebook.com for Messenger and for an Instagram account linked
+to the Page (Instagram with Facebook Login, the only way open to new apps), or an Instagram
+token on graph.instagram.com. Buttons and lists become quick replies, which both channels support.
 """
 
 from __future__ import annotations
@@ -195,7 +196,7 @@ class MetaMessagingAdapter:
         response = await request(
             self.http,
             "POST",
-            f"{self.base}/{account.external_id}/messages",
+            f"{self.base}/me/messages",
             service=self.channel,
             json=body,
             headers=headers,
@@ -219,7 +220,7 @@ class MetaMessagingAdapter:
         response = await request(
             self.http,
             "POST",
-            f"{self.base}/{account.external_id}/messages",
+            f"{self.base}/me/messages",
             service=self.channel,
             json={
                 "recipient": {"comment_id": comment_id},

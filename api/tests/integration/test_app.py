@@ -421,10 +421,10 @@ def dm(obj: str, account: str, mid: str, text: str) -> dict[str, object]:
             "instagram",
             "IG1",
             b"test-ig-secret",
-            "https://graph.instagram.com/v23.0/IG1/messages",
+            "https://graph.instagram.com/v23.0/me/messages",
             "test-ig-token",
         ),
-        ("page", "PAGE1", b"test-app-secret", f"{GRAPH}/PAGE1/messages", "test-fb-token"),
+        ("page", "PAGE1", b"test-app-secret", f"{GRAPH}/me/messages", "test-fb-token"),
     ],
 )
 async def test_instagram_and_messenger_dms_get_replies(

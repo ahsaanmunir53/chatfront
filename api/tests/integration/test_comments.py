@@ -109,7 +109,7 @@ async def test_a_price_question_gets_the_product_in_a_private_reply_once(
                 json={"caption": f"New lawn, code {lawn}", "permalink": "https://ig.test/p/1"},
             )
         )
-        sent = respx.post(f"{IG}/IG1/messages").mock(
+        sent = respx.post(f"{IG}/me/messages").mock(
             return_value=httpx.Response(200, json={"recipient_id": "IGSID1", "message_id": "m1"})
         )
         await _run(services)
@@ -198,7 +198,7 @@ async def test_a_post_without_a_product_waits_for_the_owner(app: tuple[Client, S
     )
     assert chosen.json() == {"answering": 1}
     with respx.mock:
-        sent = respx.post(f"{GRAPH}/PAGE1/messages").mock(
+        sent = respx.post(f"{GRAPH}/me/messages").mock(
             return_value=httpx.Response(200, json={"recipient_id": "PSID1", "message_id": "m2"})
         )
         await _run(services)
@@ -226,7 +226,7 @@ async def test_failures_and_the_hourly_limit(
     await _post(client, ig_comment("C1", f"{lawn} price?", media="M2"), IG_SECRET)
     with respx.mock:
         respx.get(f"{IG}/M2").mock(return_value=httpx.Response(500))
-        respx.post(f"{IG}/IG1/messages").mock(return_value=httpx.Response(400, json={}))
+        respx.post(f"{IG}/me/messages").mock(return_value=httpx.Response(400, json={}))
         await _run(services)
     failed = await _comment(services, "C1")
     assert failed.status == CommentStatus.FAILED  # the code in the comment named the product

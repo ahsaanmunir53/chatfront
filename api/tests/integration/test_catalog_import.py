@@ -675,7 +675,7 @@ async def test_the_shops_own_reel_names_its_product(app: tuple[Client, Services]
         respx.get("https://lookaside.fbsbx.com/reel.mp4").mock(
             return_value=httpx.Response(200, content=b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 64)
         )
-        respx.post(f"{IG}/IG1/messages").mock(
+        respx.post(f"{IG}/me/messages").mock(
             return_value=httpx.Response(200, json={"recipient_id": "IGU5", "message_id": "o1"})
         )
         await run_worker(services)

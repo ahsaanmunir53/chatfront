@@ -132,10 +132,10 @@ def test_parse_ignores_other_objects(
 async def test_send_shapes(
     instagram: MetaMessagingAdapter, messenger: MetaMessagingAdapter
 ) -> None:
-    ig_route = respx.post(f"{IG}/IG1/messages").mock(
+    ig_route = respx.post(f"{IG}/me/messages").mock(
         return_value=httpx.Response(200, json={"recipient_id": "x", "message_id": "mid.1"})
     )
-    fb_route = respx.post(f"{FB}/PAGE1/messages").mock(
+    fb_route = respx.post(f"{FB}/me/messages").mock(
         return_value=httpx.Response(200, json={"recipient_id": "x", "message_id": "mid.2"})
     )
     ig, fb = instagram, messenger
@@ -162,7 +162,7 @@ async def test_send_shapes(
 
 @respx.mock
 async def test_long_urdu_is_clipped_on_a_character(instagram: MetaMessagingAdapter) -> None:
-    route = respx.post(f"{IG}/IG1/messages").mock(
+    route = respx.post(f"{IG}/me/messages").mock(
         return_value=httpx.Response(200, json={"message_id": "m"})
     )
     await instagram.send(AccountRef("IG1", "t"), "u", OutText("سلام " * 400))
@@ -177,7 +177,7 @@ async def test_send_errors(instagram: MetaMessagingAdapter) -> None:
     with pytest.raises(AppError, match="cannot send"):
         await instagram.send(AccountRef("IG1", "t"), "u", OutTemplate("t", "en"))
     with respx.mock:
-        respx.post(f"{IG}/IG1/messages").mock(return_value=httpx.Response(200, json={}))
+        respx.post(f"{IG}/me/messages").mock(return_value=httpx.Response(200, json={}))
         with pytest.raises(AppError, match="message id"):
             await instagram.send(AccountRef("IG1", "t"), "u", OutText("x"))
 

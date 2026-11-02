@@ -255,7 +255,7 @@ async def test_a_live_sale_is_claimed_by_number_in_the_chat_and_in_comments(
     await webhook(client, live_comment)
     await webhook(client, live_comment)  # Meta retries; one piece only
     with respx.mock:
-        sent = respx.post(f"{IG}/IG1/messages").mock(
+        sent = respx.post(f"{IG}/me/messages").mock(
             return_value=httpx.Response(200, json={"recipient_id": "IGU7", "message_id": "pr1"})
         )
         await run(services)
@@ -300,7 +300,7 @@ async def test_ads_stories_and_mentions_are_leads_and_orders_are_credited(
     assert found[LeadKind.STORY_MENTION].url == "https://cdn.ig/m1"
 
     with respx.mock:
-        respx.post(f"{IG}/IG1/messages").mock(
+        respx.post(f"{IG}/me/messages").mock(
             return_value=httpx.Response(200, json={"message_id": "out-1"})
         )
         await run(services)
