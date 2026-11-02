@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -63,6 +64,8 @@ from chatfront.shield.routes import router as shield_router
 from chatfront.shield.scam_routes import router as scams_router
 from chatfront.sim.routes import router as busy_day_router
 from chatfront.stock.routes import router as stock_router
+
+_log = logging.getLogger(__name__)
 
 
 def content_security_policy(prod: bool) -> str:
@@ -127,9 +130,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> Response:
         try:
             response = await call_next(request)
-        except Exception:
+        except Exception as exc:
             # ServerErrorMiddleware normally builds unhandled 500s outside user middleware,
-            # which would skip these headers. Return a generic response here instead.
+            # which would skip these headers. Return a generic response here instead, and log
+            # the error's type and stack (never the request body) so it can be fixed.
+            _log.error(
+                "unhandled %s on %s %s",
+                type(exc).__name__,
+                request.method,
+                request.url.path,
+                exc_info=True,
+            )
             response = JSONResponse(
                 status_code=500,
                 content={"error": {"code": "internal_error", "message": "Internal server error"}},
