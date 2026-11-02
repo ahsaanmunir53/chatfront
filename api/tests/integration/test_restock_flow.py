@@ -649,7 +649,8 @@ async def test_the_owners_whatsapp_answers_prices_and_fills_a_flow(
         row = listed["interactive"]["action"]["sections"][0]["rows"][0]
         before = len(graph.calls)
         await wa_send(client, services, "interactive", type="list_reply", list_reply=row)
-        [form] = texts(graph, before)
+        picture, form = texts(graph, before)
+        assert picture["type"] == "image"  # the product's picture comes first
         params = form["interactive"]["action"]["parameters"]
         assert (params["flow_id"], params["flow_token"]) == ("FLOW123", f"product:{product.id}")
         data = params["flow_action_payload"]["data"]

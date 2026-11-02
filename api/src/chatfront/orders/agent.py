@@ -43,7 +43,7 @@ from chatfront.channels.handover import HANDOVER, start_handover
 from chatfront.channels.language import reply_language
 from chatfront.channels.models import Channel, Conversation, SocialPost
 from chatfront.channels.notify import send_to
-from chatfront.channels.types import Kind, Outbound, OutText
+from chatfront.channels.types import Kind, Outbound, OutImage, OutText
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack
 from chatfront.core.errors import AppError
@@ -54,7 +54,7 @@ from chatfront.delivery import pins
 from chatfront.delivery.risk import assess
 from chatfront.modules.registry import enabled_modules
 from chatfront.offers import seasons
-from chatfront.orders import custom, live_claims
+from chatfront.orders import browse, custom, live_claims
 from chatfront.orders import service as orders
 from chatfront.orders.cards import CardMaker
 from chatfront.orders.catalog_cart import take_catalog_cart
@@ -105,6 +105,10 @@ _INJECTION_NOTE = (
 )
 
 
+_BUY_NOTE = (
+    "The customer tapped Order on the product card with code {}. Help them order it: ask "
+    "for the size or colour if it has several, then add it to the cart."
+)
 _SHARED_NOTE = (
     "Note from Chatfront: the customer shared the shop's own post, which shows {} (code {}). "
     "That is the product they mean."
@@ -147,6 +151,9 @@ class OrderAgent:
             return await mentions.thank(
                 self.services, turn.tenant, turn.conversation.customer_id, turn.lang
             )
+        shown = await self._browse(turn, tapped)
+        if shown is not None:
+            return shown
         button = actions.parse_button(tapped)
         if button is not None:
             return await self._tap(turn, *button)
@@ -179,7 +186,25 @@ class OrderAgent:
                 turn, "a reply had figures the shop could not confirm", "code"
             )
         replies: list[Outbound] = [OutText(checked)] if checked else []
-        return [*replies, *ctx.cards] or [OutText(t("agent.fallback", turn.lang))]
+        pictures = [c for c in ctx.cards if isinstance(c, OutImage)]  # products first
+        others = [c for c in ctx.cards if not isinstance(c, OutImage)]
+        return [*pictures, *replies, *others] or [OutText(t("agent.fallback", turn.lang))]
+
+    async def _browse(self, turn: Turn, tapped: str | None) -> list[Outbound] | None:
+        """The store in the chat: "menu" brings categories, a category brings its cards."""
+        category = browse.parse(tapped)
+        text = turn.message.body if turn.message.kind == Kind.TEXT and not tapped else None
+        if browse.greets(text):
+            return browse.welcome(turn.tenant, turn.lang)
+        asked = tapped == browse.MENU_BUTTON or browse.wants_catalog(text)
+        if category is None and not asked:
+            return None
+        async with self.services.db.tenant(turn.tenant.id) as session:
+            items = await load_items(session)
+        if category is None:
+            return browse.categories(items, turn.lang)
+        api_url = self.services.settings.public_base_url
+        return browse.category_cards(api_url, turn.tenant, items, category, turn.lang)
 
     # -- the model's part -----------------------------------------------------------------
 
@@ -232,6 +257,8 @@ class OrderAgent:
             messages.append(ChatMessage("system", _INJECTION_NOTE))
         if shared is not None:
             messages.append(ChatMessage("system", _SHARED_NOTE.format(shared.name, shared.code)))
+        if code := browse.bought((turn.message.payload or {}).get("button_id")):
+            messages.append(ChatMessage("system", _BUY_NOTE.format(code)))
         messages.append(current_message(turn))
         request = ChatRequest(
             role=role_for(turn),

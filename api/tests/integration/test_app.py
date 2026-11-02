@@ -269,7 +269,7 @@ async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
     client, services = app
     token = (await client.post(f"/api/shops/{SHOP}/chat/session")).json()["token"]
     client_id = str(uuid.uuid4())
-    post = {"token": token, "client_id": client_id, "text": "salam"}
+    post = {"token": token, "client_id": client_id, "text": "salam, kuch poochna hai"}
     assert (await client.post(f"/api/shops/{SHOP}/chat/messages", json=post)).json() == {
         "accepted": True
     }
@@ -281,7 +281,7 @@ async def test_try_it_chat(app: tuple[httpx.AsyncClient, Services]) -> None:
     mine = {"X-Chat-Token": token}
     listed = (await client.get(f"/api/shops/{SHOP}/chat/messages", headers=mine)).json()
     assert [(m["direction"], m["body"]) for m in listed] == [
-        ("in", "salam"),
+        ("in", "salam, kuch poochna hai"),
         ("out", "Wa alaikum assalam! Bataiye, main aap ki kya madad kar sakta hoon?"),
     ]
     assert [m["client_id"] for m in listed] == [client_id, None]  # the page settles its copy
@@ -437,7 +437,7 @@ async def test_instagram_and_messenger_dms_get_replies(
     token: str,
 ) -> None:
     client, services = app
-    body, headers = signed(dm(obj, account, f"{obj}-m1", "salam"), secret)
+    body, headers = signed(dm(obj, account, f"{obj}-m1", "salam, kuch poochna hai"), secret)
     assert (await client.post("/webhooks/meta", content=body, headers=headers)).json() == {
         "ok": True
     }

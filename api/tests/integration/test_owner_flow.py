@@ -254,7 +254,7 @@ async def test_customers_still_get_the_shop_assistant_with_the_catalog(
 ) -> None:
     client, services = app
     token = (await client.post(f"/api/shops/{SHOP}/chat/session")).json()["token"]
-    reply = await say(client, services, SHOP, {"X-Chat-Token": token}, "salam", token=token)
+    reply = await say(client, services, SHOP, {"X-Chat-Token": token}, "salam, kuch poochna hai", token=token)
     assert "Wa alaikum assalam" in last(reply)["body"]
     mock = services.ai.mock
     assert isinstance(mock, MockProvider)

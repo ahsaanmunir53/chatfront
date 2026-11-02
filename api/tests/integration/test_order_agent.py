@@ -386,7 +386,7 @@ async def test_a_customer_asks_for_a_person_and_the_owner_takes_over(
     assert messages[-1]["body"] in said("handover.back")
     waiting = (await client.get("/api/owner/inbox?show=waiting", headers=owner)).json()
     assert waiting["items"] == []
-    back = await say(client, services, SHOP, guest, "salam", token=token)
+    back = await say(client, services, SHOP, guest, "salam, kuch poochna hai", token=token)
     assert back[-1]["direction"] == "out"  # the agent answers again
     late = await client.post(f"/api/owner/conversations/{chat_id}/reply", json=reply, headers=owner)
     assert late.status_code == 409
@@ -412,7 +412,7 @@ async def test_the_model_hands_over_and_no_model_hands_over(
 
     monkeypatch.setattr(services.ai, "complete", down)
     other, other_token = await customer(client)
-    reply = last(await say(client, services, SHOP, other, "salam", token=other_token))
+    reply = last(await say(client, services, SHOP, other, "salam, kuch poochna hai", token=other_token))
     assert reply["body"] in said("order.handed_over")
     async with services.db.system() as session:
         reasons = {h.requested_by for h in await session.scalars(select(Handover))}

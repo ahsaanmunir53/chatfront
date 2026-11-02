@@ -83,7 +83,7 @@ async def test_a_web_chat_joins_the_customers_whatsapp_record(
 ) -> None:
     client, services = app
     use(services, agent("salam", content="Wa alaikum assalam!"))
-    await _whatsapp(client, services, "salam", "w1")
+    await _whatsapp(client, services, "salam, kuch poochna hai", "w1")
     known = await _whatsapp_customer(services)
     async with services.db.tenant(known.tenant_id) as session:
         stored = await session.get(Customer, known.id)
@@ -211,7 +211,7 @@ async def test_an_instagram_record_joins_with_its_cart_and_two_web_chats_stay_ap
     web, web_token = await customer(client)
     await say(client, services, "gulmohar-lawn", web, "lawn rust", token=web_token)
     second, second_token = await customer(client)
-    await say(client, services, "gulmohar-lawn", second, "salam", token=second_token)
+    await say(client, services, "gulmohar-lawn", second, "salam, kuch poochna hai", token=second_token)
 
     async with services.db.system() as session:
         tenant_id = await shop_id(session)

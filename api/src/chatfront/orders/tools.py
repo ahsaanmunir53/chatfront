@@ -25,7 +25,7 @@ from chatfront.catalog.search import Found, best, search
 from chatfront.catalog.service import CatalogItem, load_items
 from chatfront.channels import identity
 from chatfront.channels.models import Channel
-from chatfront.channels.types import Outbound, OutText
+from chatfront.channels.types import Outbound, OutImage, OutText
 from chatfront.core.clock import utcnow
 from chatfront.core.countries import get_pack, shop_money
 from chatfront.core.db import Database
@@ -37,6 +37,7 @@ from chatfront.delivery.pins import pin_request
 from chatfront.delivery.risk import assess
 from chatfront.offers import seasons
 from chatfront.offers import service as offers
+from chatfront.orders import browse
 from chatfront.orders import service as orders
 from chatfront.orders.bargain import Outcome
 from chatfront.orders.cards import CardMaker, Extras
@@ -154,8 +155,16 @@ class FindProducts(BaseModel):
     )
 
 
+PICTURES_PER_TURN = 3
+
+
 async def find_products(ctx: AgentContext, params: FindProducts) -> dict[str, Any]:
     found = search(await items_of(ctx), params.query, limit=MAX_RESULTS)
+    shown = sum(isinstance(c, OutImage) for c in ctx.cards)
+    for f in found[: max(PICTURES_PER_TURN - shown, 0)]:  # the products' pictures go first
+        picture = browse.card(ctx.api_url, ctx.tenant, f.item, ctx.lang)
+        if isinstance(picture, OutImage):
+            ctx.cards.append(picture)
     return {"ok": True, "products": [_describe(ctx, f.item) for f in found]}
 
 
