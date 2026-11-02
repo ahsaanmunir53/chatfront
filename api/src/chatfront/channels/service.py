@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -41,6 +42,9 @@ if TYPE_CHECKING:
 REPLY_JOB = "conversation.reply"
 
 
+log = logging.getLogger(__name__)
+
+
 @dataclass(frozen=True)
 class Keys:
     phone_hash_key: str
@@ -56,13 +60,16 @@ class Keys:
 async def route(db: Database, channel: Channel, account_external_id: str) -> ChannelAccount | None:
     """Which tenant owns this WhatsApp number, Page or web chat. Cross-tenant, so system role."""
     async with db.system() as session:
-        return await session.scalar(
+        account = await session.scalar(
             select(ChannelAccount).where(
                 ChannelAccount.channel == channel,
                 ChannelAccount.external_id == account_external_id,
                 ChannelAccount.active.is_(True),
             )
         )
+    if account is None:  # the id to put in CONNECT_ACCOUNTS
+        log.warning("no shop is connected to %s account %s", channel, account_external_id)
+    return account
 
 
 def _lock_key(text: str) -> int:
