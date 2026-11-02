@@ -14,8 +14,9 @@ from functools import lru_cache
 
 from PIL import Image, ImageDraw, ImageFilter
 
-SIZE = (800, 1000)
-SCALE = 2  # drawn twice as large, then reduced, for smooth edges
+SIZE = (800, 1000)  # the drawing's own coordinates
+OUT = (600, 750)  # the picture sent: small enough for chat cards, quick on a free server
+SCALE = 1  # drawn at 800x1000 and reduced to OUT, which smooths the edges enough
 
 COLOURS = {
     "sea green": (46, 139, 120),
@@ -73,8 +74,10 @@ def _print(
     rng = random.Random(seed)  # noqa: S311 - a print pattern, not a secret
     accent, light = _lighter(base, 0.55), _darker(base, 0.25)
     step = 46 * SCALE
-    for row, y in enumerate(range(0, image.size[1], step)):
-        for x in range(-step, image.size[0], step):
+    xs, ys = [x for x, _ in _pts(shape)], [y for _, y in _pts(shape)]
+    left, top, right, bottom = int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))
+    for row, y in enumerate(range(top - step, bottom + step, step)):  # only over the garment
+        for x in range(left - step, right + step, step):
             cx = x + (step // 2 if row % 2 else 0) + rng.randint(-4, 4)
             cy = y + rng.randint(-4, 4)
             r = 7 * SCALE
@@ -196,7 +199,7 @@ def picture(name: str, category: str | None, colour: str | None, seed: int = 0) 
     else:
         image = _suit(tone or COLOURS["sea green"], seed, printed=True)
     out = io.BytesIO()
-    image.resize(SIZE, Image.Resampling.LANCZOS).save(out, "PNG", optimize=True)
+    image.resize(OUT, Image.Resampling.LANCZOS).save(out, "PNG")
     return out.getvalue()
 
 

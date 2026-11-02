@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
@@ -405,7 +406,8 @@ async def _drawn_photo(services: Services, tenant: Tenant, code: str) -> Respons
     ):
         raise NotFound("photo")
     colour = (variant.options or {}).get("colour") if variant is not None else None
-    data = demo_art.cached(product.name, product.category, colour)
+    # Drawing takes a moment of CPU: off the event loop, so health checks and chats go on.
+    data = await asyncio.to_thread(demo_art.cached, product.name, product.category, colour)
     return Response(
         data, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
     )
