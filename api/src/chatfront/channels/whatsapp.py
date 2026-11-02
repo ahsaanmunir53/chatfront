@@ -18,6 +18,7 @@ from chatfront.channels.types import (
     Outbound,
     OutButtons,
     OutFlow,
+    OutImage,
     OutList,
     OutLocationRequest,
     OutTemplate,
@@ -37,6 +38,7 @@ _MEDIA_TYPES = {
     "document": Kind.DOCUMENT,
 }
 BUTTON_TITLE_MAX = 20
+CAPTION_MAX = 1024  # WhatsApp's limit for a picture's caption
 LIST_TITLE_MAX = 24
 
 
@@ -163,6 +165,27 @@ def _body(message: Outbound) -> dict[str, Any]:
                     }
                 ]
             return {"type": "template", "template": template}
+        case OutImage(url=url, caption=caption, buttons=()):
+            return {"type": "image", "image": {"link": url, "caption": caption[:CAPTION_MAX]}}
+        case OutImage(url=url, caption=caption, buttons=buttons):
+            # A product card: the picture as the header, one reply button under it.
+            return {
+                "type": "interactive",
+                "interactive": {
+                    "type": "button",
+                    "header": {"type": "image", "image": {"link": url}},
+                    "body": {"text": caption[:CAPTION_MAX]},
+                    "action": {
+                        "buttons": [
+                            {
+                                "type": "reply",
+                                "reply": {"id": b.id, "title": b.title[:BUTTON_TITLE_MAX]},
+                            }
+                            for b in buttons[:3]
+                        ]
+                    },
+                },
+            }
         case OutLocationRequest(text=text):
             return {
                 "type": "interactive",
@@ -201,6 +224,7 @@ class WhatsAppAdapter:
             Capability.TEXT,
             Capability.BUTTONS,
             Capability.LIST,
+            Capability.IMAGE,
             Capability.TEMPLATE,
             Capability.LOCATION,
             Capability.FLOW,

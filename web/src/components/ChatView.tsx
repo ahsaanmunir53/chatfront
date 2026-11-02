@@ -97,12 +97,20 @@ function Bubble({
   onShareLocation: () => void;
 }) {
   const { t } = useLang();
-  const { buttons, list, location, location_request: askLocation } = message.payload;
+  const { buttons, list, location, location_request: askLocation, image } = message.payload;
   const voice = message.kind === "audio" && !message.body;
   return (
     <li className={`bubble bubble-${message.direction}`}>
       {message.direction === "in" && <span className="sr-only">{t("chat.you")}: </span>}
       <Media kind={message.kind} url={message.media_url} />
+      {image && (
+        <img
+          className="bubble-card"
+          src={image.url}
+          alt={image.title || t("chat.image_alt")}
+          loading="lazy"
+        />
+      )}
       {voice && !message.media_url && <span>{t("chat.voice_note")}</span>}
       {message.body && (
         <span lang={message.lang ?? undefined} dir={message.lang ? dirOf(message.lang) : "auto"}>
@@ -448,7 +456,9 @@ export function ChatView({
         )}
       </ol>
       {voiceUnavailable && ownerToken && voiceMode && (
-        <p className="phone-error" role="alert">{t("owner.voice_tts_unavailable")}</p>
+        <p className="phone-error" role="alert">
+          {t("owner.voice_tts_unavailable")}
+        </p>
       )}
       {notice && (
         <p className="phone-error" role="alert">

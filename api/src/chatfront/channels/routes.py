@@ -252,7 +252,7 @@ _MEDIA_KINDS = {
 }
 # What the page may see of a message's details: its buttons, its list, a request for the
 # customer's pin and a pin they shared. Language tags and internal notes stay on the server.
-_SHOWN = frozenset({"buttons", "list", "location_request", "location"})
+_SHOWN = frozenset({"buttons", "list", "location_request", "location", "image"})
 
 
 @router.post("/api/shops/{slug}/chat/media", status_code=202)

@@ -23,12 +23,16 @@ from chatfront.channels.types import (
     Kind,
     Outbound,
     OutButtons,
+    OutImage,
     OutList,
     OutText,
     StatusUpdate,
 )
 from chatfront.core.errors import AppError
 from chatfront.core.http import request
+
+CARD_TEXT_MAX = 80  # Meta's limit for a generic template's title and subtitle
+BUTTON_TITLE_MAX = 20
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +65,9 @@ def _quick_replies(options: list[tuple[str, str]]) -> list[dict[str, str]]:
 
 
 class MetaMessagingAdapter:
-    capabilities = frozenset({Capability.TEXT, Capability.BUTTONS, Capability.LIST})
+    capabilities = frozenset(
+        {Capability.TEXT, Capability.BUTTONS, Capability.LIST, Capability.IMAGE}
+    )
     has_service_window = True
 
     def __init__(
@@ -185,6 +191,38 @@ class MetaMessagingAdapter:
                 return {
                     "text": _clip_bytes(text, self.text_limit_bytes),
                     "quick_replies": _quick_replies([(r.id, r.title) for r in rows]),
+                }
+            case OutImage(url=url, caption=caption, title=title, buttons=buttons):
+                # A generic template: picture, title and one line under it, on both channels.
+                lines = caption.split("\n")
+                return {
+                    "attachment": {
+                        "type": "template",
+                        "payload": {
+                            "template_type": "generic",
+                            "elements": [
+                                {
+                                    "title": (title or lines[0])[:CARD_TEXT_MAX],
+                                    "subtitle": " · ".join(lines[1:])[:CARD_TEXT_MAX],
+                                    "image_url": url,
+                                    **(
+                                        {
+                                            "buttons": [
+                                                {
+                                                    "type": "postback",
+                                                    "title": b.title[:BUTTON_TITLE_MAX],
+                                                    "payload": b.id,
+                                                }
+                                                for b in buttons[:3]
+                                            ]
+                                        }
+                                        if buttons
+                                        else {}
+                                    ),
+                                }
+                            ],
+                        },
+                    }
                 }
         raise AppError("unsupported_message", f"{self.channel} cannot send this message")
 

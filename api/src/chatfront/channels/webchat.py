@@ -26,7 +26,13 @@ if TYPE_CHECKING:
 class WebChatAdapter:
     channel = Channel.WEBCHAT
     capabilities = frozenset(
-        {Capability.TEXT, Capability.BUTTONS, Capability.LIST, Capability.LOCATION}
+        {
+            Capability.TEXT,
+            Capability.BUTTONS,
+            Capability.LIST,
+            Capability.LOCATION,
+            Capability.IMAGE,
+        }
     )
     has_service_window = False
 

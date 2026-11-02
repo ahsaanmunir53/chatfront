@@ -57,6 +57,7 @@ export type ServerMessage = {
     buttons?: ChatButton[];
     list?: { button: string; rows: ChatListRow[] };
     location_request?: boolean;
+    image?: { url: string; title: string };
     location?: { latitude: number; longitude: number };
   };
   media_url?: string | null;
@@ -2116,7 +2117,13 @@ export const api = {
   updateNetworkBranch: (
     token: string,
     id: string,
-    change: { name?: string; city?: string | null; address?: string | null; active?: boolean; is_default?: boolean },
+    change: {
+      name?: string;
+      city?: string | null;
+      address?: string | null;
+      active?: boolean;
+      is_default?: boolean;
+    },
   ) =>
     call<NetworkBranch>(`/api/network/branches/${encodeURIComponent(id)}`, {
       method: "PUT",
@@ -2173,7 +2180,12 @@ export const api = {
   placeWholesaleOrder: (
     token: string,
     listingId: string,
-    order: { quantity: number; initial_offer_unit_price: number; budget_unit_price: number; branch_id?: string | null },
+    order: {
+      quantity: number;
+      initial_offer_unit_price: number;
+      budget_unit_price: number;
+      branch_id?: string | null;
+    },
   ) =>
     call<NetworkOrder>(`/api/network/listings/${encodeURIComponent(listingId)}/orders`, {
       method: "POST",

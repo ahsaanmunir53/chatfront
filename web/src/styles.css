@@ -6289,7 +6289,6 @@ button {
   margin-top: 6px;
 }
 
-
 /* Phone shelf camera mode (feature 69). */
 .shelf-camera-actions {
   display: flex;
@@ -6362,7 +6361,6 @@ button {
   user-select: none;
 }
 
-
 /* Phone shelf camera mode (feature 69). */
 .shelf-camera-actions {
   display: flex;
@@ -6386,7 +6384,6 @@ button {
 .shelf-camera-video[hidden] {
   display: none;
 }
-
 
 /* Network commerce owner workspace (features 54, 61, 67 and 68). */
 .network-panel {
@@ -6529,4 +6526,16 @@ button {
 
 .network-branch-label {
   overflow-wrap: anywhere;
+}
+
+/* A product card in the chat: its picture above the caption. */
+.bubble-card {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--paper);
 }

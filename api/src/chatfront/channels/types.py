@@ -61,6 +61,7 @@ class Capability(StrEnum):
     TEMPLATE = "template"
     LOCATION = "location"  # ask for a location pin with one tap
     FLOW = "flow"  # a WhatsApp Flow: a form inside the chat
+    IMAGE = "image"  # a picture with a caption: a product card
 
 
 @dataclass(frozen=True)
@@ -126,7 +127,18 @@ class OutFlow:
     data: dict[str, Any]
 
 
-Outbound = OutText | OutButtons | OutList | OutTemplate | OutLocationRequest | OutFlow
+@dataclass(frozen=True)
+class OutImage:
+    """A picture with a short caption, such as a product card: name, price and colours.
+    The link must be public; WhatsApp and Meta fetch it themselves."""
+
+    url: str
+    caption: str
+    title: str = ""
+    buttons: tuple[Button, ...] = ()  # at most one on WhatsApp, three on Instagram and Messenger
+
+
+Outbound = OutText | OutButtons | OutList | OutTemplate | OutLocationRequest | OutFlow | OutImage
 
 
 def required_capability(message: Outbound) -> Capability:
@@ -143,6 +155,8 @@ def required_capability(message: Outbound) -> Capability:
             return Capability.LOCATION
         case OutFlow():
             return Capability.FLOW
+        case OutImage():
+            return Capability.IMAGE
     raise AssertionError(message)  # pragma: no cover
 
 
@@ -162,4 +176,9 @@ def to_record(message: Outbound) -> tuple[str, dict[str, Any]]:
             return text, {"location_request": True}
         case OutFlow(text=text, token=token):
             return text, {"flow": {"token": token}}
+        case OutImage(url=url, caption=caption, title=title, buttons=buttons):
+            record: dict[str, Any] = {"image": {"url": url, "title": title}}
+            if buttons:
+                record["buttons"] = [{"id": b.id, "title": b.title} for b in buttons]
+            return caption, record
     raise AssertionError(message)  # pragma: no cover
