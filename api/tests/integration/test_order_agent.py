@@ -412,7 +412,9 @@ async def test_the_model_hands_over_and_no_model_hands_over(
 
     monkeypatch.setattr(services.ai, "complete", down)
     other, other_token = await customer(client)
-    reply = last(await say(client, services, SHOP, other, "salam, kuch poochna hai", token=other_token))
+    reply = last(
+        await say(client, services, SHOP, other, "salam, kuch poochna hai", token=other_token)
+    )
     assert reply["body"] in said("order.handed_over")
     async with services.db.system() as session:
         reasons = {h.requested_by for h in await session.scalars(select(Handover))}

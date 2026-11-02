@@ -148,7 +148,7 @@ class Message(Base):
     )
     direction: Mapped[str] = mapped_column(String(3))
     channel: Mapped[str] = mapped_column(String(20))
-    external_id: Mapped[str | None] = mapped_column(String(160))
+    external_id: Mapped[str | None] = mapped_column(String(512))
     kind: Mapped[str] = mapped_column(String(20))
     body: Mapped[str | None] = mapped_column(Text)
     media_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("media.id", ondelete="SET NULL"))
@@ -249,7 +249,7 @@ class PostComment(Base):
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("conversations.id", ondelete="SET NULL")
     )
-    message_id: Mapped[str | None] = mapped_column(String(160))
+    message_id: Mapped[str | None] = mapped_column(String(512))
     # A live sale's claim (feature 8): the reply code already decided, sent as the private
     # reply in place of the product card.
     claim_reply: Mapped[str | None] = mapped_column(Text)

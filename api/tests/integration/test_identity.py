@@ -211,7 +211,9 @@ async def test_an_instagram_record_joins_with_its_cart_and_two_web_chats_stay_ap
     web, web_token = await customer(client)
     await say(client, services, "gulmohar-lawn", web, "lawn rust", token=web_token)
     second, second_token = await customer(client)
-    await say(client, services, "gulmohar-lawn", second, "salam, kuch poochna hai", token=second_token)
+    await say(
+        client, services, "gulmohar-lawn", second, "salam, kuch poochna hai", token=second_token
+    )
 
     async with services.db.system() as session:
         tenant_id = await shop_id(session)

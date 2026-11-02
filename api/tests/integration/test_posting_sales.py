@@ -488,3 +488,14 @@ async def test_a_cleaned_photo_is_used_only_when_the_owner_chooses_it(
         f"/api/shops/{SHOP}/posters/{cleaned.json()['media_id']}", follow_redirects=False
     )
     assert not_a_poster.status_code == 404
+
+
+async def test_an_instagram_message_id_longer_than_160_characters_is_stored(
+    app: tuple[Client, Services],
+) -> None:
+    client, services = app
+    mid = "aWdfZAG1faXRlbToxOklHTWVzc2FnZAUlEOjE3ODQx" * 6  # real ids run past 200 characters
+    await webhook(client, ig_dm(mid, "IGSID6", text="price?"))
+    async with services.db.system() as session:
+        stored = await session.scalar(select(Message.external_id).where(Message.external_id == mid))
+    assert stored == mid
