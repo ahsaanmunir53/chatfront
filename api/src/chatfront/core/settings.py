@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     # WhatsApp numbers to connect at start, so no shell is needed on a free host:
     # "<shop slug>:<phone number id>:<public number>", several separated by ";".
     whatsapp_connect: str = ""
+    # Any channel: "<whatsapp|instagram|messenger>:<shop>:<account id>:<handle>", ";" between.
+    connect_accounts: str = ""
     # Shops whose owner console link is printed in the logs at start (12 hours), for hosts
     # without a shell: slugs separated by ",". Remove once signed in.
     owner_link_shops: str = ""

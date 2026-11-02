@@ -106,7 +106,7 @@ async def test_numbers_in_the_settings_are_connected_once_at_start(clean_db: Dat
     settings = get_settings().model_copy(
         update={"whatsapp_connect": "gulmohar-lawn:1187238694481159:+1 (555) 158-0703"}
     )
-    assert await connect_from_settings(clean_db, settings) == ["gulmohar-lawn"]
+    assert await connect_from_settings(clean_db, settings) == ["gulmohar-lawn (whatsapp)"]
     assert await connect_from_settings(clean_db, settings) == []  # already connected
     async with clean_db.system() as session:
         account = await session.scalar(
@@ -115,5 +115,14 @@ async def test_numbers_in_the_settings_are_connected_once_at_start(clean_db: Dat
     assert account is not None
     assert (account.channel, account.public_handle) == (Channel.WHATSAPP, "15551580703")
     assert planned("") == []
-    with pytest.raises(ValueError, match="shop:phone_number_id:number"):
-        planned("gulmohar-lawn:123")
+    with pytest.raises(ValueError, match="shop:id:handle"):
+        planned("gulmohar-lawn:123", Channel.WHATSAPP)
+    with pytest.raises(ValueError, match="channel:shop:id:handle"):
+        planned("telegram:gulmohar-lawn:1:x")
+    page = settings.model_copy(
+        update={
+            "whatsapp_connect": "",
+            "connect_accounts": "messenger:gulmohar-lawn:5550001:gulmohar",
+        }
+    )
+    assert await connect_from_settings(clean_db, page) == ["gulmohar-lawn (messenger)"]

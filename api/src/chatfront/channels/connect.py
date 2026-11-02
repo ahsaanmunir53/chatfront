@@ -74,28 +74,44 @@ async def connect(
     return account
 
 
-def planned(value: str) -> list[tuple[str, str, str]]:
-    """(shop, phone number id, number) for each entry of WHATSAPP_CONNECT."""
+CONNECTABLE = {
+    "whatsapp": Channel.WHATSAPP,
+    "instagram": Channel.INSTAGRAM,
+    "messenger": Channel.MESSENGER,
+}
+
+
+def planned(value: str, default: Channel | None = None) -> list[tuple[Channel, str, str, str]]:
+    """(channel, shop, account id, handle) for each entry: "channel:shop:id:handle", or
+    "shop:id:handle" where a default channel is given (WHATSAPP_CONNECT)."""
     found = []
     for entry in value.split(";"):
         parts = [part.strip() for part in entry.split(":")]
-        if len(parts) == 3 and all(parts):
-            found.append((parts[0], parts[1], parts[2]))
+        if default is not None and len(parts) == 3 and all(parts):
+            found.append((default, parts[0], parts[1], parts[2]))
+        elif len(parts) == 4 and all(parts) and parts[0].lower() in CONNECTABLE:
+            found.append((CONNECTABLE[parts[0].lower()], parts[1], parts[2], parts[3]))
         elif entry.strip():
-            raise ValueError(f"WHATSAPP_CONNECT entry is not shop:phone_number_id:number: {entry}")
+            shape = "shop:id:handle" if default else "channel:shop:id:handle"
+            raise ValueError(f"connect entry is not {shape}: {entry}")
     return found
 
 
 async def connect_from_settings(db: Database, settings: Settings) -> list[str]:
-    """Connect the numbers in WHATSAPP_CONNECT at start; one already connected is left as it is."""
+    """Connect the accounts in WHATSAPP_CONNECT and CONNECT_ACCOUNTS at start; one already
+    connected is left as it is."""
     done = []
-    for shop, account_id, number in planned(settings.whatsapp_connect):
+    wanted = [
+        *planned(settings.whatsapp_connect, Channel.WHATSAPP),
+        *planned(settings.connect_accounts),
+    ]
+    for channel, shop, account_id, handle in wanted:
         async with db.system() as session:
             known = await session.scalar(
                 select(ChannelAccount.id)
                 .join(Tenant, Tenant.id == ChannelAccount.tenant_id)
                 .where(
-                    ChannelAccount.channel == Channel.WHATSAPP,
+                    ChannelAccount.channel == channel,
                     ChannelAccount.external_id == account_id,
                     ChannelAccount.active.is_(True),
                     Tenant.slug == shop,
@@ -106,12 +122,12 @@ async def connect_from_settings(db: Database, settings: Settings) -> list[str]:
                 db,
                 settings,
                 shop=shop,
-                channel=Channel.WHATSAPP,
+                channel=channel,
                 account_id=account_id,
-                handle=number,
+                handle=handle,
                 token=None,
             )
-            done.append(shop)
+            done.append(f"{shop} ({channel})")
     return done
 
 
