@@ -7,13 +7,13 @@ from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 
 from chatfront.books.ledger import today
-from chatfront.catalog import sizes
-from chatfront.catalog.models import Product, ProductStatus
+from chatfront.catalog import demo_art, sizes
+from chatfront.catalog.models import Product, ProductStatus, Variant
 from chatfront.catalog.service import load_items
 from chatfront.catalog.share import share_url
 from chatfront.channels.links import chat_link
@@ -326,7 +326,7 @@ async def list_products(slug: str, request: Request, services: ServicesDep) -> l
                 image_url=(
                     await media_service.signed_url(services.storage, photo, ttl, blurred=False)
                     if photo is not None
-                    else None
+                    else _drawn_url(services, tenant, product)
                 ),
                 in_stock=item.in_stock,
                 ships_from=item.preorder,
@@ -371,8 +371,41 @@ async def product_photo(slug: str, code: str, request: Request, services: Servic
             .where(Product.code == code.upper(), Product.status == ProductStatus.ACTIVE)
         )
     if photo is None:
-        raise NotFound("photo")
+        return await _drawn_photo(services, tenant, code)
     url = await media_service.signed_url(
         services.storage, photo, services.settings.signed_url_ttl_seconds, blurred=False
     )
     return RedirectResponse(url, status_code=302)
+
+
+def _drawn_url(services: Services, tenant: Tenant, product: Product) -> str | None:
+    if not demo_art.has_art(product.source, tenant.template, product.image_media_id is not None):
+        return None
+    base = services.settings.public_base_url.rstrip("/")
+    return base + demo_art.photo_path(tenant.slug, product.code)
+
+
+async def _drawn_photo(services: Services, tenant: Tenant, code: str) -> Response:
+    """A demo product's drawn picture (no stored photo, nothing to license)."""
+    async with services.db.tenant(tenant.id) as session:
+        product = await session.scalar(
+            select(Product).where(
+                Product.code == code.upper(), Product.status == ProductStatus.ACTIVE
+            )
+        )
+        variant = (
+            await session.scalar(
+                select(Variant).where(Variant.product_id == product.id).order_by(Variant.position)
+            )
+            if product is not None
+            else None
+        )
+    if product is None or not demo_art.has_art(
+        product.source, tenant.template, product.image_media_id is not None
+    ):
+        raise NotFound("photo")
+    colour = (variant.options or {}).get("colour") if variant is not None else None
+    data = demo_art.cached(product.name, product.category, colour)
+    return Response(
+        data, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
+    )
