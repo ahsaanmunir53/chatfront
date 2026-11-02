@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     whatsapp_connect: str = ""
     # Any channel: "<whatsapp|instagram|messenger>:<shop>:<account id>:<handle>", ";" between.
     connect_accounts: str = ""
+    # Channels whose incoming messages are ignored for now (no replies): "instagram",
+    # "messenger" or "whatsapp", separated by ",". Empty answers on every channel.
+    paused_channels: str = ""
     # Shops whose owner console link is printed in the logs at start (12 hours), for hosts
     # without a shell: slugs separated by ",". Remove once signed in.
     owner_link_shops: str = ""

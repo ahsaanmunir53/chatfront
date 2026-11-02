@@ -112,6 +112,10 @@ async def meta_webhook(
     if channel is None:
         log.info("ignoring a webhook for object %r", payload.get("object"))
         return {"ok": True}
+    paused = {c.strip().lower() for c in services.settings.paused_channels.split(",")}
+    if channel in paused:
+        log.info("%s is paused; webhook ignored", channel)
+        return {"ok": True}
     inbound, statuses = services.adapters[channel].parse(payload)
     for message in inbound:
         account = await channels.route(services.db, channel, message.account_external_id)

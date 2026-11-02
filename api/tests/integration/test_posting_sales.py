@@ -10,6 +10,7 @@ from datetime import timedelta
 from typing import Any
 
 import httpx
+import pytest
 import respx
 from PIL import Image
 from sqlalchemy import select, update
@@ -499,3 +500,14 @@ async def test_an_instagram_message_id_longer_than_160_characters_is_stored(
     async with services.db.system() as session:
         stored = await session.scalar(select(Message.external_id).where(Message.external_id == mid))
     assert stored == mid
+
+
+async def test_a_paused_channel_is_ignored(
+    app: tuple[Client, Services], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, services = app
+    monkeypatch.setattr(services.settings, "paused_channels", "instagram")
+    await webhook(client, ig_dm("paused-1", "IGSID5", text="price?"))
+    async with services.db.system() as session:
+        stored = await session.scalar(select(Message.id).where(Message.external_id == "paused-1"))
+    assert stored is None
