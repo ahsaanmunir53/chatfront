@@ -138,6 +138,13 @@ class OwnerAssistant:
         scam = guardian.parse_button(button)
         if scam is not None:
             return await self._report_scam(turn, *scam) if Can.TRUST in allowed else refuse(turn)
+        report = panel.admin_choice(button)
+        if report is not None:
+            async with self.db.tenant(turn.tenant.id) as session:
+                items = await load_items(session)
+            return await self._report(turn, report, items, allowed)
+        if turn.message.kind == Kind.TEXT and panel.wants_admin(turn.message.body):
+            return panel.admin_menu(turn.tenant, allowed, turn.lang)
         async with self.db.tenant(turn.tenant.id) as session:
             action = await actions.current_action(session, turn.conversation.id)
         words, kind = turn.message.body or "", turn.message.kind

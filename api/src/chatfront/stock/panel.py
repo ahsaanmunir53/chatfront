@@ -8,6 +8,7 @@ before and after, and each person can do only what their role allows.
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
@@ -15,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from chatfront.books import reports
 from chatfront.catalog.drafts import price_from_words, to_minor
 from chatfront.catalog.models import Product, ProductStatus, Variant
 from chatfront.catalog.service import CatalogItem, load_items
@@ -27,6 +29,7 @@ from chatfront.channels.types import (
     Outbound,
     OutButtons,
     OutFlow,
+    OutImage,
     OutList,
     OutText,
 )
@@ -35,6 +38,7 @@ from chatfront.core.errors import AppError
 from chatfront.core.i18n import t
 from chatfront.core.models import Tenant
 from chatfront.delivery import shipping
+from chatfront.orders import browse
 from chatfront.orders.models import Order
 from chatfront.orders.states import OrderStatus
 from chatfront.owner import actions
@@ -180,19 +184,22 @@ async def product_panel(services: Services, turn: Turn, product_id: uuid.UUID) -
         if v.active
     ]
     text = "\n".join(lines)
+    url = browse.photo_url(services.settings.public_base_url, tenant, item)
+    picture: list[Outbound] = [OutImage(url, product.name, product.name)] if url else []
     flow = _flow(services, tenant, item, lang) if turn.message.channel == Channel.WHATSAPP else None
     if flow is not None:
         return [
+            *picture,
             OutFlow(
                 f"{text}\n\n{flow.text}", flow.flow_id, flow.cta, flow.token, flow.screen, flow.data
-            )
+            ),
         ]
     buttons = (
         Button(f"pp:{product.id}:price", t("panel.change_price", lang)),
         Button(f"pp:{product.id}:stock", t("panel.add_stock", lang)),
         Button(f"pp:{product.id}:limit", t("panel.change_limit", lang)),
     )
-    return [OutButtons(text, buttons)]
+    return [*picture, OutButtons(text, buttons)]
 
 
 async def _ask(
@@ -520,3 +527,43 @@ async def _ops_for(
     if new is None or new == item.product.price:
         return []
     return [{"op": "price", **base, "old": item.product.price, "new": new}]
+
+
+# -- the owner's admin menu ------------------------------------------------------------------
+
+ADMIN_PREFIX = "adm:"
+ADMIN_ITEMS = (  # (report, the string for its row), in the order a shop owner reaches for them
+    "orders",
+    "pending_payments",
+    "today",
+    "products",
+    "low_stock",
+    "pick_list",
+    "week",
+    "udhaar",
+)
+_ADMIN_WORDS = re.compile(
+    r"^\s*(menu|admin|panel|dashboard|home|options|مینو|ڈیش بورڈ|मेनू)\s*[?!.]*\s*$",
+    re.IGNORECASE,
+)
+
+
+def wants_admin(text: str | None) -> bool:
+    return bool(text and _ADMIN_WORDS.match(text))
+
+
+def admin_menu(tenant: Tenant, allowed: frozenset[Can], lang: str) -> list[Outbound]:
+    """The shop's admin panel inside WhatsApp: every report this person may open."""
+    rows = tuple(
+        ListRow(ADMIN_PREFIX + item, t(f"admin.{item}", lang), t(f"admin.{item}_note", lang))
+        for item in ADMIN_ITEMS
+        if reports.NEEDS[item] in allowed
+    )
+    return [OutList(t("admin.title", lang, shop=tenant.name), t("admin.button", lang), rows)]
+
+
+def admin_choice(button_id: str | None) -> str | None:
+    if button_id and button_id.startswith(ADMIN_PREFIX):
+        item = button_id.removeprefix(ADMIN_PREFIX)
+        return item if item in ADMIN_ITEMS else None
+    return None

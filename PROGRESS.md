@@ -922,6 +922,19 @@ What it delivered:
   currency, as a count and a spread, never which shops; labelled as not the whole market.
 - Migration 0027.
 
+## Done on 2 November: the store inside the chat
+
+- Customers on WhatsApp, Instagram, Messenger and the shop page's chat get a store: a greeting
+  with Catalog and My order buttons, "menu" for the categories, a category for its products as
+  picture cards (name, price, colours or sizes, code) with an Order button, and the agent's
+  answers lead with the pictures of what it found.
+- The demo clothing shop's products have pictures drawn by code (`catalog/demo_art.py`), served
+  at the product's photo link; a shop's own photos always win.
+- The owner's WhatsApp has an admin menu ("menu"): new orders, payments to check, today's sales,
+  products (now with their picture), low stock, packing list, the week and udhaar, each limited
+  by the person's role. Orders from every channel land in the same place.
+- Checks: full API suite, eval replay 100/100, web types, unit tests and build, locally.
+
 ## Where the model keys go (when they arrive)
 
 Never in the chat. Each key goes in one or more of these places, typed by Ahsaan:
