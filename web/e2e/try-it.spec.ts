@@ -14,7 +14,7 @@ test("a customer finds a demo shop and chats with it", async ({ page }) => {
   await page.getByLabel("Type a message").fill("salam");
   await page.getByRole("button", { name: "Send", exact: true }).click();
   await expect(page.locator(".bubble-in").first()).toContainText("salam");
-  await expect(page.locator(".bubble-out")).toContainText("Wa alaikum assalam", {
+  await expect(page.locator(".bubble-out")).toContainText("khush aamdeed", {
     timeout: 10_000,
   });
 });
@@ -30,7 +30,7 @@ test("the page opens while the server sleeps, and messages wait for it", async (
 
   await page.unroute("**/health");
   await expect(page.getByText("online", { exact: true })).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator(".bubble-out")).toContainText("Wa alaikum assalam", {
+  await expect(page.locator(".bubble-out")).toContainText("khush aamdeed", {
     timeout: 10_000,
   });
 });
