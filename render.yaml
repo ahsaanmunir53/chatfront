@@ -1,4 +1,6 @@
-# Render blueprint: one free web service runs the API, the job worker and the web app.
+# Render blueprint: one free web service runs the API and the job worker (and can serve the
+# web app too); a free static site serves the web app from Render's CDN, so pages open at
+# once even while the API is asleep, and the page wakes the API and says so meanwhile.
 # Render's free tier has no background workers, so cron-job.org calls /internal/cron.
 services:
   - type: web
@@ -74,3 +76,32 @@ services:
         sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
+
+  # The web app on its own: never sleeps. Point it at the API above; then set CORS_ORIGINS and
+  # WEB_BASE_URL on the API to this site's address so links in chats open here.
+  - type: web
+    name: chatfront-web
+    runtime: static
+    buildCommand: cd web && npm ci && npm run build
+    staticPublishPath: ./web/dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: VITE_API_BASE
+        value: https://chatfront-3fw8.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://chatfront-3fw8.onrender.com; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
