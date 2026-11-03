@@ -1,0 +1,55 @@
+"""An order over WhatsApp, paid in advance by transfer, placed by the customer's tap."""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+import httpx
+import respx
+
+from chatfront.services import Services
+from tests.integration.chat import GRAPH, Client, agent, code_of, signed, use, wa_message
+
+
+async def _send(client: Client, services: Services, payload: dict[str, Any]) -> list[Any]:
+    body, headers = signed(payload)
+    assert (await client.post("/webhooks/meta", content=body, headers=headers)).status_code == 200
+    with respx.mock:
+        ids = (httpx.Response(200, json={"messages": [{"id": f"wamid.out{n}"}]}) for n in range(99))
+        send = respx.post(f"{GRAPH}/PN1/messages").mock(side_effect=lambda _: next(ids))
+        assert services.worker is not None
+        while await services.worker.run_once():
+            pass
+    return [json.loads(call.request.content) for call in send.calls]
+
+
+async def test_a_transfer_order_is_placed_by_a_tap_on_whatsapp(
+    app: tuple[Client, Services],
+) -> None:
+    client, services = app
+    code = await code_of(client, "Khaddar 2-piece, stitched")
+    use(
+        services,
+        agent("khaddar", calls={"add_to_cart": {"product_code": code, "options": {"size": "S"}}}),
+        agent(
+            "khaddar",
+            step=1,
+            calls={
+                "set_delivery_details": {
+                    "city": "lhr",
+                    "address": "Street 2, Farooq Colony",
+                    "name": "Ahsaan",
+                }
+            },
+        ),
+        agent("khaddar", step=2, calls={"checkout": {"payment_method": "transfer"}}),
+        agent("khaddar", step=3, content="Card bhej diya, Order karein dabayein."),
+    )
+    sent = await _send(client, services, wa_message("wamid.1", body="khaddar S chahiye"))
+    card = next(m for m in sent if m.get("type") == "interactive")
+    yes = card["interactive"]["action"]["buttons"][0]["reply"]
+    tap = wa_message("wamid.2", kind="interactive", type="button_reply", button_reply=yes)
+    replies = await _send(client, services, tap)
+    assert replies, "the tap got no answer"
+    assert "ho gaya" in replies[0]["text"]["body"]

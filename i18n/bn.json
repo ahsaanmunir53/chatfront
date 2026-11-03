@@ -1998,5 +1998,16 @@
   "store.shop_now": "কালেকশন দেখুন",
   "store.all": "সব",
   "store.order_on": "{channel}-এ অর্ডার করুন",
-  "store.view": "ডিজাইন দেখুন"
+  "store.view": "ডিজাইন দেখুন",
+  "side.overview": "সারসংক্ষেপ",
+  "side.inbox": "ইনবক্স",
+  "side.products": "পণ্য",
+  "side.orders": "অর্ডার",
+  "side.stock": "স্টক",
+  "side.money": "টাকা",
+  "side.marketing": "মার্কেটিং",
+  "side.customers": "গ্রাহক",
+  "side.safety": "নিরাপত্তা",
+  "side.settings": "টিম ও সেটিংস",
+  "side.menu": "কনসোলের অংশ"
 }

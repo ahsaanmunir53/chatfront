@@ -1998,5 +1998,16 @@
   "store.shop_now": "Shop the collection",
   "store.all": "All",
   "store.order_on": "Order on {channel}",
-  "store.view": "See designs"
+  "store.view": "See designs",
+  "side.overview": "Overview",
+  "side.inbox": "Inbox",
+  "side.products": "Products",
+  "side.orders": "Orders",
+  "side.stock": "Stock",
+  "side.money": "Money",
+  "side.marketing": "Marketing",
+  "side.customers": "Customers",
+  "side.safety": "Safety",
+  "side.settings": "Team and settings",
+  "side.menu": "Console sections"
 }

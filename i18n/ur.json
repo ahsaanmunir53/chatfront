@@ -1998,5 +1998,16 @@
   "store.shop_now": "کلیکشن دیکھیں",
   "store.all": "سب",
   "store.order_on": "{channel} پر آرڈر کریں",
-  "store.view": "ڈیزائن دیکھیں"
+  "store.view": "ڈیزائن دیکھیں",
+  "side.overview": "خلاصہ",
+  "side.inbox": "ان باکس",
+  "side.products": "پروڈکٹس",
+  "side.orders": "آرڈرز",
+  "side.stock": "اسٹاک",
+  "side.money": "پیسہ",
+  "side.marketing": "مارکیٹنگ",
+  "side.customers": "کسٹمرز",
+  "side.safety": "حفاظت",
+  "side.settings": "ٹیم اور سیٹنگز",
+  "side.menu": "کنسول کے حصے"
 }

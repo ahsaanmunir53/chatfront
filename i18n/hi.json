@@ -1998,5 +1998,16 @@
   "store.shop_now": "कलेक्शन देखें",
   "store.all": "सब",
   "store.order_on": "{channel} पर ऑर्डर करें",
-  "store.view": "डिज़ाइन देखें"
+  "store.view": "डिज़ाइन देखें",
+  "side.overview": "सारांश",
+  "side.inbox": "इनबॉक्स",
+  "side.products": "प्रोडक्ट",
+  "side.orders": "ऑर्डर",
+  "side.stock": "स्टॉक",
+  "side.money": "पैसा",
+  "side.marketing": "मार्केटिंग",
+  "side.customers": "ग्राहक",
+  "side.safety": "सुरक्षा",
+  "side.settings": "टीम और सेटिंग्स",
+  "side.menu": "कंसोल के हिस्से"
 }

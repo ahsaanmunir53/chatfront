@@ -1998,5 +1998,16 @@
   "store.shop_now": "Collection dekhein",
   "store.all": "Sab",
   "store.order_on": "{channel} par order karein",
-  "store.view": "Designs dekhein"
+  "store.view": "Designs dekhein",
+  "side.overview": "Khulasa",
+  "side.inbox": "Inbox",
+  "side.products": "Products",
+  "side.orders": "Orders",
+  "side.stock": "Stock",
+  "side.money": "Paisa",
+  "side.marketing": "Marketing",
+  "side.customers": "Customers",
+  "side.safety": "Hifazat",
+  "side.settings": "Team aur settings",
+  "side.menu": "Console ke hisse"
 }

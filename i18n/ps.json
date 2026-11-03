@@ -1998,5 +1998,16 @@
   "store.shop_now": "ټولګه وګورئ",
   "store.all": "ټول",
   "store.order_on": "په {channel} امر ورکړئ",
-  "store.view": "ډیزاینونه وګورئ"
+  "store.view": "ډیزاینونه وګورئ",
+  "side.overview": "لنډیز",
+  "side.inbox": "ان باکس",
+  "side.products": "توکي",
+  "side.orders": "امرونه",
+  "side.stock": "ذخیره",
+  "side.money": "پیسې",
+  "side.marketing": "بازارموندنه",
+  "side.customers": "پېرودونکي",
+  "side.safety": "خوندیتوب",
+  "side.settings": "ټیم او امستنې",
+  "side.menu": "د کنسول برخې"
 }

@@ -1998,5 +1998,16 @@
   "store.shop_now": "تسوّق المجموعة",
   "store.all": "الكل",
   "store.order_on": "اطلب عبر {channel}",
-  "store.view": "شاهد التصاميم"
+  "store.view": "شاهد التصاميم",
+  "side.overview": "نظرة عامة",
+  "side.inbox": "الوارد",
+  "side.products": "المنتجات",
+  "side.orders": "الطلبات",
+  "side.stock": "المخزون",
+  "side.money": "المال",
+  "side.marketing": "التسويق",
+  "side.customers": "العملاء",
+  "side.safety": "الأمان",
+  "side.settings": "الفريق والإعدادات",
+  "side.menu": "أقسام لوحة التحكم"
 }

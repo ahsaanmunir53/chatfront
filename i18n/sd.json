@@ -1998,5 +1998,16 @@
   "store.shop_now": "ڪليڪشن ڏسو",
   "store.all": "سڀ",
   "store.order_on": "{channel} تي آرڊر ڪريو",
-  "store.view": "ڊيزائن ڏسو"
+  "store.view": "ڊيزائن ڏسو",
+  "side.overview": "خلاصو",
+  "side.inbox": "ان باڪس",
+  "side.products": "پراڊڪٽس",
+  "side.orders": "آرڊر",
+  "side.stock": "اسٽاڪ",
+  "side.money": "پئسا",
+  "side.marketing": "مارڪيٽنگ",
+  "side.customers": "گراهڪ",
+  "side.safety": "حفاظت",
+  "side.settings": "ٽيم ۽ سيٽنگون",
+  "side.menu": "ڪنسول جا حصا"
 }

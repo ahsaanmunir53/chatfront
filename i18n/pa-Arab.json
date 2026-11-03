@@ -1998,5 +1998,16 @@
   "store.shop_now": "کلیکشن ویکھو",
   "store.all": "سارے",
   "store.order_on": "{channel} تے آرڈر کرو",
-  "store.view": "ڈیزائن ویکھو"
+  "store.view": "ڈیزائن ویکھو",
+  "side.overview": "خلاصہ",
+  "side.inbox": "ان باکس",
+  "side.products": "پروڈکٹس",
+  "side.orders": "آرڈر",
+  "side.stock": "سٹاک",
+  "side.money": "پیسہ",
+  "side.marketing": "مارکیٹنگ",
+  "side.customers": "گاہک",
+  "side.safety": "حفاظت",
+  "side.settings": "ٹیم تے سیٹنگاں",
+  "side.menu": "کنسول دے حصے"
 }
