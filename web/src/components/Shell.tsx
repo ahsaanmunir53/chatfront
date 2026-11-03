@@ -16,7 +16,9 @@ export function LangMenu({ tone = "light" }: { tone?: "light" | "dark" }) {
 
   useEffect(() => {
     if (!open) return;
-    wrapper.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    wrapper.current
+      ?.querySelector<HTMLElement>('[aria-checked="true"]')
+      ?.focus();
     const close = (event: MouseEvent) => {
       if (!wrapper.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -32,14 +34,22 @@ export function LangMenu({ tone = "light" }: { tone?: "light" | "dark" }) {
     }
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
-    const items = [...(wrapper.current?.querySelectorAll<HTMLElement>("[role=menuitemradio]") ?? [])];
+    const items = [
+      ...(wrapper.current?.querySelectorAll<HTMLElement>(
+        "[role=menuitemradio]",
+      ) ?? []),
+    ];
     const at = items.indexOf(document.activeElement as HTMLElement);
     const step = event.key === "ArrowDown" ? 1 : -1;
     items[(at + step + items.length) % items.length]?.focus();
   }
 
   return (
-    <div className={`lang-menu lang-menu-${tone}`} ref={wrapper} onKeyDown={onKeyDown}>
+    <div
+      className={`lang-menu lang-menu-${tone}`}
+      ref={wrapper}
+      onKeyDown={onKeyDown}
+    >
       <button
         type="button"
         className="lang-trigger"
@@ -56,7 +66,12 @@ export function LangMenu({ tone = "light" }: { tone?: "light" | "dark" }) {
         <ChevronIcon size={16} />
       </button>
       {open && (
-        <div className="lang-panel" id={panelId} role="menu" aria-label={t("nav.language")}>
+        <div
+          className="lang-panel"
+          id={panelId}
+          role="menu"
+          aria-label={t("nav.language")}
+        >
           {UI_LANGS.map((tag) => {
             const option = languageOf(tag);
             return (
@@ -79,7 +94,9 @@ export function LangMenu({ tone = "light" }: { tone?: "light" | "dark" }) {
                     {option.name}
                   </span>
                 )}
-                {statusOf(tag) === "beta" && <span className="lang-beta">{t("lang.beta")}</span>}
+                {statusOf(tag) === "beta" && (
+                  <span className="lang-beta">{t("lang.beta")}</span>
+                )}
                 {tag === lang && <CheckIcon size={16} className="lang-check" />}
               </button>
             );
@@ -152,11 +169,21 @@ export function Footer() {
   );
 }
 
-export function Page({ children, tone = "light" }: { children: ReactNode; tone?: "light" | "dark" }) {
+export function Page({
+  children,
+  tone = "light",
+  wide = false,
+}: {
+  children: ReactNode;
+  tone?: "light" | "dark";
+  wide?: boolean;
+}) {
   return (
     <div className="page">
       <TopBar tone={tone} />
-      <main className="page-main">{children}</main>
+      <main className={wide ? "page-main page-wide" : "page-main"}>
+        {children}
+      </main>
       <Footer />
     </div>
   );

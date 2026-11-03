@@ -1994,5 +1994,9 @@
   "admin.week": "यह हफ़्ता",
   "admin.week_note": "हफ़्ते की बिक्री और मुनाफ़ा",
   "admin.udhaar": "उधार",
-  "admin.udhaar_note": "किसने दुकान के पैसे देने हैं"
+  "admin.udhaar_note": "किसने दुकान के पैसे देने हैं",
+  "store.shop_now": "कलेक्शन देखें",
+  "store.all": "सब",
+  "store.order_on": "{channel} पर ऑर्डर करें",
+  "store.view": "डिज़ाइन देखें"
 }

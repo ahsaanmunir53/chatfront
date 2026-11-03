@@ -1994,5 +1994,9 @@
   "admin.week": "یہ ہفتہ",
   "admin.week_note": "ہفتے کی سیل اور منافع",
   "admin.udhaar": "ادھار",
-  "admin.udhaar_note": "کس نے دکان کے پیسے دینے ہیں"
+  "admin.udhaar_note": "کس نے دکان کے پیسے دینے ہیں",
+  "store.shop_now": "کلیکشن دیکھیں",
+  "store.all": "سب",
+  "store.order_on": "{channel} پر آرڈر کریں",
+  "store.view": "ڈیزائن دیکھیں"
 }

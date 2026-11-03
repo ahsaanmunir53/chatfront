@@ -1994,5 +1994,9 @@
   "admin.week": "ایہہ ہفتہ",
   "admin.week_note": "ہفتے دی سیل تے منافع",
   "admin.udhaar": "اُدھار",
-  "admin.udhaar_note": "کس نے دکان دے پیسے دینے نیں"
+  "admin.udhaar_note": "کس نے دکان دے پیسے دینے نیں",
+  "store.shop_now": "کلیکشن ویکھو",
+  "store.all": "سارے",
+  "store.order_on": "{channel} تے آرڈر کرو",
+  "store.view": "ڈیزائن ویکھو"
 }

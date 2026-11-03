@@ -1994,5 +1994,9 @@
   "admin.week": "Yeh hafta",
   "admin.week_note": "Hafte ki sale aur munafa",
   "admin.udhaar": "Udhaar",
-  "admin.udhaar_note": "Kis ne dukaan ke paise dene hain"
+  "admin.udhaar_note": "Kis ne dukaan ke paise dene hain",
+  "store.shop_now": "Collection dekhein",
+  "store.all": "Sab",
+  "store.order_on": "{channel} par order karein",
+  "store.view": "Designs dekhein"
 }

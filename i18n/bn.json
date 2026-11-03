@@ -1994,5 +1994,9 @@
   "admin.week": "এই সপ্তাহ",
   "admin.week_note": "সপ্তাহের বিক্রি ও লাভ",
   "admin.udhaar": "বাকি",
-  "admin.udhaar_note": "কার কাছে দোকানের টাকা পাওনা"
+  "admin.udhaar_note": "কার কাছে দোকানের টাকা পাওনা",
+  "store.shop_now": "কালেকশন দেখুন",
+  "store.all": "সব",
+  "store.order_on": "{channel}-এ অর্ডার করুন",
+  "store.view": "ডিজাইন দেখুন"
 }

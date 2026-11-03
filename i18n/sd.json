@@ -1994,5 +1994,9 @@
   "admin.week": "هي هفتو",
   "admin.week_note": "هفتي جو وڪرو ۽ منافعو",
   "admin.udhaar": "اڌار",
-  "admin.udhaar_note": "ڪنهن دڪان جا پئسا ڏيڻا آهن"
+  "admin.udhaar_note": "ڪنهن دڪان جا پئسا ڏيڻا آهن",
+  "store.shop_now": "ڪليڪشن ڏسو",
+  "store.all": "سڀ",
+  "store.order_on": "{channel} تي آرڊر ڪريو",
+  "store.view": "ڊيزائن ڏسو"
 }

@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { useCart } from "../cart";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { ApiError, api } from "../api";
 import type { ChannelLink, Countdown } from "../api";
 import { bundledProducts, fromApi, productText } from "../catalog";
 import { useCopy } from "../clipboard";
 import type { ShopProduct } from "../catalog";
-import { Avatar, initials, templateTone } from "../components/Avatar";
+import { initials, templateTone } from "../components/Avatar";
 import { ChatIcon, KeyIcon, PinIcon, SendIcon } from "../components/Icons";
 import { ShopReviewsSection } from "../components/Reviews";
 import { Page, Problem } from "../components/Shell";
@@ -62,7 +67,8 @@ export function useShop(slug: string) {
           demo: shop.is_demo,
         }),
       (error: unknown) => {
-        if (current && error instanceof ApiError && error.status === 404) setMissing(true);
+        if (current && error instanceof ApiError && error.status === 404)
+          setMissing(true);
       },
     );
     return () => {
@@ -73,7 +79,10 @@ export function useShop(slug: string) {
   const profile: Profile | undefined =
     live?.profile ?? (bundled && { ...bundled, country: DEFAULT_COUNTRY });
   return {
-    profile: profile && { ...profile, template: bundled?.template ?? profile.template },
+    profile: profile && {
+      ...profile,
+      template: bundled?.template ?? profile.template,
+    },
     channels: live?.channels ?? [],
     countdowns: live?.countdowns ?? [],
     // Only the demo shops themselves can be copied; a visitor's copy cannot be copied again.
@@ -105,7 +114,13 @@ function useProducts(slug: string): ShopProduct[] | undefined {
 }
 
 /** A flash or live sale on the product (feature 8): the price, what is left and the time. */
-function SaleLine({ product, country }: { product: ShopProduct; country: string }) {
+function SaleLine({
+  product,
+  country,
+}: {
+  product: ShopProduct;
+  country: string;
+}) {
   const { t, lang } = useLang();
   const sale = product.sale;
   const left = useLeft(sale?.ends_at ?? "1970-01-01T00:00:00Z");
@@ -118,7 +133,11 @@ function SaleLine({ product, country }: { product: ShopProduct; country: string 
       </span>{" "}
       <strong>{formatMoney(sale.price, country, lang)}</strong>{" "}
       <s>{formatMoney(product.listPrice, country, lang)}</s>{" "}
-      <span>{sale.left > 0 ? t("shop.sale_left", { count: sale.left }) : t("shop.sale_gone")}</span>{" "}
+      <span>
+        {sale.left > 0
+          ? t("shop.sale_left", { count: sale.left })
+          : t("shop.sale_gone")}
+      </span>{" "}
       <span className="product-sale-time">
         {minutes < 60
           ? t("shop.minutes_left", { minutes })
@@ -145,7 +164,10 @@ function ProductCard({
   const price = formatMoney(product.price, country, lang);
   const ask = t("catalog.ask_text", { product: text.name });
   return (
-    <li id={`p-${product.key}`} className={`product ${product.inStock ? "" : "is-sold-out"}`}>
+    <li
+      id={`p-${product.key}`}
+      className={`product ${product.inStock ? "" : "is-sold-out"}`}
+    >
       <div className={`product-tile tone-${templateTone(template)}`}>
         {product.imageUrl ? (
           <img src={product.imageUrl} alt="" loading="lazy" />
@@ -154,15 +176,17 @@ function ProductCard({
             {initials(text.name)}
           </span>
         )}
-        {!product.inStock && <span className="product-stamp">{t("catalog.sold_out")}</span>}
-        <span className="price-tag">
-          {product.priceVaries ? t("catalog.from", { price }) : price}
-        </span>
+        {!product.inStock && (
+          <span className="product-stamp">{t("catalog.sold_out")}</span>
+        )}
       </div>
       <div className="product-body">
         <h3 className="product-name" lang={nameLang} dir="auto">
           {text.name}
         </h3>
+        <p className="product-price">
+          {product.priceVaries ? t("catalog.from", { price }) : price}
+        </p>
         {product.options.length > 0 && (
           <p className="product-options" dir="auto">
             {product.options.join(", ")}
@@ -179,11 +203,16 @@ function ProductCard({
           {product.inStock && product.variants.length > 0 && (
             <AddToCart slug={slug} product={product} name={text.name} />
           )}
-          <Link to={`/s/${slug}/chat?${new URLSearchParams({ ask })}`} className="product-ask">
+          <Link
+            to={`/s/${slug}/chat?${new URLSearchParams({ ask })}`}
+            className="product-ask"
+          >
             <ChatIcon size={16} />
             {t("catalog.ask")}
           </Link>
-          {product.shareUrl && <Share url={product.shareUrl} name={text.name} />}
+          {product.shareUrl && (
+            <Share url={product.shareUrl} name={text.name} />
+          )}
         </div>
       </div>
     </li>
@@ -222,7 +251,15 @@ function Share({ url, name }: { url: string; name: string }) {
 }
 
 /** One variant into the cart: picked from the options when there are several. */
-function AddToCart({ slug, product, name }: { slug: string; product: ShopProduct; name: string }) {
+function AddToCart({
+  slug,
+  product,
+  name,
+}: {
+  slug: string;
+  product: ShopProduct;
+  name: string;
+}) {
   const { t } = useLang();
   const cart = useCart(slug);
   const choices = product.variants.filter((variant) => variant.inStock);
@@ -265,7 +302,10 @@ function AddToCart({ slug, product, name }: { slug: string; product: ShopProduct
 function VisitNote({ slug }: { slug: string }) {
   const { t } = useLang();
   const [params] = useSearchParams();
-  const [kept, setKept] = useState<{ ref: string | null; group: string | null }>({
+  const [kept, setKept] = useState<{
+    ref: string | null;
+    group: string | null;
+  }>({
     ref: null,
     group: null,
   });
@@ -300,16 +340,38 @@ function CartBar({ slug }: { slug: string }) {
   return (
     <div className="cart-bar" role="region" aria-label={t("checkout.cart")}>
       <span>{t("shop.cart_bar", { count })}</span>
-      <Link to={`/s/${slug}/checkout`} className="button button-saffron button-small">
+      <Link
+        to={`/s/${slug}/checkout`}
+        className="button button-saffron button-small"
+      >
         {t("shop.checkout")}
       </Link>
     </div>
   );
 }
 
-function Catalog({ slug, profile }: { slug: string; profile: Profile }) {
+/** The shop's categories, in the order the catalog lists them. */
+function categoriesOf(products: ShopProduct[]): string[] {
+  return [...new Set(products.map((p) => p.category).filter(Boolean))];
+}
+
+function categoryName(category: string): string {
+  const words = category.replace(/[_-]/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function Catalog({
+  slug,
+  profile,
+  products,
+  category,
+}: {
+  slug: string;
+  profile: Profile;
+  products: ShopProduct[] | undefined;
+  category: string | null;
+}) {
   const { t } = useLang();
-  const products = useProducts(slug);
   // A link from a private reply to a comment (#p-<code>) lands on that product.
   useEffect(() => {
     const target = window.location.hash.slice(1);
@@ -317,14 +379,22 @@ function Catalog({ slug, profile }: { slug: string; profile: Profile }) {
       document.getElementById(target)?.scrollIntoView({ block: "center" });
     }
   }, [products]);
+  const shown = products?.filter(
+    (p) => category === null || p.category === category,
+  );
   return (
-    <section className="catalog" aria-labelledby="catalog-title" aria-busy={!products}>
-      <h2 id="catalog-title" className="section-title">
-        {t("shop.products")}
+    <section
+      id="collection"
+      className="catalog"
+      aria-labelledby="catalog-title"
+      aria-busy={!products}
+    >
+      <h2 id="catalog-title" className="section-title store-title">
+        {category === null ? t("shop.products") : categoryName(category)}
       </h2>
-      {products && products.length > 0 ? (
+      {shown && shown.length > 0 ? (
         <ul className="product-grid">
-          {products.map((product) => (
+          {shown.map((product) => (
             <ProductCard
               key={product.key}
               product={product}
@@ -346,6 +416,74 @@ function Catalog({ slug, profile }: { slug: string; profile: Profile }) {
         </div>
       )}
     </section>
+  );
+}
+
+/** The category row under the shop's name: all, then each category. */
+function CategoryNav({
+  categories,
+  category,
+  choose,
+}: {
+  categories: string[];
+  category: string | null;
+  choose: (category: string | null) => void;
+}) {
+  const { t } = useLang();
+  if (categories.length < 2) return null;
+  return (
+    <nav className="store-nav" aria-label={t("shop.products")}>
+      {[null, ...categories].map((name) => (
+        <button
+          key={name ?? "all"}
+          type="button"
+          aria-pressed={category === name}
+          onClick={() => choose(name)}
+        >
+          {name === null ? t("store.all") : categoryName(name)}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+/** One picture tile per category, the way a shop window groups its stock. */
+function CategoryTiles({
+  products,
+  categories,
+  choose,
+}: {
+  products: ShopProduct[];
+  categories: string[];
+  choose: (category: string) => void;
+}) {
+  const { t } = useLang();
+  if (categories.length < 2) return null;
+  return (
+    <ul className="store-tiles">
+      {categories.map((name) => {
+        const inside = products.filter((p) => p.category === name);
+        const cover = inside.find((p) => p.imageUrl)?.imageUrl;
+        return (
+          <li key={name}>
+            <button
+              type="button"
+              className="store-tile"
+              onClick={() => choose(name)}
+            >
+              {cover && <img src={cover} alt="" loading="lazy" />}
+              <span className="store-tile-text">
+                <strong>{categoryName(name)}</strong>
+                <span>
+                  {t("browse.count", { count: inside.length })} ·{" "}
+                  {t("store.view")}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -413,31 +551,46 @@ function useLeft(endsAt: string): number {
   return Date.parse(endsAt) - now;
 }
 
-function CountdownLine({ item, country }: { item: Countdown; country: string }) {
+function CountdownLine({
+  item,
+  country,
+}: {
+  item: Countdown;
+  country: string;
+}) {
   const { t, lang } = useLang();
   const left = useLeft(item.ends_at);
   if (left <= 0) return null;
   const what =
     item.kind === "sale"
       ? item.percent !== null
-        ? t("shop.sale_percent", { code: item.code ?? "", percent: item.percent })
+        ? t("shop.sale_percent", {
+            code: item.code ?? "",
+            percent: item.percent,
+          })
         : t("shop.sale_amount", {
             code: item.code ?? "",
             amount: formatMoney(item.amount ?? 0, country, lang),
           })
       : t("shop.order_by", {
-          event: item.event ? t(`season.${item.event}` as Key) : (item.name ?? ""),
+          event: item.event
+            ? t(`season.${item.event}` as Key)
+            : (item.name ?? ""),
           date: dayLabel(item.ends_at.slice(0, 10), lang),
         });
   return (
     <li className={`countdown is-${item.kind}`}>
       <span className="countdown-what" dir="auto">
         {what}
-        {item.expected && <span className="countdown-note"> {t("shop.moon_note")}</span>}
+        {item.expected && (
+          <span className="countdown-note"> {t("shop.moon_note")}</span>
+        )}
       </span>
       <strong className="countdown-left">
         {left < DAY
-          ? t("shop.hours_left", { hours: Math.max(Math.floor(left / HOUR), 1) })
+          ? t("shop.hours_left", {
+              hours: Math.max(Math.floor(left / HOUR), 1),
+            })
           : t("shop.days_left", { days: Math.floor(left / DAY) })}
       </strong>
     </li>
@@ -461,10 +614,47 @@ function Countdowns({ list, country }: { list: Countdown[]; country: string }) {
   );
 }
 
+/** The shop's cart in its header, with how many pieces are in it. */
+function CartLink({ slug }: { slug: string }) {
+  const { t } = useLang();
+  const { count } = useCart(slug);
+  return (
+    <Link
+      to={`/s/${slug}/checkout`}
+      className="store-cart"
+      aria-label={t("checkout.cart")}
+    >
+      <BagIcon />
+      {count > 0 && <span className="store-cart-count">{count}</span>}
+    </Link>
+  );
+}
+
+function BagIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M5 8h14l-1 12H6L5 8Zm4 0V6a3 3 0 0 1 6 0v2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ShopPage() {
   const { slug = "" } = useParams();
   const { lang, t } = useLang();
   const { profile, channels, countdowns, copyable, missing } = useShop(slug);
+  const products = useProducts(slug);
+  const [category, setCategory] = useState<string | null>(null);
 
   if (missing) {
     return (
@@ -483,56 +673,119 @@ export function ShopPage() {
 
   const outside = channels
     .filter((c) => c.url && c.channel in CHANNEL_NAMES)
-    .sort((a, b) => CHANNEL_ORDER.indexOf(a.channel) - CHANNEL_ORDER.indexOf(b.channel));
+    .sort(
+      (a, b) =>
+        CHANNEL_ORDER.indexOf(a.channel) - CHANNEL_ORDER.indexOf(b.channel),
+    );
+  const categories = categoriesOf(products ?? []);
+  const pictures = (products ?? []).filter((p) => p.imageUrl).slice(0, 2);
+  function choose(name: string | null) {
+    setCategory(name);
+    document
+      .getElementById("collection")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }
   return (
-    <Page>
-      <section className="profile">
-        <div className="profile-cover" aria-hidden="true" />
-        <div className="profile-body">
-          <Avatar name={profile.name} template={profile.template} size="lg" />
-          <h1 className="profile-name" lang={scriptLang(profile.name)} dir="auto">
-            {profile.name}
-          </h1>
-          <p className="profile-kind">
-            {pick(profile.business_type, lang)}
-            {profile.city && (
-              <span className="profile-city">
-                <PinIcon size={16} />
-                {profile.city}
-              </span>
-            )}
-          </p>
-          <p className="profile-tagline">{pick(profile.tagline, lang)}</p>
-          <div className="profile-actions">
-            <Link to={`/s/${slug}/chat`} className="action action-primary">
-              <ChatIcon />
-              {t("shop.chat_here")}
-            </Link>
-            {outside.length > 0 && (
-              <div className="profile-channels">
-                {outside.map((c) => (
-                  <a key={c.channel} href={c.url ?? undefined} className="action" rel="noopener">
-                    <SendIcon className="flip-rtl" />
-                    <span lang="en">{CHANNEL_NAMES[c.channel]}</span>
-                  </a>
-                ))}
-              </div>
-            )}
+    <Page wide>
+      <div className={`store tone-${templateTone(profile.template)}`}>
+        <Countdowns list={countdowns} country={profile.country} />
+        <header className="store-head">
+          <Link to={`/s/${slug}/chat`} className="store-head-chat">
+            <ChatIcon size={18} />
+            <span>{t("shop.chat_here")}</span>
+          </Link>
+          <div className="store-brand">
+            <h1
+              className="store-name"
+              lang={scriptLang(profile.name)}
+              dir="auto"
+            >
+              {profile.name}
+            </h1>
+            <p className="store-kind">
+              {pick(profile.business_type, lang)}
+              {profile.city && (
+                <span className="profile-city">
+                  <PinIcon size={14} />
+                  {profile.city}
+                </span>
+              )}
+            </p>
           </div>
-        </div>
-      </section>
+          <CartLink slug={slug} />
+        </header>
+        <CategoryNav
+          categories={categories}
+          category={category}
+          choose={choose}
+        />
 
-      <VisitNote slug={slug} />
-      <Countdowns list={countdowns} country={profile.country} />
-      <Catalog slug={slug} profile={profile} />
-      <ShopReviewsSection slug={slug} />
-      <CartBar slug={slug} />
+        <section className="store-hero">
+          <div className="store-hero-text">
+            <p className="store-hero-line">{pick(profile.tagline, lang)}</p>
+            <div className="store-hero-actions">
+              <a
+                href="#collection"
+                className="store-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  choose(null);
+                }}
+              >
+                {t("store.shop_now")}
+              </a>
+              {outside.map((c) => (
+                <a
+                  key={c.channel}
+                  href={c.url ?? undefined}
+                  className="store-button store-button-quiet"
+                  rel="noopener"
+                >
+                  <SendIcon size={16} className="flip-rtl" />
+                  {t("store.order_on", {
+                    channel: CHANNEL_NAMES[c.channel] ?? c.channel,
+                  })}
+                </a>
+              ))}
+            </div>
+          </div>
+          {pictures.length > 0 && (
+            <div
+              className={`store-hero-pictures is-${pictures.length}`}
+              aria-hidden="true"
+            >
+              {pictures.map((p) => (
+                <img key={p.key} src={p.imageUrl ?? undefined} alt="" />
+              ))}
+            </div>
+          )}
+        </section>
 
-      {copyable && <TryAsOwner slug={slug} />}
+        <VisitNote slug={slug} />
+        <CategoryTiles
+          products={products ?? []}
+          categories={categories}
+          choose={choose}
+        />
+        <Catalog
+          slug={slug}
+          profile={profile}
+          products={products}
+          category={category}
+        />
+        <ShopReviewsSection slug={slug} />
+        <CartBar slug={slug} />
 
-      <p className="trust-link">
-        <Link to={`/s/${slug}/trust`}>{t("shop.trust_link")}</Link>
-      </p>
+        {copyable && <TryAsOwner slug={slug} />}
+
+        <p className="trust-link">
+          <Link to={`/s/${slug}/trust`}>{t("shop.trust_link")}</Link>
+        </p>
+        <Link to={`/s/${slug}/chat`} className="store-chat-fab">
+          <ChatIcon size={18} />
+          {t("shop.chat_here")}
+        </Link>
+      </div>
     </Page>
   );
 }

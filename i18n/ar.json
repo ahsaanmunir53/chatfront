@@ -1994,5 +1994,9 @@
   "admin.week": "هذا الأسبوع",
   "admin.week_note": "مبيعات الأسبوع وأرباحه",
   "admin.udhaar": "الديون",
-  "admin.udhaar_note": "من يدين للمتجر بالمال"
+  "admin.udhaar_note": "من يدين للمتجر بالمال",
+  "store.shop_now": "تسوّق المجموعة",
+  "store.all": "الكل",
+  "store.order_on": "اطلب عبر {channel}",
+  "store.view": "شاهد التصاميم"
 }

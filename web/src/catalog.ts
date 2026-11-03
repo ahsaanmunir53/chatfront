@@ -18,7 +18,10 @@ type DemoProduct = {
   description: string;
   variants?: DemoVariant[];
 };
-type TemplateFile = { id: string; demo: { slug: string; products?: DemoProduct[] } };
+type TemplateFile = {
+  id: string;
+  demo: { slug: string; products?: DemoProduct[] };
+};
 
 export type ShopProduct = {
   key: string;
@@ -27,6 +30,7 @@ export type ShopProduct = {
   translations: Record<string, { name?: string; description?: string }>;
   price: number; // minor units, the lowest a variant sells for
   priceVaries: boolean;
+  category: string; // "" when the product has none
   options: string[]; // one label per variant: "M", "Sea green"
   imageUrl: string | null;
   inStock: boolean;
@@ -48,7 +52,10 @@ function optionLabel(options: Record<string, string> | undefined): string {
   return Object.values(options ?? {}).join(" ");
 }
 
-function lowest(prices: number[], fallback: number): { price: number; varies: boolean } {
+function lowest(
+  prices: number[],
+  fallback: number,
+): { price: number; varies: boolean } {
   if (prices.length === 0) return { price: fallback, varies: false };
   const price = Math.min(...prices);
   return { price, varies: prices.some((p) => p !== price) };
@@ -72,6 +79,7 @@ export function bundledProducts(slug: string): ShopProduct[] | undefined {
       translations: {},
       price,
       priceVaries: varies,
+      category: product.category,
       options: variants.map((v) => optionLabel(v.options)).filter(Boolean),
       imageUrl: null,
       inStock: variants.some((v) => v.stock == null || v.stock > 0),
@@ -97,7 +105,10 @@ export function fromApi(product: PublicProduct): ShopProduct {
     translations: product.translations,
     price,
     priceVaries: varies,
-    options: product.variants.map((v) => optionLabel(v.options)).filter(Boolean),
+    category: product.category ?? "",
+    options: product.variants
+      .map((v) => optionLabel(v.options))
+      .filter(Boolean),
     imageUrl: product.image_url,
     inStock: product.in_stock,
     shipsFrom: product.ships_from,
@@ -120,7 +131,9 @@ export function productText(
   tag: Lang,
 ): { name: string; description: string; lang: Lang | null } {
   const languages = chain(tag);
-  for (const language of languages.length > 1 ? languages.slice(0, -1) : languages) {
+  for (const language of languages.length > 1
+    ? languages.slice(0, -1)
+    : languages) {
     const text = product.translations[language.tag];
     if (text?.name) {
       return {

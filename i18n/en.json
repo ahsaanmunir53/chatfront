@@ -1994,5 +1994,9 @@
   "admin.week": "This week",
   "admin.week_note": "The week's sales and profit",
   "admin.udhaar": "Udhaar",
-  "admin.udhaar_note": "Who owes the shop money"
+  "admin.udhaar_note": "Who owes the shop money",
+  "store.shop_now": "Shop the collection",
+  "store.all": "All",
+  "store.order_on": "Order on {channel}",
+  "store.view": "See designs"
 }

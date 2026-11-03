@@ -1994,5 +1994,9 @@
   "admin.week": "دا اونۍ",
   "admin.week_note": "د اونۍ پلور او ګټه",
   "admin.udhaar": "پور",
-  "admin.udhaar_note": "څوک دوکان ته پیسې پوروړی دی"
+  "admin.udhaar_note": "څوک دوکان ته پیسې پوروړی دی",
+  "store.shop_now": "ټولګه وګورئ",
+  "store.all": "ټول",
+  "store.order_on": "په {channel} امر ورکړئ",
+  "store.view": "ډیزاینونه وګورئ"
 }
