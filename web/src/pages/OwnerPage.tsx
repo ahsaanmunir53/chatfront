@@ -708,7 +708,6 @@ function Console({
               key={section.id}
               id={`sec-${section.id}`}
               className="admin-section"
-              aria-label={t(section.label)}
             >
               {section.children}
             </section>
