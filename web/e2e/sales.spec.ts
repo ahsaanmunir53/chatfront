@@ -27,7 +27,7 @@ test("the owner starts a live sale and a customer takes a piece by writing its n
   const lawn = buyer.locator(".product", { hasText: "Printed lawn 3-piece" });
   await expect(lawn.locator(".product-sale")).toContainText("Live #1", { timeout: 20_000 });
   await expect(lawn.locator(".product-sale")).toContainText("Rs 3,999");
-  await buyer.getByRole("link", { name: "Chat here" }).click();
+  await buyer.getByRole("link", { name: "Chat here" }).first().click();
   await buyer.getByRole("textbox").fill("1");
   await buyer.getByRole("textbox").press("Enter");
   const choice = buyer.locator(".bubble-out").last();
