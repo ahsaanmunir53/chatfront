@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 from chatfront.catalog import demo_art
 from chatfront.catalog.service import CatalogItem
+from chatfront.channels.models import Message
 from chatfront.channels.types import (
     Button,
     ListRow,
@@ -140,6 +141,43 @@ def card(api_url: str, tenant: Tenant, item: CatalogItem, lang: str) -> Outbound
         return OutText(caption)
     buy = (Button(BUY_PREFIX + product.code, t("browse.order_button", lang)),)
     return OutImage(url, caption, product.name, buy if item.in_stock else ())
+
+
+def _pictured(history: Sequence[Message]) -> set[str]:
+    """Names of the products whose picture the chat already shows."""
+    return {
+        str((m.payload or {}).get("image", {}).get("title", ""))
+        for m in history
+        if m.direction == "out" and isinstance((m.payload or {}).get("image"), dict)
+    }
+
+
+def mentioned(
+    api_url: str,
+    tenant: Tenant,
+    items: Sequence[CatalogItem],
+    text: str,
+    lang: str,
+    history: Sequence[Message] = (),
+    room: int = 3,
+) -> list[OutImage]:
+    """Pictures of the products a reply names by code, in the order it names them, so a
+    list written by the assistant arrives with its pictures. A product the chat already
+    showed is not sent again."""
+    seen = _pictured(history)
+    found: list[tuple[int, CatalogItem]] = []
+    for item in items:
+        match = re.search(rf"\b{re.escape(item.product.code)}\b", text)
+        if match and item.product.name not in seen:
+            found.append((match.start(), item))
+    out: list[OutImage] = []
+    for _, item in sorted(found, key=lambda pair: pair[0]):
+        if len(out) >= room:
+            break
+        picture = card(api_url, tenant, item, lang)
+        if isinstance(picture, OutImage):
+            out.append(picture)
+    return out
 
 
 def category_cards(

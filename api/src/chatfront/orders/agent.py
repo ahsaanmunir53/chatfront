@@ -64,6 +64,7 @@ from chatfront.orders.tools import (
     CANCEL_ORDER,
     CHANGE_ORDER,
     CHECKOUT,
+    PICTURES_PER_TURN,
     AgentContext,
     accepted_methods,
 )
@@ -187,6 +188,13 @@ class OrderAgent:
             )
         replies: list[Outbound] = [OutText(checked)] if checked else []
         pictures = [c for c in ctx.cards if isinstance(c, OutImage)]  # products first
+        if checked:  # a list the assistant wrote itself still comes with its pictures
+            named = browse.mentioned(
+                ctx.api_url, turn.tenant, ctx.items, checked, turn.lang, history=turn.history
+            )
+            titles = {p.title for p in pictures}
+            room = max(PICTURES_PER_TURN - len(pictures), 0)
+            pictures += [p for p in named if p.title not in titles][:room]
         others = [c for c in ctx.cards if not isinstance(c, OutImage)]
         return [*pictures, *replies, *others] or [OutText(t("agent.fallback", turn.lang))]
 
@@ -238,6 +246,7 @@ class OrderAgent:
             booking_flow_id=services.settings.whatsapp_flow_booking_id or "",
             api_url=services.settings.public_base_url.rstrip("/"),
             link_secret=services.settings.secret_key.get_secret_value(),
+            items=items,
         )
         prompt = load_prompt("order_agent")
         system = prompt.render(

@@ -126,3 +126,20 @@ def test_the_owner_admin_menu() -> None:
     assert [r.id for r in few.rows] == ["adm:orders"]
     assert panel.admin_choice("adm:today") == "today"
     assert panel.admin_choice("adm:nope") is None
+
+
+def test_a_list_the_assistant_writes_comes_with_its_pictures() -> None:
+    from chatfront.channels.models import Message
+
+    lawn, khaddar, kurta = (
+        item("Printed lawn", "suits", "Rust"),
+        item("Khaddar", "suits"),
+        item("Kurta", "kurtas"),
+    )
+    text = "1. Khaddar (KHA) - Rs 3,950\n2. Printed lawn (PRI) - Rs 4,850"
+    shown = browse.mentioned("https://x", SHOP, [lawn, khaddar, kurta], text, "en")
+    assert [p.title for p in shown] == ["Khaddar", "Printed lawn"]  # in the order named
+    before = Message(direction="out", payload={"image": {"title": "Khaddar"}})
+    again = browse.mentioned("https://x", SHOP, [lawn, khaddar], text, "en", history=[before])
+    assert [p.title for p in again] == ["Printed lawn"]  # not the one already shown
+    assert browse.mentioned("https://x", SHOP, [lawn], "PRIX is not a code", "en") == []

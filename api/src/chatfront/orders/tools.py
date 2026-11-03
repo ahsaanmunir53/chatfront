@@ -77,6 +77,7 @@ class AgentContext:
     api_url: str = ""  # where this server answers, for links to files code makes (feature 44)
     link_secret: str = ""  # signs those links
     cards: list[Outbound] = field(default_factory=list)
+    items: Sequence[CatalogItem] = ()  # the shop's catalog this turn, for pictures of named items
     handover: str | None = None  # the reason, when the agent asked for a person
 
     @property
