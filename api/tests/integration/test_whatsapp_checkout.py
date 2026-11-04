@@ -71,3 +71,27 @@ async def test_payment_details_from_the_environment_reach_the_shop(
     assert shop is not None
     assert shop.profile["payment"] == "JazzCash 0300 0000000, Demo"
     assert await set_payment_details(services.db, "gulmohar-lawn=JazzCash 0300 0000000, Demo") == []
+
+
+async def test_the_same_price_asked_again_gets_the_same_counter(
+    app: tuple[Client, Services],
+) -> None:
+    from sqlalchemy import select
+
+    from chatfront.orders.models import PriceOffer
+
+    client, services = app
+    code = await code_of(client, "Printed lawn 3-piece")
+    offer = {"make_offer": {"product_code": code, "price": 3500}}
+    use(
+        services,
+        agent("3500 ka", calls=offer),
+        agent("3500 ka", step=1, content="Maazrat, shop ki counter offer yeh hai."),
+        agent("3500 hi", calls=offer),
+        agent("3500 hi", step=1, content="Wohi counter offer hai."),
+    )
+    await _send(client, services, wa_message("wamid.o1", body="3500 ka de dein"))
+    await _send(client, services, wa_message("wamid.o2", body="3500 hi kar dein"))
+    async with services.db.system() as session:
+        rounds = list(await session.scalars(select(PriceOffer)))
+    assert len(rounds) == 1  # no second, lower step for the same number

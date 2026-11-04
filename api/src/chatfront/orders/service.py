@@ -393,6 +393,11 @@ async def offer(
             .order_by(PriceOffer.created_at)
         )
     )
+    same = next((r for r in reversed(rounds) if r.offered == amount), None)
+    if same is not None:
+        # The same price asked again (the model repeating the customer's first number) gets the
+        # same answer: the shop does not come down a step for nothing.
+        return bargain.Decision(bargain.Outcome(same.outcome), same.answer, same.round)
     countered = [
         r.answer
         for r in rounds
