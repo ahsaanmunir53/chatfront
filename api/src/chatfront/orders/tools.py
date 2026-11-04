@@ -504,8 +504,10 @@ async def make_offer(ctx: AgentContext, params: Offer) -> dict[str, Any]:
         "usual_price": ctx.money(item.product.price),
         "meaning": {
             Outcome.ACCEPTED: "the shop agrees to this price; it applies when added to the cart",
-            Outcome.COUNTER: "the shop cannot do that price; this is its counter offer",
-            Outcome.FINAL: "this is the shop's last price for it",
+            Outcome.COUNTER: "the shop cannot do that price; this is its counter offer. If the "
+            "customer agrees to it, call make_offer with this price so the cart uses it",
+            Outcome.FINAL: "this is the shop's last price for it. If the customer agrees to "
+            "it, call make_offer with this price so the cart uses it",
             Outcome.FIXED: "this product has a fixed price",
             Outcome.ASKED: "the shop owner is asked about this price; say you will tell the "
             "customer the answer here",
