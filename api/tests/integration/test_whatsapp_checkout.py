@@ -68,5 +68,6 @@ async def test_payment_details_from_the_environment_reach_the_shop(
     assert done == ["gulmohar-lawn"]
     async with services.db.system() as session:
         shop = await session.scalar(select(Tenant).where(Tenant.slug == "gulmohar-lawn"))
-    assert shop is not None and shop.profile["payment"] == "JazzCash 0300 0000000, Demo"
+    assert shop is not None
+    assert shop.profile["payment"] == "JazzCash 0300 0000000, Demo"
     assert await set_payment_details(services.db, "gulmohar-lawn=JazzCash 0300 0000000, Demo") == []

@@ -9,7 +9,7 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /health
+    healthCheckPath: /live
     autoDeploy: true
     envVars:
       - key: ENV
@@ -62,7 +62,7 @@ services:
       - key: SUPABASE_SERVICE_KEY
         sync: false
       - key: DB_POOL_SIZE
-        value: "3"
+        value: "5"
       # Optional; each one turns a feature on (.env.example says where to get it)
       - key: SAFE_BROWSING_API_KEY
         sync: false

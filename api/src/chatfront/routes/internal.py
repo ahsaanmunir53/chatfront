@@ -28,6 +28,13 @@ def _check(services: Services, secret: str | None) -> None:
         raise Forbidden("Bad cron secret")
 
 
+@router.get("/live")
+async def live() -> dict[str, bool]:
+    """The host's check that the process answers: no database, so a busy pool (a console
+    loading dozens of panels) never gets a healthy instance restarted."""
+    return {"ok": True}
+
+
 @router.get("/health")
 async def health(services: ServicesDep) -> dict[str, object]:
     async with services.db.system() as session:
