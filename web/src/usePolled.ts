@@ -8,6 +8,7 @@ export function usePolled<T>(load: (() => Promise<T>) | null, everyMs: number) {
   const { state } = useServer();
   const [data, setData] = useState<T | null>(null);
   const refresh = useCallback(() => {
+    if (document.visibilityState === "hidden") return; // a tab in the background asks nothing
     load?.().then(setData, () => {
       // The last result stays on screen; the next poll tries again.
     });

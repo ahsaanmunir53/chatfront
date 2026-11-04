@@ -17,7 +17,7 @@ import { BookParcel, DeliveryProofs, useCouriers } from "./Couriers";
 import { PinIcon } from "./Icons";
 import { WhyDetails } from "./Why";
 
-const POLL_MS = 6000;
+const POLL_MS = 15_000; // a free server shares a few database connections with every panel
 const PICK_POLL_MS = 30_000;
 const CHECKABLE = new Set(["paid", "confirmed", "packed"]);
 const SENT = new Set(["dispatched", "delivered", "returned"]);
@@ -42,11 +42,16 @@ function Badges({ order }: { order: OwnerOrder }) {
   const { t } = useLang();
   return (
     <>
-      {order.gift && <span className="order-badge">{t("console.order_gift")}</span>}
+      {order.gift && (
+        <span className="order-badge">{t("console.order_gift")}</span>
+      )}
       {order.group && (
         <span className="order-badge" dir="auto">
           {order.group_member
-            ? t("console.order_group_part", { group: order.group, name: order.group_member })
+            ? t("console.order_group_part", {
+                group: order.group,
+                name: order.group_member,
+              })
             : t("console.order_group_lead", { group: order.group })}
         </span>
       )}
@@ -63,7 +68,9 @@ function Risk({ order }: { order: OwnerOrder }) {
       <summary>{t(`risk.${band}` as Key)}</summary>
       <ul>
         {reasons.map((reason) => (
-          <li key={reason.code}>{t(`risk.${reason.code}` as Key, { count: reason.count ?? 0 })}</li>
+          <li key={reason.code}>
+            {t(`risk.${reason.code}` as Key, { count: reason.count ?? 0 })}
+          </li>
         ))}
       </ul>
     </details>
@@ -97,7 +104,11 @@ function Dispatch({
     <form className="order-dispatch" onSubmit={submit}>
       <label>
         <span>{t("console.order_courier")}</span>
-        <input value={courier} maxLength={60} onChange={(e) => setCourier(e.target.value)} />
+        <input
+          value={courier}
+          maxLength={60}
+          onChange={(e) => setCourier(e.target.value)}
+        />
       </label>
       <label>
         <span>{t("console.order_tracking")}</span>
@@ -110,7 +121,11 @@ function Dispatch({
       </label>
       <label>
         <span>{t("console.order_charge")}</span>
-        <input value={charge} inputMode="decimal" onChange={(e) => setCharge(e.target.value)} />
+        <input
+          value={charge}
+          inputMode="decimal"
+          onChange={(e) => setCharge(e.target.value)}
+        />
       </label>
       <button type="submit" className="action action-primary">
         {t("console.move.dispatched")}
@@ -159,11 +174,19 @@ function Charges({
       <form className="order-dispatch" onSubmit={(event) => void save(event)}>
         <label>
           <span>{t("console.charges_there")}</span>
-          <input value={there} inputMode="decimal" onChange={(e) => setThere(e.target.value)} />
+          <input
+            value={there}
+            inputMode="decimal"
+            onChange={(e) => setThere(e.target.value)}
+          />
         </label>
         <label>
           <span>{t("console.charges_back")}</span>
-          <input value={back} inputMode="decimal" onChange={(e) => setBack(e.target.value)} />
+          <input
+            value={back}
+            inputMode="decimal"
+            onChange={(e) => setBack(e.target.value)}
+          />
         </label>
         <button type="submit" className="action action-primary">
           {t("console.charges_save")}
@@ -179,15 +202,22 @@ function Charges({
 }
 
 /** What a packing check found, one line per problem. */
-export function findings(check: PackingCheck, t: ReturnType<typeof useLang>["t"]): string[] {
+export function findings(
+  check: PackingCheck,
+  t: ReturnType<typeof useLang>["t"],
+): string[] {
   const out: string[] = [];
   for (const line of check.lines) {
     const seen = line.seen ?? 0;
     if (!line.sure) out.push(t("packing.not_seen", { name: line.name }));
     else if (seen < line.quantity)
-      out.push(t("packing.missing", { name: line.name, count: line.quantity - seen }));
+      out.push(
+        t("packing.missing", { name: line.name, count: line.quantity - seen }),
+      );
     else if (seen > line.quantity)
-      out.push(t("packing.too_many", { name: line.name, count: seen - line.quantity }));
+      out.push(
+        t("packing.too_many", { name: line.name, count: seen - line.quantity }),
+      );
   }
   for (const item of check.extra) out.push(t("packing.extra", { item }));
   if (check.asked_owner) out.push(t("packing.asked_owner"));
@@ -224,7 +254,9 @@ function CheckPacking({
   onDone: () => void;
 }) {
   const { t } = useLang();
-  const [state, setState] = useState<"idle" | "checking" | "failed" | "no_model">("idle");
+  const [state, setState] = useState<
+    "idle" | "checking" | "failed" | "no_model"
+  >("idle");
   async function send(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -235,13 +267,19 @@ function CheckPacking({
       setState("idle");
       onDone();
     } catch (error) {
-      setState(error instanceof ApiError && error.status === 503 ? "no_model" : "failed");
+      setState(
+        error instanceof ApiError && error.status === 503
+          ? "no_model"
+          : "failed",
+      );
     }
   }
   return (
     <>
       <label className="action packing-photo" aria-busy={state === "checking"}>
-        {state === "checking" ? t("console.packing_checking") : t("console.packing_check")}
+        {state === "checking"
+          ? t("console.packing_checking")
+          : t("console.packing_check")}
         <input
           type="file"
           accept="image/*"
@@ -284,7 +322,12 @@ function OrderRow({
   const [failed, setFailed] = useState(false);
   const money = (minor: number) => formatMoney(minor, me.country, lang);
 
-  async function move(to: string, courier = "", tracking = "", charge: number | null = null) {
+  async function move(
+    to: string,
+    courier = "",
+    tracking = "",
+    charge: number | null = null,
+  ) {
     setFailed(false);
     try {
       await api.moveOrder(token, order.code, to, courier, tracking, charge);
@@ -314,7 +357,9 @@ function OrderRow({
       <div className="order-money">
         <span className="pay-amount">{money(order.total)}</span>
         {order.paid > 0 && (
-          <span className="pay-note">{t("console.order_paid", { amount: money(order.paid) })}</span>
+          <span className="pay-note">
+            {t("console.order_paid", { amount: money(order.paid) })}
+          </span>
         )}
         {order.to_collect > 0 && (
           <span className="pay-note">
@@ -328,12 +373,16 @@ function OrderRow({
         )}
         {order.shipment?.courier_charge != null && (
           <span className="pay-note">
-            {t("console.order_courier_charge", { amount: money(order.shipment.courier_charge) })}
+            {t("console.order_courier_charge", {
+              amount: money(order.shipment.courier_charge),
+            })}
           </span>
         )}
         {order.shipment?.return_charge != null && (
           <span className="pay-note">
-            {t("console.order_return_charge", { amount: money(order.shipment.return_charge) })}
+            {t("console.order_return_charge", {
+              amount: money(order.shipment.return_charge),
+            })}
           </span>
         )}
       </div>
@@ -354,7 +403,12 @@ function OrderRow({
                 {t("console.move.dispatched")}
               </button>
             ) : (
-              <button key={to} type="button" className="action" onClick={() => void move(to)}>
+              <button
+                key={to}
+                type="button"
+                className="action"
+                onClick={() => void move(to)}
+              >
                 {t(`console.move.${to}` as Key)}
               </button>
             ),
@@ -363,7 +417,11 @@ function OrderRow({
             <button
               type="button"
               className="action"
-              onClick={() => void downloadLabel(token, order.code).catch(() => setFailed(true))}
+              onClick={() =>
+                void downloadLabel(token, order.code).catch(() =>
+                  setFailed(true),
+                )
+              }
             >
               {t("console.order_label")}
             </button>
@@ -372,7 +430,11 @@ function OrderRow({
             <button
               type="button"
               className="action"
-              onClick={() => void downloadGiftCard(token, order.code).catch(() => setFailed(true))}
+              onClick={() =>
+                void downloadGiftCard(token, order.code).catch(() =>
+                  setFailed(true),
+                )
+              }
             >
               {t("console.order_gift_card")}
             </button>
@@ -381,14 +443,21 @@ function OrderRow({
             <CheckPacking token={token} order={order} onDone={onChange} />
           )}
           {canShip && (
-            <BookParcel token={token} order={order} couriers={couriers} onDone={onChange} />
+            <BookParcel
+              token={token}
+              order={order}
+              couriers={couriers}
+              onDone={onChange}
+            />
           )}
         </div>
       )}
       {dispatching && (
         <Dispatch
           me={me}
-          onSend={(courier, tracking, charge) => void move("dispatched", courier, tracking, charge)}
+          onSend={(courier, tracking, charge) =>
+            void move("dispatched", courier, tracking, charge)
+          }
         />
       )}
       {canShip && order.shipment && SENT.has(order.status) && (
@@ -416,23 +485,33 @@ function PickListPanel({ token }: { token: string }) {
   const load = useCallback(() => api.pickList(token), [token]);
   const { data } = usePolled(load, PICK_POLL_MS);
   const [failed, setFailed] = useState(false);
-  const empty = data && !data.lines.length && !data.waiting.length && !data.grouped.length;
+  const empty =
+    data && !data.lines.length && !data.waiting.length && !data.grouped.length;
   if (!data || empty) return null;
   async function print() {
     try {
-      saveFile(await api.pickListPdf(token), `pick-list-${data?.day ?? "today"}.pdf`);
+      saveFile(
+        await api.pickListPdf(token),
+        `pick-list-${data?.day ?? "today"}.pdf`,
+      );
     } catch {
       setFailed(true);
     }
   }
-  const waiting = data.waiting.map((w) => `${w.code} (${w.ships_from})`).join(", ");
-  const grouped = data.grouped.map((g) => `${g.code} (${g.group}, ${g.closes_on})`).join(", ");
+  const waiting = data.waiting
+    .map((w) => `${w.code} (${w.ships_from})`)
+    .join(", ");
+  const grouped = data.grouped
+    .map((g) => `${g.code} (${g.group}, ${g.closes_on})`)
+    .join(", ");
   return (
     <section className="pick-list" aria-labelledby="pick-list-title">
       <h3 id="pick-list-title" className="pay-block-title">
         {t("console.pick_title")}
       </h3>
-      <p className="pay-note">{t("pick.title", { orders: data.orders, pieces: data.pieces })}</p>
+      <p className="pay-note">
+        {t("pick.title", { orders: data.orders, pieces: data.pieces })}
+      </p>
       {data.lines.length > 0 && (
         <table className="daybook pick-table">
           <thead>
@@ -449,7 +528,9 @@ function PickListPanel({ token }: { token: string }) {
                 <th scope="row" dir="auto">
                   {line.name}
                   {line.short > 0 && (
-                    <span className="profit-unknown">{t("pick.short", { count: line.short })}</span>
+                    <span className="profit-unknown">
+                      {t("pick.short", { count: line.short })}
+                    </span>
                   )}
                 </th>
                 <td dir="ltr">{line.orders}</td>
