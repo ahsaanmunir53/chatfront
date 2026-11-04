@@ -143,3 +143,34 @@ def test_a_list_the_assistant_writes_comes_with_its_pictures() -> None:
     again = browse.mentioned("https://x", SHOP, [lawn, khaddar], text, "en", history=[before])
     assert [p.title for p in again] == ["Printed lawn"]  # not the one already shown
     assert browse.mentioned("https://x", SHOP, [lawn], "PRIX is not a code", "en") == []
+
+
+async def test_a_whatsapp_picture_is_uploaded_first_and_sent_by_id() -> None:
+    import httpx
+    import respx
+
+    from chatfront.channels.base import AccountRef
+    from chatfront.channels.whatsapp import WhatsAppAdapter
+
+    graph, photo = "https://graph.test/v21.0", "https://shop.test/p.png"
+    card = OutImage(photo, "Printed lawn", "Printed lawn")
+    async with httpx.AsyncClient() as http, respx.mock:
+        respx.get(photo).mock(
+            return_value=httpx.Response(200, content=b"png", headers={"content-type": "image/png"})
+        )
+        upload = respx.post(f"{graph}/PN1/media").mock(
+            return_value=httpx.Response(200, json={"id": "MEDIA9"})
+        )
+        sent = respx.post(f"{graph}/PN1/messages").mock(
+            return_value=httpx.Response(200, json={"messages": [{"id": "wamid.1"}]})
+        )
+        adapter = WhatsAppAdapter(http, "https://graph.test", "v21.0")
+        await adapter.send(AccountRef("PN1", "token"), "923001234567", card)
+        await adapter.send(AccountRef("PN1", "token"), "923001234567", card)
+    assert upload.call_count == 1  # uploaded once, then reused
+    import json
+
+    assert json.loads(sent.calls[-1].request.content)["image"] == {
+        "id": "MEDIA9",
+        "caption": "Printed lawn",
+    }

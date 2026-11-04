@@ -39,6 +39,7 @@ _MEDIA_TYPES = {
 }
 BUTTON_TITLE_MAX = 20
 CAPTION_MAX = 1024  # WhatsApp's limit for a picture's caption
+MEDIA_KEPT = 256  # uploaded pictures remembered per server (WhatsApp keeps them 30 days)
 LIST_TITLE_MAX = 24
 
 
@@ -110,7 +111,11 @@ def _flow_answers(reply: dict[str, Any]) -> dict[str, Any]:
     return answers if isinstance(answers, dict) else {}
 
 
-def _body(message: Outbound) -> dict[str, Any]:
+def _picture(url: str, media_id: str | None) -> dict[str, str]:
+    return {"id": media_id} if media_id else {"link": url}
+
+
+def _body(message: Outbound, media_id: str | None = None) -> dict[str, Any]:
     match message:
         case OutText(text=text):
             return {"type": "text", "text": {"body": text, "preview_url": False}}
@@ -166,14 +171,15 @@ def _body(message: Outbound) -> dict[str, Any]:
                 ]
             return {"type": "template", "template": template}
         case OutImage(url=url, caption=caption, buttons=()):
-            return {"type": "image", "image": {"link": url, "caption": caption[:CAPTION_MAX]}}
+            image = {**_picture(url, media_id), "caption": caption[:CAPTION_MAX]}
+            return {"type": "image", "image": image}
         case OutImage(url=url, caption=caption, buttons=buttons):
             # A product card: the picture as the header, one reply button under it.
             return {
                 "type": "interactive",
                 "interactive": {
                     "type": "button",
-                    "header": {"type": "image", "image": {"link": url}},
+                    "header": {"type": "image", "image": _picture(url, media_id)},
                     "body": {"text": caption[:CAPTION_MAX]},
                     "action": {
                         "buttons": [
@@ -235,6 +241,7 @@ class WhatsAppAdapter:
     def __init__(self, http: httpx.AsyncClient, graph_base_url: str, version: str) -> None:
         self.http = http
         self.base = f"{graph_base_url.rstrip('/')}/{version}"
+        self._media: dict[tuple[str, str], str] = {}
 
     def parse(self, payload: dict[str, Any]) -> tuple[list[Inbound], list[StatusUpdate]]:
         messages: list[Inbound] = []
@@ -271,12 +278,45 @@ class WhatsAppAdapter:
             raise AppError("whatsapp_token_missing", "No WhatsApp access token is configured")
         return {"Authorization": f"Bearer {account.access_token}"}
 
+    async def _uploaded(self, account: AccountRef, url: str) -> str | None:
+        """The picture uploaded to WhatsApp, so delivery does not depend on WhatsApp fetching
+        our link (a sleeping or guarded host fails that silently); None falls back to the
+        link. Ids are kept a while, so one picture is uploaded once."""
+        key = (account.external_id, url)
+        if key in self._media:
+            return self._media[key]
+        try:
+            got = await self.http.get(url, follow_redirects=True, timeout=20)
+            got.raise_for_status()
+            kind = got.headers.get("content-type", "image/png").split(";")[0]
+            if not kind.startswith("image/"):
+                return None
+            response = await self.http.post(
+                f"{self.base}/{account.external_id}/media",
+                headers=self._headers(account),
+                data={"messaging_product": "whatsapp", "type": kind},
+                files={"file": ("picture", got.content, kind)},
+                timeout=30,
+            )
+            response.raise_for_status()
+            media_id = str(response.json()["id"])
+        except Exception:  # best effort: the link still works without it
+            log.warning("could not upload a picture to WhatsApp; sending its link")
+            return None
+        if len(self._media) >= MEDIA_KEPT:
+            self._media.pop(next(iter(self._media)))
+        self._media[key] = media_id
+        return media_id
+
     async def send(self, account: AccountRef, to: str, message: Outbound) -> str:
+        media_id = (
+            await self._uploaded(account, message.url) if isinstance(message, OutImage) else None
+        )
         body = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
             "to": to,
-            **_body(message),
+            **_body(message, media_id),
         }
         response = await request(
             self.http,
