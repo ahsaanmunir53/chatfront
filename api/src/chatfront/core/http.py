@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -14,6 +15,21 @@ from chatfront.core.errors import AppError
 log = logging.getLogger(__name__)
 
 RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+
+def _detail(response: httpx.Response) -> str:
+    """The provider's own error code and words (Meta: code, subcode, message), so a failure
+    says why; long digit runs (phone numbers, ids) are masked."""
+    try:
+        body = response.json()
+    except ValueError:
+        return ""
+    error = body.get("error") if isinstance(body, dict) else None
+    if not isinstance(error, dict):
+        return ""
+    parts = [str(error.get(k)) for k in ("code", "error_subcode") if error.get(k) is not None]
+    words = re.sub(r"\d{6,}", "#", str(error.get("message", "")))[:160]
+    return f" ({'/'.join(parts)}: {words})" if parts or words else ""
 
 
 class UpstreamError(AppError):
@@ -59,7 +75,7 @@ async def request(
             retryable = response.status_code in RETRYABLE_STATUS
             error = UpstreamError(
                 service,
-                f"HTTP {response.status_code}",
+                f"HTTP {response.status_code}{_detail(response)}",
                 status=response.status_code,
                 retryable=retryable,
             )
