@@ -78,6 +78,7 @@ class AgentContext:
     link_secret: str = ""  # signs those links
     cards: list[Outbound] = field(default_factory=list)
     items: Sequence[CatalogItem] = ()  # the shop's catalog this turn, for pictures of named items
+    added: set[uuid.UUID] = field(default_factory=set)  # variants added this turn
     handover: str | None = None  # the reason, when the agent asked for a person
 
     @property
@@ -309,6 +310,8 @@ async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, A
     variant, problem = variant_for(item, params.options)
     if variant is None:
         return problem or tool_error("not_for_sale")
+    if add and variant.id in ctx.added:
+        return await cart_now(ctx)  # the model adding the same piece twice in one reply
     async with ctx.db.tenant(ctx.tenant.id) as session:
         cart = await orders.open_cart(
             session, ctx.tenant, ctx.customer_id, conversation_id=ctx.conversation_id
@@ -333,6 +336,8 @@ async def _put(ctx: AgentContext, params: CartLine, *, add: bool) -> dict[str, A
             )
         except AppError as exc:
             return tool_error(exc.code)
+        if add:
+            ctx.added.add(variant.id)
         suggestions = (
             await offers.goes_with(
                 session,

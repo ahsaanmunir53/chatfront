@@ -95,3 +95,25 @@ async def test_the_same_price_asked_again_gets_the_same_counter(
     async with services.db.system() as session:
         rounds = list(await session.scalars(select(PriceOffer)))
     assert len(rounds) == 1  # no second, lower step for the same number
+
+
+async def test_the_same_piece_added_twice_in_one_reply_is_one_piece(
+    app: tuple[Client, Services],
+) -> None:
+    from sqlalchemy import select
+
+    from chatfront.orders.models import OrderItem
+
+    client, services = app
+    code = await code_of(client, "Printed lawn 3-piece")
+    add = {"add_to_cart": {"product_code": code, "options": {"colour": "Rust"}}}
+    use(
+        services,
+        agent("rust", calls=add),
+        agent("rust", step=1, calls=add),
+        agent("rust", step=2, content="Rust wala cart mein."),
+    )
+    await _send(client, services, wa_message("wamid.a1", body="rust wala 1 piece"))
+    async with services.db.system() as session:
+        quantities = list(await session.scalars(select(OrderItem.quantity)))
+    assert quantities == [1]
