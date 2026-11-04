@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     # Shops whose owner console link is printed in the logs at start (12 hours), for hosts
     # without a shell: slugs separated by ",". Remove once signed in.
     owner_link_shops: str = ""
+    # Where each shop's customers send money, "<shop>=<details>;...", set at start.
+    shop_payment_details: str = ""
     # Owner alerts outside the 24-hour window go as this approved utility template (one body
     # parameter); without it they wait in the console (feature 118).
     whatsapp_alert_template: str | None = None

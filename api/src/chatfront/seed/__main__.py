@@ -115,12 +115,31 @@ async def seed(db: Database, modules: ModuleRegistry) -> list[str]:
     return created
 
 
+async def set_payment_details(db: Database, value: str) -> list[str]:
+    """SHOP_PAYMENT_DETAILS: "<shop>=<where to send money>;..." becomes each shop's payment
+    line (the account the customer is told to pay), for hosts without a console change yet."""
+    done = []
+    for entry in filter(None, (part.strip() for part in value.split(";"))):
+        slug, _, words = entry.partition("=")
+        if not slug.strip() or not words.strip():
+            raise ValueError(f"payment entry is not shop=details: {entry}")
+        async with db.system() as session:
+            tenant = await session.scalar(select(Tenant).where(Tenant.slug == slug.strip()))
+            if tenant is None:
+                continue
+            if (tenant.profile or {}).get("payment") != words.strip():
+                tenant.profile = {**(tenant.profile or {}), "payment": words.strip()}
+                done.append(tenant.slug)
+    return done
+
+
 async def main() -> None:
     settings = get_settings()
     db = Database(settings.database_url, pool_size=1)
     try:
         created = await seed(db, core_modules())
         connected = await connect_from_settings(db, settings)
+        paid = await set_payment_details(db, settings.shop_payment_details)
         links = [
             (shop, await link_for(db, settings, shop, 12))
             for shop in filter(None, (s.strip() for s in settings.owner_link_shops.split(",")))
@@ -130,6 +149,8 @@ async def main() -> None:
     print("created:", ", ".join(created) or "nothing, all demo shops exist")
     if connected:
         print("WhatsApp connected for:", ", ".join(connected))
+    if paid:
+        print("Payment details set for:", ", ".join(paid))
     for shop, link in links:
         print(f"Owner console for {shop} (12 hours): {link}")
 

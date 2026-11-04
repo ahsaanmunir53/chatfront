@@ -53,3 +53,20 @@ async def test_a_transfer_order_is_placed_by_a_tap_on_whatsapp(
     replies = await _send(client, services, tap)
     assert replies, "the tap got no answer"
     assert "ho gaya" in replies[0]["text"]["body"]
+
+
+async def test_payment_details_from_the_environment_reach_the_shop(
+    app: tuple[Client, Services],
+) -> None:
+    from sqlalchemy import select
+
+    from chatfront.core.models import Tenant
+    from chatfront.seed.__main__ import set_payment_details
+
+    _, services = app
+    done = await set_payment_details(services.db, "gulmohar-lawn=JazzCash 0300 0000000, Demo")
+    assert done == ["gulmohar-lawn"]
+    async with services.db.system() as session:
+        shop = await session.scalar(select(Tenant).where(Tenant.slug == "gulmohar-lawn"))
+    assert shop is not None and shop.profile["payment"] == "JazzCash 0300 0000000, Demo"
+    assert await set_payment_details(services.db, "gulmohar-lawn=JazzCash 0300 0000000, Demo") == []
